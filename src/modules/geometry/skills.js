@@ -14,11 +14,11 @@ export const units = [
     id: 'geo-shapes', area: 'geometry', title: 'Properties of shapes',
     blurb: 'Properties of 2D and 3D shapes, symmetry, plans and elevations, constructions and loci.',
     skills: [
-      { id: 'geo-2d-properties', title: 'Properties of 2D shapes', grade: 1, prereqs: [], summary: 'Name and describe triangles, quadrilaterals and polygons.' },
-      { id: 'geo-symmetry', title: 'Symmetry', grade: 1, prereqs: ['geo-2d-properties'], summary: 'Lines of symmetry and order of rotational symmetry.' },
-      { id: 'geo-3d-properties', title: '3D shapes and nets', grade: 2, prereqs: ['geo-2d-properties'], summary: 'Faces, edges and vertices of 3D shapes, and their nets.' },
+      { id: 'geo-2d-properties', title: 'Properties of 2D shapes', grade: 1, prereqs: [], summary: 'Name and describe triangles, quadrilaterals and polygons, and use their properties on a grid.' },
+      { id: 'geo-symmetry', title: 'Symmetry', grade: 1, prereqs: ['geo-2d-properties'], summary: 'Lines of symmetry and order of rotational symmetry, including using lines of symmetry on a grid.' },
+      { id: 'geo-3d-properties', title: '3D shapes and nets', grade: 2, prereqs: ['geo-2d-properties'], summary: 'Faces, edges and vertices of 3D shapes, total edge lengths, and their nets.' },
       { id: 'geo-plans-elevations', title: 'Plans and elevations', grade: 4, prereqs: ['geo-3d-properties'], summary: 'Match 3D solids to their plan, front elevation and side elevation.' },
-      { id: 'geo-constructions-loci', title: 'Constructions and loci', grade: 5, prereqs: ['geo-angle-basics', 'geo-2d-properties'], summary: 'Recognise perpendicular bisectors, angle bisectors and loci of points.' },
+      { id: 'geo-constructions-loci', title: 'Constructions and loci', grade: 5, prereqs: ['geo-angle-basics', 'geo-2d-properties'], summary: 'Recognise constructions and loci, find regions that satisfy several conditions, and use scale drawings.' },
     ],
   },
   {

@@ -31,12 +31,14 @@ for (const g of gens) {
       if (q.visual) {
         console.log(q.visual.startsWith('<svg') ? '  [diagram]' : strip(q.visual));
         if (pngDir && q.visual.includes('<svg')) {
-          const svgText = q.visual.match(/<svg[\s\S]*<\/svg>/)[0]
-            .replace(/var\(--[a-z0-9-]+,\s*([^)]+)\)/g, '$1')
-            .replace(/<svg /, '<svg width="560" ');
-          const base = `${pngDir}/${g.id}-${d}-${i + 1}`;
-          writeFileSync(`${base}.svg`, `<?xml version="1.0"?>${svgText}`);
-          try { execFileSync('rsvg-convert', ['-b', 'white', '-o', `${base}.png`, `${base}.svg`]); console.log(`  -> ${base}.png`); } catch (e) { console.log(`  !! rsvg failed: ${e.message}`); }
+          [...q.visual.matchAll(/<svg[\s\S]*?<\/svg>/g)].forEach((match, j) => {
+            const svgText = match[0]
+              .replace(/var\(--[a-z0-9-]+,\s*([^)]+)\)/g, '$1')
+              .replace(/<svg /, '<svg width="560" ');
+            const base = `${pngDir}/${g.id}-${d}-${i + 1}${j ? `-${j + 1}` : ''}`;
+            writeFileSync(`${base}.svg`, `<?xml version="1.0"?>${svgText}`);
+            try { execFileSync('rsvg-convert', ['-b', 'white', '-o', `${base}.png`, `${base}.svg`]); console.log(`  -> ${base}.png`); } catch (e) { console.log(`  !! rsvg failed: ${e.message}`); }
+          });
         }
       }
       q.options.forEach((o) => console.log(`   ${o.id === q.answer ? '✔' : ' '} ${o.id}. ${strip(o.text)}`));

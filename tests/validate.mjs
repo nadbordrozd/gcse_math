@@ -132,7 +132,7 @@ for (const g of selected) {
         const again = generateSafely(g, seed * 7919 + 13, { difficulty: d });
         if (JSON.stringify(again) !== JSON.stringify(q)) bad('not deterministic for the same seed');
       }
-      prompts.add(q.prompt + (q.visual || ''));
+      prompts.add(q.prompt + (q.visual || '') + '|' + q.answerText);
       skeletons.add(plain(q.prompt).replace(/\$[^$]*\$/g, '#').replace(/[−-]?\d[\d,.]*/g, '#').replace(/\b[A-Z][a-z]+\b/g, 'N'));
       answers.add(q.answerText);
       letters[q.answer] = (letters[q.answer] || 0) + 1;

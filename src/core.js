@@ -147,14 +147,16 @@ export const decimals = (x) => (String(tidy(x)).split('.')[1] || '').replace(/e.
  * Plain-text number: thousands separators, true minus sign. dp forces a fixed number of decimal places.
  * num(12000) -> "12,000"; num(-3.5) -> "−3.5"; num(2.5, 2) -> "2.50".
  */
-export function num(x, dp = null) {
+export function num(x, dp = null, arr = undefined) {
+  if (Array.isArray(arr)) dp = null; // called as array.map(num): the second argument is an index, not dp
   x = tidy(x);
   const opts = dp === null ? { maximumFractionDigits: 10 } : { minimumFractionDigits: dp, maximumFractionDigits: dp };
   const s = Math.abs(x).toLocaleString('en-GB', opts);
   return (x < 0 ? '−' : '') + s;
 }
 /** TeX number: commas are wrapped {,} so KaTeX does not add a space. */
-export function tnum(x, dp = null) {
+export function tnum(x, dp = null, arr = undefined) {
+  if (Array.isArray(arr)) dp = null;
   return num(x, dp).replace(/,/g, '{,}').replace('−', '-');
 }
 /** Money in pounds: money(3.5) -> "£3.50", money(12) -> "£12". */
@@ -281,26 +283,58 @@ export function semanticKey(text) {
 /* ------------------------------------------------------------------ */
 
 function numericFillers(answer, k) {
-  const p = parseValue(answer);
-  if (!p) return [];
-  const m = String(answer).match(/\d*\.?\d+/);
-  const dp = m && m[0].includes('.') ? m[0].split('.')[1].length : 0;
-  const step = dp ? 10 ** -dp : Math.max(1, 10 ** Math.max(0, Math.floor(Math.log10(Math.abs(p.value) || 1)) - 1));
+  const text = String(answer);
+  // Only nudge plain numbers (optionally with $…$, £, %, a unit): never fractions, roots or standard form.
+  if (/\\|\//.test(text.replace(/\{,\}/g, ''))) return [];
+  const m = text.match(/^(\$?)(−|-)?(£?)(\d{1,3}(?:(?:,|\{,\})\d{3})+|\d+)(\.\d+)?(.*)$/);
+  if (!m) return [];
+  const [, open, minus, pound, intPart, decPart = '', rest] = m;
+  const comma = intPart.includes('{,}') ? '{,}' : intPart.includes(',') ? ',' : '';
+  const value = Number(`${minus ? '-' : ''}${intPart.replace(/\{,\}|,/g, '')}${decPart}`);
+  if (!Number.isFinite(value)) return [];
+  const dp = decPart ? decPart.length - 1 : 0;
+  const step = dp ? 10 ** -dp : Math.max(1, 10 ** Math.max(0, Math.floor(Math.log10(Math.abs(value) || 1)) - 1));
+  const minusSign = minus || (open ? '-' : '−');
+  const fmt = (v) => {
+    const abs = Math.abs(v);
+    let body = dp ? tidy(abs).toFixed(dp) : String(Math.round(abs));
+    if (comma) { const [ip, fp] = body.split('.'); body = ip.replace(/\B(?=(\d{3})+(?!\d))/g, comma) + (fp ? `.${fp}` : ''); }
+    return `${open}${v < 0 ? minusSign : ''}${pound}${body}${rest}`;
+  };
   const out = [];
   for (let i = 1; out.length < k * 2 && i < 40; i += 1) {
-    for (const v of [p.value + i * step, p.value - i * step]) {
-      if (v < 0 && p.value >= 0) continue;
-      out.push(String(answer).replace(/\d*\.?\d+/, (dp ? tidy(v).toFixed(dp) : String(tidy(v)))));
+    for (const v of [tidy(value + i * step), tidy(value - i * step)]) {
+      if ((v < 0 && value >= 0) || (v === 0 && value !== 0)) continue;
+      out.push(fmt(v));
     }
   }
   return out;
 }
 
 /**
+ * Put options into a natural order without giving away the answer's position:
+ * an explicit `order` list wins; otherwise numbers ascending, then texts by the first number they
+ * contain (class intervals), then single letters alphabetically; anything else is shuffled.
+ */
+function naturalOrder(rng, choices, order) {
+  if (order) {
+    const idx = (t) => { const i = order.map(String).indexOf(t); return i < 0 ? Infinity : i; };
+    return [...choices].sort((a, b) => idx(a) - idx(b));
+  }
+  const vals = choices.map((t) => parseValue(t));
+  if (vals.every(Boolean)) return choices.map((t, i) => [t, vals[i].value]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
+  const firstNum = (t) => { const m = String(t).replace(/−/g, '-').match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
+  const nums = choices.map(firstNum);
+  if (nums.every((n) => n !== null) && new Set(nums).size === nums.length) return choices.map((t, i) => [t, nums[i]]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
+  if (choices.every((t) => /^[A-E]$/.test(t))) return [...choices].sort();
+  return shuffle(rng, choices);
+}
+
+/**
  * Build shuffled options. answer/distractors are display strings (already formatted, TeX inside $..$).
  * Duplicates are removed by text and by numeric value. Exactly one option is the answer.
  */
-export function buildOptions(rng, answer, distractors, { count = 5, allowEquivalent = false, fill = true, keepOrder = false } = {}) {
+export function buildOptions(rng, answer, distractors, { count = 5, allowEquivalent = false, fill = true, keepOrder = false, order = null } = {}) {
   const seenText = new Set();
   const seenKey = new Set();
   const choices = [];
@@ -321,7 +355,10 @@ export function buildOptions(rng, answer, distractors, { count = 5, allowEquival
   distractors.forEach(add);
   if (fill && choices.length < count) numericFillers(answer, count).forEach(add);
   if (choices.length < count) throw new Error(`Could not build ${count} distinct options (got ${choices.length}) for answer ${answer}`);
-  const ordered = keepOrder ? choices : shuffle(rng, choices);
+  let ordered = keepOrder ? naturalOrder(rng, choices, order) : shuffle(rng, choices);
+  // Options that are single-letter labels (diagram A, point P …) are listed alphabetically.
+  const label = (t) => String(t).trim().replace(/^\$|\$$/g, '').replace(/^\\(text|mathrm)\{(.*)\}$/, '$2');
+  if (ordered.every((t) => /^[A-Z]$/.test(label(t)))) ordered = [...ordered].sort((a, b) => label(a).localeCompare(label(b)));
   return {
     options: ordered.map((text, i) => ({ id: LETTERS[i], text })),
     answer: LETTERS[ordered.indexOf(String(answer))],
@@ -408,7 +445,7 @@ export function checkTyped(spec, input) {
  *   calculator?: boolean (true if a calculator is needed / allowed),
  *   hint?: string,
  *   count?: number of options (default 5),
- *   allowEquivalent?: boolean, keepOrder?: boolean
+ *   allowEquivalent?: boolean, keepOrder?: boolean (natural order; pass order: [...] to fix it explicitly)
  * }
  */
 export function makeQuestion(id, skill, seed, config, build) {
@@ -416,7 +453,7 @@ export function makeQuestion(id, skill, seed, config, build) {
   const difficulty = config?.difficulty || 'medium';
   const data = build(rng, difficulty);
   const choices = buildOptions(rng, data.answer, data.distractors || [], {
-    count: data.count ?? 5, allowEquivalent: data.allowEquivalent, keepOrder: data.keepOrder, fill: data.fill ?? true,
+    count: data.count ?? 5, allowEquivalent: data.allowEquivalent, keepOrder: data.keepOrder, order: data.order ?? null, fill: data.fill ?? true,
   });
   return {
     id: `${id}-${seed}-${difficulty}`,

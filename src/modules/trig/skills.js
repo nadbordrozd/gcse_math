@@ -17,7 +17,8 @@ export const units = [
       { id: 'trig-exact-values', title: 'Exact trig values', grade: 6, prereqs: ['trig-sohcahtoa-side'], summary: 'Know sin, cos and tan of 0°, 30°, 45°, 60° and 90°.' },
       { id: 'trig-sine-rule', title: 'The sine rule', grade: 7, prereqs: ['trig-sohcahtoa-angle'], summary: 'Find sides and angles in any triangle with the sine rule.' },
       { id: 'trig-cosine-rule', title: 'The cosine rule', grade: 7, prereqs: ['trig-sohcahtoa-angle'], summary: 'Find sides and angles in any triangle with the cosine rule.' },
-      { id: 'trig-area-sine', title: 'Area of a triangle using ½ab sin C', grade: 7, prereqs: ['trig-sohcahtoa-side'], summary: 'Find the area of any triangle from two sides and the included angle.' },
+      { id: 'trig-area-sine', title: 'Area of a triangle using ½ab sin C', grade: 7, prereqs: ['trig-sohcahtoa-side'], summary: 'Find the area of any triangle from two sides and the included angle, work backwards from an area, and find segment areas.' },
+      { id: 'trig-sine-cosine-problems', title: 'Sine and cosine rule problems', grade: 8, prereqs: ['trig-sine-rule', 'trig-cosine-rule', 'trig-area-sine'], summary: 'Choose the right rule and combine rules in multi-step problems: quadrilaterals, bearings and real-life triangles.' },
     ],
   },
   {

@@ -101,6 +101,7 @@ student type the answer instead of choosing (used in "type answers" mode and in 
 - Maths goes in TeX between `$…$`: `$3x + 5 = 20$`, `$\frac{3}{4}$`, `$4 \times 7$`, `$\sqrt{48}$`, `$x^{2}$`, `$62^\circ$`.
   Use `\times` and `\div`, not `*` or `/`. Units may sit outside the maths: `$12$ cm` or `12 cm`.
   Never write a literal `$` for money – this is a UK site, use £.
+  Write `\lt` / `\gt` (not raw `<` / `>`) inside TeX so the HTML stays valid.
 - Plain HTML is fine outside maths: `<b>`, `<br>`, `<i>`, and tables built with `table()` from core.
 - Use realistic UK contexts (£, metric units, UK names – `names(rng, k)` gives a diverse list).
 - Mark calculator questions with `calculator: true` (decimals needing a calculator, trig, π to 1 dp, compound

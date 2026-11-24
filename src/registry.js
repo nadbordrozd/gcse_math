@@ -1,20 +1,15 @@
 // Combines the module taxonomies and generators into one catalogue.
-import { units as numberUnits } from './modules/number/skills.js';
-import { units as algebraUnits } from './modules/algebra/skills.js';
-import { units as graphsUnits } from './modules/graphs/skills.js';
-import { units as ratioUnits } from './modules/ratio/skills.js';
-import { units as geometryUnits } from './modules/geometry/skills.js';
-import { units as trigUnits } from './modules/trig/skills.js';
-import { units as probabilityUnits } from './modules/probability/skills.js';
-import { units as statisticsUnits } from './modules/statistics/skills.js';
-import { generators as numberGens } from './modules/number/generators.js';
-import { generators as algebraGens } from './modules/algebra/generators.js';
-import { generators as graphsGens } from './modules/graphs/generators.js';
-import { generators as ratioGens } from './modules/ratio/generators.js';
-import { generators as geometryGens } from './modules/geometry/generators.js';
-import { generators as trigGens } from './modules/trig/generators.js';
-import { generators as probabilityGens } from './modules/probability/generators.js';
-import { generators as statisticsGens } from './modules/statistics/generators.js';
+// Modules load independently so a broken module (e.g. mid-edit) cannot take down the others.
+const MODULE_NAMES = ['number', 'algebra', 'graphs', 'ratio', 'geometry', 'trig', 'probability', 'statistics'];
+export const LOAD_ERRORS = {};
+const loaded = await Promise.all(MODULE_NAMES.map(async (name) => {
+  let units = [];
+  let generators = [];
+  try { ({ units } = await import(`./modules/${name}/skills.js`)); } catch (e) { LOAD_ERRORS[`${name}/skills`] = e; }
+  try { ({ generators } = await import(`./modules/${name}/generators.js`)); } catch (e) { LOAD_ERRORS[`${name}/generators`] = e; }
+  return [name, { units, generators }];
+}));
+for (const [k, e] of Object.entries(LOAD_ERRORS)) console.error(`Failed to load module ${k}:`, e?.message || e);
 
 export const AREAS = [
   { id: 'number', title: 'Number', color: '#2f5bd3', tint: '#eaf0ff', icon: '#' },
@@ -25,16 +20,7 @@ export const AREAS = [
   { id: 'statistics', title: 'Statistics', color: '#0e7490', tint: '#e3f5f9', icon: 'σ' },
 ];
 
-export const MODULES = {
-  number: { units: numberUnits, generators: numberGens },
-  algebra: { units: algebraUnits, generators: algebraGens },
-  graphs: { units: graphsUnits, generators: graphsGens },
-  ratio: { units: ratioUnits, generators: ratioGens },
-  geometry: { units: geometryUnits, generators: geometryGens },
-  trig: { units: trigUnits, generators: trigGens },
-  probability: { units: probabilityUnits, generators: probabilityGens },
-  statistics: { units: statisticsUnits, generators: statisticsGens },
-};
+export const MODULES = Object.fromEntries(loaded);
 
 const areaOrder = AREAS.map((a) => a.id);
 export const UNITS = Object.entries(MODULES)
