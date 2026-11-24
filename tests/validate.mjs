@@ -1,8 +1,8 @@
 // Validates every registered generator over many seeds at every difficulty.
 // Usage: node tests/validate.mjs [module|skill-id|archetype-id ...] [--seeds=200] [--verbose]
 import katex from 'katex';
-import { SKILLS, SKILL, GENERATORS, MODULES } from '../src/registry.js';
-import { parseValue, checkTyped } from '../src/core.js';
+import { SKILLS, SKILL, GENERATORS, MODULES, LOAD_ERRORS } from '../src/registry.js';
+import { parseValue, checkTyped, generateSafely } from '../src/core.js';
 
 const args = process.argv.slice(2);
 const seeds = Number((args.find((a) => a.startsWith('--seeds=')) || '--seeds=200').split('=')[1]);
@@ -20,12 +20,17 @@ const warnings = [];
 const fail = (g, msg) => failures.push(`${g.id}: ${msg}`);
 const warn = (g, msg) => warnings.push(`${g.id}: ${msg}`);
 
+for (const [k, e] of Object.entries(LOAD_ERRORS)) {
+  const mod = k.split('/')[0];
+  (!filters.length || filters.includes(mod) ? failures : warnings).push(`module ${k} failed to load: ${e?.message || e}`);
+}
+
 // --- structural checks on taxonomy ---------------------------------------------------------
 const ids = new Set();
 for (const s of SKILLS) {
   if (ids.has(s.id)) failures.push(`taxonomy: duplicate skill id ${s.id}`);
   ids.add(s.id);
-  for (const p of s.prereqs) if (!SKILL[p]) failures.push(`taxonomy: ${s.id} has unknown prerequisite ${p}`);
+  for (const p of s.prereqs) if (!SKILL[p]) (Object.keys(LOAD_ERRORS).length ? warnings : failures).push(`taxonomy: ${s.id} has unknown prerequisite ${p}`);
   if (!(s.grade >= 1 && s.grade <= 9)) failures.push(`taxonomy: ${s.id} has bad grade ${s.grade}`);
 }
 const genIds = new Set();
@@ -72,11 +77,14 @@ function tagBalance(html) {
 const report = [];
 for (const g of selected) {
   const prompts = new Set(); const skeletons = new Set(); const answers = new Set(); const letters = {};
-  let firstError = null; let count = 0; let calcCount = 0; let typedCount = 0;
+  let firstError = null; let throws = 0; let count = 0; let calcCount = 0; let typedCount = 0;
   for (const d of DIFFS) {
     for (let seed = 1; seed <= seeds; seed += 1) {
       let q;
-      try { q = g(seed * 7919 + 13, { difficulty: d }); } catch (e) { firstError ||= `${d} seed ${seed}: ${e.message}`; continue; }
+      try { q = g(seed * 7919 + 13, { difficulty: d }); } catch (e) {
+        throws += 1;
+        try { q = generateSafely(g, seed * 7919 + 13, { difficulty: d }); } catch (e2) { firstError ||= `${d} seed ${seed}: ${e2.message} (even after retries)`; continue; }
+      }
       count += 1;
       const bad = (msg) => { if (!firstError) firstError = `${d} seed ${seed}: ${msg}`; };
       if (q.skill_id !== g.skillId) bad('skill id mismatch');
@@ -121,7 +129,7 @@ for (const g of selected) {
       if (q.calculator) calcCount += 1;
       // Determinism
       if (seed <= 3) {
-        const again = g(seed * 7919 + 13, { difficulty: d });
+        const again = generateSafely(g, seed * 7919 + 13, { difficulty: d });
         if (JSON.stringify(again) !== JSON.stringify(q)) bad('not deterministic for the same seed');
       }
       prompts.add(q.prompt + (q.visual || ''));
@@ -131,6 +139,8 @@ for (const g of selected) {
     }
   }
   if (firstError) fail(g, firstError);
+  if (throws > seeds * DIFFS.length * 0.1) fail(g, `throws on ${throws} of ${seeds * DIFFS.length} seeds (retries are for rare cases only; keep under 10%)`);
+  else if (throws > seeds * DIFFS.length * 0.02) warn(g, `throws on ${throws} seeds before retrying`);
   const total = seeds * DIFFS.length;
   const uniq = prompts.size / Math.max(1, count);
   if (count && prompts.size < Math.min(40, total * 0.3)) warn(g, `low variety: only ${prompts.size} distinct questions in ${count}`);

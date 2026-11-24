@@ -4,6 +4,7 @@
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { GENERATORS, MODULES } from '../src/registry.js';
+import { generateSafely } from '../src/core.js';
 
 const args = process.argv.slice(2);
 const opt = (k, dflt) => (args.find((a) => a.startsWith(`--${k}=`)) || `--${k}=${dflt}`).split('=')[1];
@@ -24,7 +25,7 @@ for (const g of gens) {
   for (const d of diffs) {
     for (let i = 0; i < n; i += 1) {
       const seed = (seed0 + i) * 104729 + d.length;
-      const q = g(seed, { difficulty: d });
+      const q = generateSafely(g, seed, { difficulty: d });
       console.log(`\n[${d} #${i + 1}]${q.calculator ? ' (calculator)' : ''}${q.typed ? ` typed:${JSON.stringify(q.typed)}` : ''}`);
       console.log(strip(q.prompt));
       if (q.visual) {
@@ -34,7 +35,7 @@ for (const g of gens) {
             .replace(/var\(--[a-z0-9-]+,\s*([^)]+)\)/g, '$1')
             .replace(/<svg /, '<svg width="560" ');
           const base = `${pngDir}/${g.id}-${d}-${i + 1}`;
-          writeFileSync(`${base}.svg`, `<?xml version="1.0"?>${svgText.replace('<svg ', '<svg style="background:#fff" ')}`);
+          writeFileSync(`${base}.svg`, `<?xml version="1.0"?>${svgText}`);
           try { execFileSync('rsvg-convert', ['-b', 'white', '-o', `${base}.png`, `${base}.svg`]); console.log(`  -> ${base}.png`); } catch (e) { console.log(`  !! rsvg failed: ${e.message}`); }
         }
       }

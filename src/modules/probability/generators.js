@@ -1,5 +1,12 @@
-// Question generators for this module. See docs/GENERATOR_GUIDELINES.md.
-// eslint-disable-next-line no-unused-vars
-import { gen } from '../../core.js';
+// Question generators for the Probability module. See docs/GENERATOR_GUIDELINES.md.
+// Archetypes live in topic files; this file collects them in taxonomy order.
+import { basicsA } from './basics.js';
+import { sampleArchetypes, expectedArchetypes } from './sample.js';
+import { twoWayArchetypes, vennArchetypes } from './combined.js';
+import { indArchetypes, depArchetypes, condArchetypes } from './trees.js';
 
-export const generators = [];
+export const generators = [
+  ...basicsA, ...sampleArchetypes, ...expectedArchetypes,
+  ...twoWayArchetypes, ...vennArchetypes,
+  ...indArchetypes, ...depArchetypes, ...condArchetypes,
+];
