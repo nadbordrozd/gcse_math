@@ -1,5 +1,5 @@
 // Practice sessions: one skill (#/skill/<id>) or mixed review (#/mixed).
-import { SKILL, UNIT, GENERATORS_BY_SKILL, GENERATOR } from '../registry.js';
+import { SKILL, UNIT, GENERATORS_BY_SKILL, GENERATOR, DEPENDENTS } from '../registry.js';
 import { generateSafely } from '../core.js';
 import { state, save, points, recordAnswer, difficultyFor, skillStatus, MASTERY_POINTS, CORRECT_POINTS, HINT_POINTS } from './state.js';
 import { esc, gradeBadge, higherBadge, progressBar, STATUS, areaStyle, AREA, isDev, randomSeed, toast } from './ui.js';
@@ -97,9 +97,10 @@ function devPanel(skillId) {
 }
 
 function relatedLinks(skill) {
-  const pre = skill.prereqs.map((id) => SKILL[id]).filter(Boolean);
-  if (!pre.length) return '';
-  return `<span class="related">Builds on: ${pre.map((s) => `<a href="#/skill/${s.id}" class="${STATUS[skillStatus(s.id)].cls}">${esc(s.title)}</a>`).join(', ')}</span>`;
+  const link = (s) => `<a href="#/skill/${s.id}" class="${STATUS[skillStatus(s.id)].cls}">${esc(s.title)}</a>`;
+  const pre = skill.prereqs.map((id) => SKILL[id]).filter((s) => s && hasQuestions(s.id));
+  const next = (DEPENDENTS[skill.id] || []).map((id) => SKILL[id]).filter((s) => s && hasQuestions(s.id)).slice(0, 4);
+  return `<span class="related">${pre.length ? `Builds on: ${pre.map(link).join(', ')}` : ''}${pre.length && next.length ? '<br>' : ''}${next.length ? `Leads to: ${next.map(link).join(', ')}` : ''}</span>`;
 }
 
 function updateHeader(root) {

@@ -28,8 +28,9 @@ export function renderHome(root) {
         </div>
       </div>
       <div class="hero-cards">
-        ${recs.length ? `<h2 class="small-title">Up next</h2>${recs.map((r) => recCard(r)).join('')}` : `
-          <a class="tile" href="#/check-pick"><span class="tile-icon">⏱</span><span><b>Take a quick check</b><small>About 5 minutes on one topic. Find out where you are and what to practise.</small></span></a>`}
+        ${firstVisit || !recs.length ? `
+          <a class="tile" href="#/check-pick"><span class="tile-icon">⏱</span><span><b>Start with a quick check</b><small>About 5 minutes on one topic. Find out where you are and what to practise first.</small></span></a>` : ''}
+        ${recs.length ? `<h2 class="small-title">${firstVisit ? 'Or start from the very beginning' : 'Up next'}</h2>${recs.slice(0, firstVisit ? 2 : 4).map((r) => recCard(r)).join('')}` : ''}
         <div class="tile-row">
           <a class="tile mini" href="#/check-pick"><span class="tile-icon">⏱</span><span><b>Quick check</b><small>5-minute level test</small></span></a>
           <a class="tile mini" href="#/mixed"><span class="tile-icon">🔀</span><span><b>Mixed practice</b><small>Review what you've learned</small></span></a>
