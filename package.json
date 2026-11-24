@@ -1,0 +1,12 @@
+{
+  "name": "gcse-maths",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/validate.mjs",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "katex": "^0.16.11"
+  }
+}
