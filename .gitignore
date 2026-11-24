@@ -2,3 +2,4 @@ reference_papers/
 .DS_Store
 node_modules/
 node_modules/
+.beads.gate.lock
