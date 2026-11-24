@@ -60,18 +60,28 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 
 ## Build & Test
 
-_Add your build and test commands here_
+No build step: plain ES modules served statically (GitHub Pages from `main` /).
 
 ```bash
-# Example:
-# npm install
-# npm test
+npm install                              # only needed for tests (KaTeX)
+python3 -m http.server 8077              # then open http://localhost:8077 (dev mode on localhost)
+node tests/validate.mjs [module|skill|archetype]   # must pass before committing generators
+node tests/sample.mjs <archetype|skill|module> --n=3 [--png=/tmp/dir]  # eyeball questions/diagrams
 ```
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+- `src/core.js` – generator helpers (seeded RNG, Frac, number/TeX formatting, options, typed answers).
+- `src/svg.js` – SVG diagram primitives. Diagrams are strings so generators stay pure and testable in Node.
+- `src/modules/<module>/skills.js` – taxonomy: units → skills (grade 1–9, prereqs, higher flag).
+- `src/modules/<module>/generators.js` – question archetypes (`gen(id, skillId, build, meta)`).
+- `src/registry.js` – loads all modules (each independently), builds SKILLS/UNITS/GENERATORS and the prereq graph.
+- `src/app/` – the UI: `main.js` (router), `home.js`, `practice.js`, `check.js` (adaptive quick checks),
+  `mock.js` (mock exams), `pages.js` (study plan, settings, about), `state.js` (localStorage), `plan.js`.
+- `reference_papers/` – git-ignored real AQA papers used as private reference for question types.
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- Read `docs/GENERATOR_GUIDELINES.md` before writing or changing generators.
+- Maths in question text is `$TeX$` rendered by KaTeX; never use `$` for money.
+- Skill ids are referenced across modules as prerequisites: never rename or delete one without updating references.
