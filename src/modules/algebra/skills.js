@@ -61,7 +61,7 @@ export const units = [
     skills: [
       { id: 'alg-substitute-formulae', title: 'Substituting into formulae', grade: 3, prereqs: ['alg-substitution'], summary: 'Use formulae such as v = u + at and A = ½(a + b)h.' },
       { id: 'alg-writing-formulae', title: 'Writing formulae', grade: 3, prereqs: ['alg-notation'], summary: 'Write a formula or expression to describe a situation.' },
-      { id: 'alg-vocabulary', title: 'Expressions, equations, formulae and identities', grade: 4, prereqs: ['alg-simplify', 'alg-expand-single'], summary: 'Tell the difference between an expression, equation, formula and identity; use ≡.' },
+      { id: 'alg-vocabulary', title: 'Expressions, equations, formulae and identities', grade: 4, prereqs: ['alg-simplify', 'alg-expand-single'], summary: 'Tell the difference between an expression, equation, formula and identity; use ≡ to find unknown coefficients.' },
       { id: 'alg-rearrange-simple', title: 'Changing the subject', grade: 5, prereqs: ['alg-solve-one-two-step'], summary: 'Rearrange formulae such as v = u + at to make another letter the subject.' },
       { id: 'alg-rearrange-hard', title: 'Harder rearranging', grade: 7, prereqs: ['alg-rearrange-simple', 'alg-factorise-single'], summary: 'Rearrange formulae where the subject appears twice or under a power or root.' },
       { id: 'alg-iteration', title: 'Iteration', grade: 7, prereqs: ['alg-substitute-formulae', 'num-calculator'], summary: 'Use an iterative formula to approximate a solution; find a root between two values.' },
@@ -71,8 +71,8 @@ export const units = [
     id: 'alg-proof', area: 'algebra', title: 'Algebraic reasoning and proof',
     blurb: 'Counterexamples and algebraic proof.',
     skills: [
-      { id: 'alg-counterexample', title: 'Counterexamples', grade: 4, prereqs: ['num-primes', 'num-negatives'], summary: 'Find a counterexample to show that a statement is false.' },
-      { id: 'alg-proof', title: 'Algebraic proof', grade: 7, prereqs: ['alg-expand-double', 'alg-factorise-single'], summary: 'Use algebra (e.g. 2n, 2n + 1) to show that a statement is always true.' },
+      { id: 'alg-counterexample', title: 'Counterexamples', grade: 4, prereqs: ['num-primes', 'num-negatives'], summary: 'Find a counterexample to show that a statement is false; decide if a statement is always, sometimes or never true.' },
+      { id: 'alg-proof', title: 'Algebraic proof', grade: 7, prereqs: ['alg-expand-double', 'alg-factorise-single'], summary: 'Use algebra (e.g. 2n, 2n + 1, completing the square) to show that a statement is always true.' },
     ],
   },
 ];
