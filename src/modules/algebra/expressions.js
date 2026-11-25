@@ -364,7 +364,7 @@ export const simplifyPerimeter = G('alg-simplify-perimeter', 'alg-simplify', (rn
       `Answer: $${ans}$ cm`,
     ],
   };
-}, { title: 'Perimeter of a shape with algebraic sides' });
+}, { title: 'Perimeter of a shape with algebraic sides', learn: ['alg-simplify', 'geo-perimeter'] });
 
 /* ================================================================== */
 /* alg-substitution                                                    */

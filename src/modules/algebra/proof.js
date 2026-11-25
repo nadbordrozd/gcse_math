@@ -289,7 +289,7 @@ export const proofPositive = G('alg-proof-positive', 'alg-proof', (rng, d) => {
       `Answer: $${ans}$`,
     ],
   };
-}, { title: 'Prove a quadratic is always positive' });
+}, { title: 'Prove a quadratic is always positive', learn: ['alg-proof', 'alg-completing-square'] });
 
 export const generators = [
   counterNumber, counterAlways, counterAlgebra,

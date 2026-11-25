@@ -332,7 +332,7 @@ export const simNonLinCircle = G('alg-sim-nl-circle', 'alg-simultaneous-nonlinea
     };
   }
   throw new Error('no line');
-}, { title: 'Solve a line and a circle simultaneously' });
+}, { title: 'Solve a line and a circle simultaneously', learn: ['alg-simultaneous-nonlinear', 'gr-circle-equation'] });
 
 export const generators = [
   simElimSimple, simElimScale, simSubstitution,

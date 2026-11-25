@@ -671,7 +671,7 @@ export const formingGeometry = G('alg-forming-geometry', 'alg-forming-equations'
       `Answer: ${c.unit === '°' ? `$${ans}^\\circ$` : fmt(ans)}`,
     ],
   };
-}, { title: 'Form and solve equations from angles and perimeters', word: true });
+}, { title: 'Form and solve equations from angles and perimeters', learn: ['alg-forming-equations', 'geo-angles-triangles', 'geo-perimeter'], word: true });
 
 export const generators = [
   solveOneStep, solveTwoStep, solveThinkNumber,

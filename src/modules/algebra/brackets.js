@@ -181,7 +181,7 @@ export const expandDoubleArea = G('alg-expand-double-area', 'alg-expand-double',
       `Answer: $${P(right, x)}$ cm²`,
     ],
   };
-}, { title: 'Area expressions with double brackets' });
+}, { title: 'Area expressions with double brackets', learn: ['alg-expand-double', 'geo-area-basic'] });
 
 /* ================================================================== */
 /* alg-factorise-quadratic                                             */
@@ -251,7 +251,7 @@ export const factoriseQuadArea = G('alg-factorise-quad-area', 'alg-factorise-qua
       `Answer: the width is $${ans}$`,
     ],
   };
-}, { title: 'Find a side from a quadratic area' });
+}, { title: 'Find a side from a quadratic area', learn: ['alg-factorise-quadratic', 'geo-area-basic'] });
 
 export const factoriseQuadCommon = G('alg-factorise-quad-common', 'alg-factorise-quadratic', (rng, d) => {
   const x = 'x';
@@ -480,7 +480,7 @@ export const expandTripleIdentity = G('alg-expand-triple-coef', 'alg-expand-trip
       `Answer: $${name} = ${tnum(val)}$`,
     ],
   };
-}, { title: 'Unknown coefficients in a triple-bracket identity' });
+}, { title: 'Unknown coefficients in a triple-bracket identity', learn: ['alg-expand-triple', 'alg-vocabulary'] });
 
 /* ================================================================== */
 /* alg-factorise-hard                                                  */
@@ -865,7 +865,7 @@ export const fracEquation = G('alg-frac-equation', 'alg-fractions-operations', (
     };
   }
   throw new Error('no equation');
-}, { title: 'Solve an equation with algebraic fractions' });
+}, { title: 'Solve an equation with algebraic fractions', learn: ['alg-fractions-operations', 'alg-solve-quad-factorising'] });
 
 export const generators = [
   expandDouble, expandSquare, expandDoubleCoef, expandDoubleArea,

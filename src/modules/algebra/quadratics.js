@@ -214,7 +214,7 @@ export const solveQuadContext = G('alg-solve-quad-context', 'alg-solve-quad-fact
       ],
     };
   }
-}, { title: 'Quadratic equations from shapes and numbers' });
+}, { title: 'Quadratic equations from shapes and numbers', learn: ['alg-solve-quad-factorising', 'alg-forming-equations', 'trig-pythagoras'] });
 
 /* ================================================================== */
 /* alg-quadratic-formula                                               */
@@ -451,7 +451,7 @@ export const ctsTurning = G('alg-cts-turning-point', 'alg-completing-square', (r
       `Answer: $${ans}$`,
     ],
   };
-}, { title: 'Turning point / minimum by completing the square' });
+}, { title: 'Turning point / minimum by completing the square', learn: ['alg-completing-square', 'gr-quadratic-graphs'] });
 
 export const ctsSolve = G('alg-cts-solve', 'alg-completing-square', (rng, d) => {
   const x = 'x';
