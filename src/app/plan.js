@@ -41,7 +41,7 @@ export function recommendations(limit = 4) {
   if (state.last && SKILL[state.last] && !isMastered(state.last) && hasQuestions(state.last)) add(SKILL[state.last], 'Carry on where you left off');
   needsPractice().slice(0, 2).forEach((s) => add(s, 'A quick check showed this needs practice'));
   inProgress().slice(0, 1).forEach((s) => add(s, 'You have started this'));
-  readyToLearn().slice(0, limit).forEach((s) => add(s, 'Ready to learn: you know what it builds on'));
+  readyToLearn().slice(0, limit).forEach((s) => add(s, s.prereqs.length ? 'Ready to learn: you know what it builds on' : 'A good place to start'));
   return out;
 }
 

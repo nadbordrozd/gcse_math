@@ -5,6 +5,13 @@ import { math, esc, typedHelp } from './ui.js';
 /** Should this question be answered by typing? */
 export const useTyped = (q, mode) => Boolean(q.typed) && mode === 'typed';
 
+/** Long options (sentences, inequalities, long expressions) read better one per row. */
+export function optionsClass(q) {
+  const visible = (t) => String(t).replace(/<[^>]+>/g, '').replace(/\\[a-zA-Z]+/g, 'x').replace(/[{}$\\^_]/g, '');
+  const longest = Math.max(...q.options.map((o) => visible(o.text).length));
+  return longest > 26 ? 'options long' : 'options';
+}
+
 export function solutionHTML(q, { open = true } = {}) {
   const steps = q.solution.map((s) => `<li>${math(s)}</li>`).join('');
   return `<details class="solution" ${open ? 'open' : ''}><summary>How to solve it</summary><ol>${steps}</ol></details>`;
@@ -39,13 +46,12 @@ export function mountQuestion(root, q, opts = {}) {
           <button type="submit" class="btn primary">Check</button>
           <p class="typed-help">${esc(typedHelp(q.typed))}</p>
         </form>`
-    : `<div class="options" role="group" aria-label="Answer options">${q.options.map((o, i) => `
+    : `<div class="${optionsClass(q)}" role="group" aria-label="Answer options">${q.options.map((o, i) => `
           <button type="button" class="option" data-id="${o.id}"><span class="opt-key">${o.id}</span><span class="opt-text">${math(o.text)}</span><kbd>${i + 1}</kbd></button>`).join('')}
         </div>`}
       <div class="q-actions">
         ${opts.hint !== false ? '<button type="button" class="btn ghost hint-btn" title="Shortcut: H">💡 Hint</button>' : ''}
         ${opts.dontKnow ? `<button type="button" class="btn ghost dk-btn">${esc(opts.dontKnowLabel || "I don't know")}</button>` : ''}
-        ${typed || !q.typed ? '' : ''}
       </div>
       <div class="hint-box" hidden></div>
       <div class="feedback" hidden></div>

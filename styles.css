@@ -224,6 +224,7 @@ table.qtable th, table.qtable td { border: 1px solid var(--line); padding: .35re
 table.qtable th { background: var(--surface2); font-weight: 650; }
 .prompt table.qtable { margin: .8rem 0; }
 .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .6rem; margin-top: 1.2rem; }
+.options.long { grid-template-columns: 1fr; }
 .option {
   display: flex; align-items: center; gap: .7rem; text-align: left; font: inherit; font-size: 1.05rem; padding: .75rem .9rem;
   border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; min-height: 3.2rem;
@@ -363,3 +364,4 @@ table.history { width: 100%; font-size: .9rem; }
   .area-bar { grid-template-columns: 110px 1fr 50px; }
   .exam-head { top: 5.6rem; }
 }
+.dev-panel select { max-width: 100%; }

@@ -410,17 +410,26 @@ export function checkTyped(spec, input) {
     return Math.abs(got - target) <= tol + 1e-12;
   }
   if (spec.kind === 'coord') {
-    const m = raw.replace(/[−–]/g, '-').match(/^\(?\s*(-?[\d./]+)\s*[,;]\s*(-?[\d./]+)\s*\)?$/);
-    if (!m) return false;
-    const x = parseTypedNumber(m[1]); const y = parseTypedNumber(m[2]);
-    return Boolean(x && y) && Math.abs(x.value - spec.x) < 1e-9 && Math.abs(y.value - spec.y) < 1e-9;
+    const t = raw.replace(/[−–]/g, '-').replace(/\s+/g, ' ');
+    let xs; let ys;
+    const named = t.match(/x\s*=\s*(-?[\d./ ]+?)\s*(?:[,;]|and)\s*y\s*=\s*(-?[\d./ ]+)$/i) || t.match(/y\s*=\s*(-?[\d./ ]+?)\s*(?:[,;]|and)\s*x\s*=\s*(-?[\d./ ]+)$/i);
+    if (named) [xs, ys] = /^\s*y/i.test(t) ? [named[2], named[1]] : [named[1], named[2]];
+    else {
+      const m = t.match(/^\(?\s*(-?[\d./]+)\s*[,;]\s*(-?[\d./]+)\s*\)?$/);
+      if (!m) return false;
+      [, xs, ys] = m;
+    }
+    const x = parseTypedNumber(xs); const y = parseTypedNumber(ys);
+    const tol = (spec.tolerance ?? 0) + 1e-9;
+    return Boolean(x && y) && Math.abs(x.value - spec.x) <= tol && Math.abs(y.value - spec.y) <= tol;
   }
   if (spec.kind === 'list') {
     const parts = raw.split(/[,;]|\band\b|\s+or\s+/).map((t) => t.trim().replace(/^[a-z]\s*=\s*/i, '')).filter(Boolean).map(parseTypedNumber);
     if (parts.some((p) => !p) || parts.length !== spec.values.length) return false;
     const want = [...spec.values].map(Number).sort((a, b) => a - b);
     const got = parts.map((p) => p.value).sort((a, b) => a - b);
-    return want.every((w, i) => Math.abs(w - got[i]) < 1e-9);
+    const tol = (spec.tolerance ?? 0) + 1e-9;
+    return want.every((w, i) => Math.abs(w - got[i]) <= tol);
   }
   if (spec.kind === 'text') {
     const n = (t) => String(t).toLowerCase().replace(/[−–]/g, '-').replace(/×/g, '*').replace(/\s+/g, '');

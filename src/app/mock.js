@@ -3,7 +3,7 @@ import { SKILLS, SKILL, GENERATORS_BY_SKILL } from '../registry.js';
 import { generateSafely, checkTyped } from '../core.js';
 import { state, save } from './state.js';
 import { esc, math, gradeBadge, areaStyle, AREA, randomSeed, typedHelp } from './ui.js';
-import { questionBodyHTML, solutionHTML } from './question.js';
+import { questionBodyHTML, solutionHTML, optionsClass } from './question.js';
 import { hasQuestions } from './plan.js';
 
 // Approximate share of marks by content area in the real papers.
@@ -151,7 +151,7 @@ function go(root, i) {
     <article class="question">
       ${questionBodyHTML(q, { number: i + 1, marks: item.marks })}
       ${typed ? `<div class="typed"><input type="text" class="typed-input" aria-label="Your answer" placeholder="Your answer" value="${esc(item.response ?? '')}" spellcheck="false" autocomplete="off"><p class="typed-help">${esc(typedHelp(q.typed))}</p></div>`
-    : `<div class="options">${q.options.map((o) => `<button type="button" class="option ${item.response === o.id ? 'selected' : ''}" data-id="${o.id}"><span class="opt-key">${o.id}</span><span class="opt-text">${math(o.text)}</span></button>`).join('')}</div>`}
+    : `<div class="${optionsClass(q)}">${q.options.map((o) => `<button type="button" class="option ${item.response === o.id ? 'selected' : ''}" data-id="${o.id}"><span class="opt-key">${o.id}</span><span class="opt-text">${math(o.text)}</span></button>`).join('')}</div>`}
     </article>`;
   root.querySelectorAll('.exam-q .option').forEach((b) => b.addEventListener('click', () => {
     item.response = item.response === b.dataset.id ? null : b.dataset.id;
