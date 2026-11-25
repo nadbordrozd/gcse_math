@@ -290,7 +290,7 @@ export const directRates = gen('rat-direct-rates', 'rat-direct-proportion', (rng
     };
   }
   throw new Error('rates');
-}, { title: 'Rates: work, flow, pay and fuel', word: true });
+}, { title: 'Rates: work, flow, pay and fuel', word: true, learn: ['rat-direct-proportion', 'rat-unit-conversion'] });
 
 /* ================================================================== */
 /* rat-exchange-rates                                                  */
@@ -978,7 +978,7 @@ const SHAPES = {
   down: { f: (t) => 0.8 - 0.7 * t, label: null, from0: true },
   sqrt: { f: (t) => Math.sqrt(t), label: 'directly proportional to $\\sqrt{x}$', from0: true },
 };
-function graphPanels(order) {
+export function graphPanels(order) {
   const W = 110; const H = 120; const pad = 14;
   let body = '';
   order.forEach((key, i) => {
@@ -1040,7 +1040,7 @@ export const propRecognise = gen('rat-prop-recognise', 'rat-proportion-algebra',
       `Answer: $${eqTex(kind, k, Y, X)}$`,
     ],
   };
-}, { title: 'Recognise the equation or graph for a proportion statement' });
+}, { title: 'Recognise the equation or graph for a proportion statement', learn: ['rat-proportion-algebra', 'gr-graph-shapes'] });
 
 export const proportionGenerators = [
   directRecipe, directCost, directMax, directTable, directRates,

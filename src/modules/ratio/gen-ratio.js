@@ -537,7 +537,7 @@ export const shareGeometry = gen('rat-share-geometry', 'rat-share', (rng, d) => 
       `Answer: $${ans}^\\circ$`,
     ],
   };
-}, { title: 'Angles and perimeters shared in a ratio' });
+}, { title: 'Angles and perimeters shared in a ratio', learn: ['rat-share', 'geo-angles-triangles'] });
 
 export const shareDivide = gen('rat-share-divide-number', 'rat-share', (rng, d) => {
   let a; let b; let part; let T;
@@ -960,7 +960,7 @@ export const ratioPercent = gen('rat-ratio-percent', 'rat-ratio-fractions', (rng
     };
   }
   throw new Error('rest');
-}, { title: 'Ratios and percentages' });
+}, { title: 'Ratios and percentages', learn: ['rat-ratio-fractions', 'rat-percent-express'] });
 
 // [x, y, intro (before the ratio), all (for the question), act, who]
 const CLUB_CTX = [
@@ -1180,7 +1180,7 @@ export const changeAdd = gen('rat-change-add', 'rat-ratio-change', (rng, d) => {
     };
   }
   throw new Error('change');
-}, { title: 'Ratio changes when some are added or removed', word: true });
+}, { title: 'Ratio changes when some are added or removed', word: true, learn: ['rat-ratio-change', 'alg-forming-equations'] });
 function sign1(rng) { return rng() < 0.6 ? 1 : -1; }
 
 const TRANSFER_CTX = [
@@ -1286,7 +1286,7 @@ export const changeWeeks = gen('rat-change-over-time', 'rat-ratio-change', (rng,
     };
   }
   throw new Error('weeks');
-}, { title: 'When will two growing amounts be in a given ratio?', word: true });
+}, { title: 'When will two growing amounts be in a given ratio?', word: true, learn: ['rat-ratio-change', 'alg-forming-equations'] });
 function sameNR(x, y, nr) { return x * nr[1] === y * nr[0]; }
 
 const GIVE_CTX = [

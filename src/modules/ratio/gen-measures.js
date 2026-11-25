@@ -410,7 +410,7 @@ export const scaleDrawing = gen('rat-scale-drawing', 'rat-scales-maps', (rng, d)
     };
   }
   throw new Error('drawing');
-}, { title: 'Scale drawings and models', word: true });
+}, { title: 'Scale drawings and models', word: true, learn: ['rat-scales-maps', 'rat-area-volume-units'] });
 
 export const scaleFind = gen('rat-scale-find', 'rat-scales-maps', (rng, d) => {
   for (let i = 0; i < 200; i += 1) {
@@ -661,7 +661,7 @@ export const speedUnits = gen('rat-speed-units', 'rat-speed', (rng, d) => {
     };
   }
   throw new Error('speed units');
-}, { title: 'Convert between m/s and km/h' });
+}, { title: 'Convert between m/s and km/h', learn: ['rat-speed', 'rat-unit-conversion'] });
 
 export const speedChange = gen('rat-speed-change', 'rat-speed', (rng, d) => {
   const F = size(d, [1, 2, 3], [0.5, 1, 2, 3, 4], [0.5, 1, 1.5, 2, 3, 4, 5]);
@@ -1130,7 +1130,7 @@ export const compoundUnitConvert = gen('rat-compound-unit-convert', 'rat-area-vo
     };
   }
   throw new Error('compound units');
-}, { title: 'Convert compound units (kg/m³, psi, litres per minute …)' });
+}, { title: 'Convert compound units (kg/m³, psi, litres per minute …)', learn: ['rat-area-volume-units', 'rat-density-pressure'] });
 
 export const measuresGenerators = [
   convertMetric, convertTime, convertImperial, convertWord,

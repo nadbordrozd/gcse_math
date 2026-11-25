@@ -404,7 +404,7 @@ export const successive = gen('rat-pct-successive', 'rat-percent-increase', (rng
     };
   }
   throw new Error('successive');
-}, { title: 'Two percentage changes one after another' });
+}, { title: 'Two percentage changes one after another', learn: ['rat-percent-increase'] });
 
 /* ================================================================== */
 /* rat-percent-express                                                 */
@@ -911,7 +911,7 @@ export const reverseTwoStep = gen('rat-reverse-two-step', 'rat-reverse-percent',
     };
   }
   throw new Error('rev2');
-}, { title: 'Reverse percentages over two changes' });
+}, { title: 'Reverse percentages over two changes', learn: ['rat-reverse-percent', 'rat-percent-increase'] });
 
 /* ================================================================== */
 /* rat-compound-interest                                               */
@@ -1029,7 +1029,7 @@ export const growthDecay = gen('rat-growth-decay', 'rat-compound-interest', (rng
     ],
     longDecimalsOk: true,
   };
-}, { title: 'Compound growth and decay of populations and quantities', word: true });
+}, { title: 'Compound growth and decay of populations and quantities', word: true, learn: ['rat-compound-interest'] });
 
 export const compoundMultiplier = gen('rat-compound-multiplier', 'rat-compound-interest', (rng, d) => {
   const r = pick(rng, size(d, [2, 3, 4, 5, 10], [1.5, 2.5, 6, 8, 12, 15], [0.5, 1.25, 3.5, 7.5, 2.75]));
