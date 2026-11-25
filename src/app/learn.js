@@ -6,6 +6,7 @@ import { esc, math, gradeBadge, higherBadge, areaStyle, AREA, STATUS, randomSeed
 import { mountQuestion } from './question.js';
 import { isSecure, hasQuestions } from './plan.js';
 import { skillStatus } from './state.js';
+import { syncAchievements } from './awards.js';
 
 let tryCtl = null;
 let searchTerm = '';
@@ -65,6 +66,7 @@ export function renderTutorial(root, id) {
   state.read = state.read || {};
   state.read[t.id] = Date.now();
   save();
+  syncAchievements();
   const skills = (t.skills || []).map((s) => SKILL[s]).filter(Boolean);
   const main = skills[0];
   const unit = UNITS.find((u) => u.id === main?.unit);

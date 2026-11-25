@@ -5,6 +5,7 @@ import { state, save } from './state.js';
 import { esc, math, gradeBadge, areaStyle, AREA, randomSeed, typedHelp } from './ui.js';
 import { questionBodyHTML, solutionHTML, optionsClass } from './question.js';
 import { hasQuestions } from './plan.js';
+import { syncAchievements } from './awards.js';
 
 // Approximate share of marks by content area in the real papers.
 const WEIGHTS = {
@@ -185,6 +186,7 @@ function markExam(root) {
   const minutes = Math.round((Date.now() - exam.start) / 60000);
   state.mocks.push({ at: Date.now(), tier: exam.tier, paper: exam.paper, n: items.length, score, total, grade, minutes });
   save();
+  syncAchievements();
   const byArea = {};
   for (const x of items) {
     const a = (byArea[x.skill.area] ||= { got: 0, total: 0 });

@@ -1,0 +1,270 @@
+{
+  "style": {
+    "relic": "A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight.",
+    "beast": "A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes."
+  },
+  "negative": "round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+  "detail": "medium detail",
+  "badges": {
+    "skills_1": {
+      "kind": "relic",
+      "subject": "A single glowing golden five-pointed star with a soft halo"
+    },
+    "skills_5": {
+      "kind": "relic",
+      "subject": "An open brass pocket compass with a red needle and a hinged lid"
+    },
+    "skills_10": {
+      "kind": "relic",
+      "subject": "A ten-sided crystal die made of glowing purple amethyst"
+    },
+    "skills_25": {
+      "kind": "relic",
+      "subject": "A shining silver knight gauntlet clenched into a fist"
+    },
+    "skills_50": {
+      "kind": "relic",
+      "subject": "A large ornate golden goblet trophy cup with two handles and a red gem"
+    },
+    "skills_100": {
+      "kind": "relic",
+      "subject": "A golden laurel wreath tied with a red ribbon"
+    },
+    "skills_all": {
+      "kind": "relic",
+      "subject": "A magnificent golden crown set with nine different coloured gems, with a glowing magical aura"
+    },
+    "top_grade": {
+      "kind": "relic",
+      "subject": "A small snowy mountain peak with a red banner flag planted on the summit"
+    },
+    "foundations": {
+      "kind": "relic",
+      "subject": "A carved grey stone cornerstone block with a glowing blue rune carved on its front"
+    },
+    "all_grades": {
+      "kind": "relic",
+      "subject": "A clear crystal prism splitting a beam of white light into a rainbow"
+    },
+    "higher_1": {
+      "kind": "relic",
+      "subject": "A pair of brown leather boots with small white feathered wings on the heels"
+    },
+    "flawless": {
+      "kind": "relic",
+      "subject": "A perfect glowing white pearl sitting in an open pink clam shell"
+    },
+    "comeback": {
+      "kind": "relic",
+      "subject": "A broken blue ceramic bowl mended with shining gold seams along its cracks"
+    },
+    "every_area": {
+      "kind": "relic",
+      "subject": "A golden amulet necklace with six different coloured round gems"
+    },
+    "hat_trick": {
+      "kind": "relic",
+      "subject": "A leather quiver holding three golden arrows"
+    },
+    "weekend": {
+      "kind": "relic",
+      "subject": "A steaming mug of hot chocolate topped with pink and white marshmallows"
+    },
+    "streak_7": {
+      "kind": "relic",
+      "subject": "An old iron lantern with a bright warm flame glowing inside"
+    },
+    "streak_30": {
+      "kind": "relic",
+      "subject": "A burning torch with a big magical blue and gold flame"
+    },
+    "questions_100": {
+      "kind": "relic",
+      "subject": "A long rolled-out parchment scroll covered in tiny ink scribbles, with a red wax seal"
+    },
+    "questions_1000": {
+      "kind": "relic",
+      "subject": "A huge thick ancient spell book with a dark green leather cover, brass clasps and glowing pages"
+    },
+    "check_1": {
+      "kind": "relic",
+      "subject": "A brass telescope spyglass, extended, with a leather grip"
+    },
+    "check_all": {
+      "kind": "relic",
+      "subject": "An unrolled parchment map of a fantasy island with every region coloured in and tiny flags planted"
+    },
+    "mock_1": {
+      "kind": "relic",
+      "subject": "An ornate wooden hourglass with golden sand running through it"
+    },
+    "mock_4": {
+      "kind": "relic",
+      "subject": "A shiny silver medal with a blue ribbon"
+    },
+    "mock_7": {
+      "kind": "relic",
+      "subject": "A shiny gold medal with a red ribbon and a star engraved in the centre"
+    },
+    "learn_10": {
+      "kind": "relic",
+      "subject": "A lit white candle on a brass holder beside a small open book"
+    },
+    "learn_50": {
+      "kind": "relic",
+      "subject": "An ornate golden key with a blue gem in its bow"
+    },
+    "unit_num-calc": {
+      "kind": "beast",
+      "subject": "A regal green basilisk lizard monster wearing a small golden crown, standing on its hind legs with glaring yellow eyes and a spiky frill"
+    },
+    "unit_num-factors": {
+      "kind": "beast",
+      "subject": "A walking tree ent monster whose trunk splits into two branches, and each branch splits into two again, with round red berries at the branch tips and a friendly bark face"
+    },
+    "unit_num-fractions": {
+      "kind": "beast",
+      "subject": "A round pepperoni pizza mimic monster with one slice missing, big eyes and a mouth full of sharp teeth in the gap"
+    },
+    "unit_num-fdp": {
+      "kind": "beast",
+      "subject": "A chameleon lizard monster with a curled tail, its body in three bold colour bands: red at the head, green in the middle and blue at the tail"
+    },
+    "unit_num-powers": {
+      "kind": "beast",
+      "subject": "A fluffy white rabbit monster with red eyes, with a smaller identical rabbit sitting on its head and an even tinier rabbit on top of that one"
+    },
+    "unit_num-rounding": {
+      "kind": "beast",
+      "subject": "A big shaggy white yeti monster with a blue face, shrugging with a puzzled expression"
+    },
+    "unit_num-surds": {
+      "kind": "beast",
+      "subject": "A screaming mandrake root monster just pulled out of the ground, a gnarled brown root body with tiny arms and a tuft of green leaves on its head"
+    },
+    "unit_alg-expressions": {
+      "kind": "beast",
+      "subject": "A bright red crab monster with two huge curved claws raised up and eyes on stalks"
+    },
+    "unit_alg-equations": {
+      "kind": "beast",
+      "subject": "A brass clockwork golem holding a set of balance scales perfectly level in its outstretched arms"
+    },
+    "unit_alg-inequalities": {
+      "kind": "beast",
+      "subject": "A green crocodile monster with its huge jaws wide open, showing rows of white teeth"
+    },
+    "unit_alg-quadratics": {
+      "kind": "beast",
+      "subject": "A purple two-headed snake monster with a head at each end of its body, its body curving down into a U shape"
+    },
+    "unit_alg-simultaneous": {
+      "kind": "beast",
+      "subject": "Two wolves standing back to back, one jet black wolf and one snow white wolf, both howling"
+    },
+    "unit_alg-formulae": {
+      "kind": "beast",
+      "subject": "A fat green toad alchemist wearing a purple wizard robe, holding up a bubbling glass flask of pink potion"
+    },
+    "unit_alg-proof": {
+      "kind": "beast",
+      "subject": "A white unicorn with a rainbow mane and a golden spiral horn, rearing up proudly"
+    },
+    "unit_gr-sequences": {
+      "kind": "beast",
+      "subject": "A long orange centipede monster whose body segments get steadily bigger from its head to its tail"
+    },
+    "unit_gr-linear": {
+      "kind": "beast",
+      "subject": "A white mountain goat monster with big curled horns standing on a steep straight rocky slope"
+    },
+    "unit_gr-nonlinear": {
+      "kind": "beast",
+      "subject": "A teal sea serpent leviathan whose long body arches up and dips down through blue waves in smooth curves"
+    },
+    "unit_gr-reallife": {
+      "kind": "beast",
+      "subject": "A spotted cheetah monster sprinting at full speed with motion lines behind it"
+    },
+    "unit_gr-functions": {
+      "kind": "beast",
+      "subject": "A clockwork robot golem with a big funnel hopper on top of its head and a delivery chute in its belly"
+    },
+    "unit_rat-ratio": {
+      "kind": "beast",
+      "subject": "A two-headed green ogre monster, one head grinning and the other head grumpy, holding a meat drumstick"
+    },
+    "unit_rat-percent": {
+      "kind": "beast",
+      "subject": "A red dragon curled up asleep on a big pile of shining gold coins"
+    },
+    "unit_rat-proportion": {
+      "kind": "beast",
+      "subject": "A big red soldier ant queen monster wearing a tiny crown, with strong mandibles"
+    },
+    "unit_rat-measures": {
+      "kind": "beast",
+      "subject": "A white winged pegasus horse galloping through the air with feathered wings spread wide"
+    },
+    "unit_geo-angles": {
+      "kind": "beast",
+      "subject": "A purple bat monster with its leathery wings spread wide open, big pointed ears and tiny fangs"
+    },
+    "unit_geo-shapes": {
+      "kind": "beast",
+      "subject": "A beetle monster with a shiny shell made of turquoise hexagon plates like a honeycomb"
+    },
+    "unit_geo-area": {
+      "kind": "beast",
+      "subject": "A tortoise monster whose shell is a neat grid of square tiles in alternating cream and brown like a chessboard"
+    },
+    "unit_geo-volume": {
+      "kind": "beast",
+      "subject": "A translucent green slime monster shaped like a perfect cuboid box, with a sword and a bone floating inside it"
+    },
+    "unit_geo-transform": {
+      "kind": "beast",
+      "subject": "A friendly white ghost monster facing its own mirror image, a second pale blue ghost, as if reflected in a mirror"
+    },
+    "unit_trig-pythagoras": {
+      "kind": "beast",
+      "subject": "A golden scarab beetle monster with triangular emerald green wings spread open"
+    },
+    "unit_trig-trig": {
+      "kind": "beast",
+      "subject": "A blue wyvern dragon with large triangular wings, perched with its tail curled"
+    },
+    "unit_trig-similarity": {
+      "kind": "beast",
+      "subject": "A big orange tabby cat monster sitting next to a tiny identical kitten copy of itself"
+    },
+    "unit_trig-circles": {
+      "kind": "beast",
+      "subject": "A green serpent curled into a perfect circle, biting its own tail"
+    },
+    "unit_trig-vectors": {
+      "kind": "beast",
+      "subject": "A brown falcon diving steeply with its wings swept back like an arrowhead"
+    },
+    "unit_prob-basics": {
+      "kind": "beast",
+      "subject": "A mischievous green goblin flipping a shiny gold coin into the air with its thumb"
+    },
+    "unit_prob-combined": {
+      "kind": "beast",
+      "subject": "A grey shark monster standing upright on its tail, wearing sunglasses and holding a fan of playing cards"
+    },
+    "unit_stat-averages": {
+      "kind": "beast",
+      "subject": "A three-headed brown dog monster, the left head smiling, the middle head calm and the right head grumpy"
+    },
+    "unit_stat-charts": {
+      "kind": "beast",
+      "subject": "A golem monster built from stacked rectangular blocks of different heights in red, blue, green and yellow"
+    },
+    "unit_stat-higher": {
+      "kind": "beast",
+      "subject": "A ginger cat monster sitting inside a cardboard box, with very long white whiskers sticking out sideways"
+    }
+  }
+}

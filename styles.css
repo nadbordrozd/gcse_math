@@ -418,3 +418,78 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
 .row-learn { font-size: 1.05rem; padding: .2rem .35rem; border-radius: 8px; opacity: .65; cursor: pointer; }
 .row-learn:hover, .row-learn:focus { opacity: 1; background: var(--surface); outline: none; }
 @media (max-width: 860px) { .tile-row { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- sound toggle & achievements nav ---------- */
+.sound-toggle { font: inherit; font-size: 1rem; background: none; border: 0; padding: .35rem .5rem; border-radius: 8px; cursor: pointer; opacity: .75; }
+.sound-toggle:hover { background: var(--surface2); opacity: 1; }
+.nav-ach .ach-count { font-size: .78rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- achievements ---------- */
+.ach-total { display: flex; align-items: center; gap: 1rem; margin: 1rem 0 .5rem; }
+.ach-total b { font-size: 2rem; white-space: nowrap; }
+.ach-total b small { font-size: 1rem; color: var(--muted); font-weight: 500; }
+.ach-total .bar { flex: 1; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.achievements .area-mini { margin-top: 1.4rem; }
+.plinth { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 14px; flex: none;
+  background: radial-gradient(circle at 50% 55%, #2d2656 0 40%, #1a1533 72%); }
+.plinth.small { width: 64px; height: 64px; border-radius: 10px; }
+.badge-img { image-rendering: pixelated; display: block; }
+.badge-emoji { line-height: 1; display: block; }
+.ach-card { display: flex; gap: 1rem; align-items: center; padding: .8rem; border: 2px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.ach-copy { min-width: 0; flex: 1; }
+.ach-copy h3 { margin: 0 0 .25rem; font-size: 1.02rem; }
+.ach-req { margin: 0 0 .3rem; font-size: .86rem; font-weight: 650; color: var(--warn); }
+.ach-flavour { margin: 0 0 .45rem; font-size: .83rem; font-style: italic; color: var(--muted); line-height: 1.45; }
+.ach-status { display: flex; align-items: center; gap: .6rem; font-size: .78rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ach-status .bar { flex: 1; }
+.ach-card.earned { border-color: #e0a92e; background: linear-gradient(160deg, color-mix(in srgb, #f2c14e 14%, var(--surface)), var(--surface) 60%); }
+.ach-card.earned .plinth { background: radial-gradient(circle at 50% 55%, rgba(255, 214, 110, .6) 0 22%, rgba(242, 193, 78, .2) 45%, #1a1533 72%); }
+.ach-card.earned .ach-status { color: var(--good); }
+.ach-card.earned:hover .badge-img, .ach-card.earned:hover .badge-emoji { animation: badge-bob .9s steps(4) infinite alternate; }
+.ach-card.locked .badge-img, .ach-card.locked .badge-emoji { filter: brightness(0); opacity: .55; }
+.ach-card.locked .plinth { background: radial-gradient(circle at 50% 55%, #3a3550 0 40%, #24203a 72%); }
+@keyframes badge-bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+.ach-toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; display: flex; flex-direction: column; gap: .5rem; align-items: flex-end; }
+.ach-toast { display: flex; align-items: center; gap: .7rem; padding: .4rem 1rem .4rem .4rem; border: 2px solid #f2c14e; border-radius: 14px;
+  background: #1d1838; color: #fff; text-decoration: none; box-shadow: 0 14px 34px rgba(23, 18, 46, .35); animation: toast-in .35s ease-out; }
+.ach-toast small { display: block; color: #f2c14e; font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.ach-toast b { font-size: 1rem; }
+.ach-toast.leaving { opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* ---------- mastery celebration ---------- */
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 80; }
+.celebrate { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 1rem;
+  background: rgba(10, 14, 30, .55); backdrop-filter: blur(3px); opacity: 0; transition: opacity .25s; }
+.celebrate.show { opacity: 1; }
+.celebrate-card { position: relative; width: min(460px, 100%); text-align: center; padding: 1.2rem 1.4rem 1rem; border-radius: 20px;
+  background: var(--surface); box-shadow: 0 24px 60px rgba(0, 0, 0, .35); border-top: 6px solid var(--area); transform: scale(.85); transition: transform .35s cubic-bezier(.2, 1.6, .4, 1); }
+.celebrate.show .celebrate-card { transform: none; }
+.celebrate-card h2 { margin: .1rem 0 .3rem; font-size: 1.35rem; }
+.celebrate-kicker { margin: 0; font-size: .85rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #c48a00; }
+.burst { width: 150px; height: 150px; margin: -.2rem auto 0; display: block; overflow: visible; }
+.burst .rays { fill: #f2c14e; opacity: .55; transform-origin: 0 0; animation: rays-spin 9s linear infinite; }
+.burst .star { fill: #f2c14e; stroke: #c48a00; stroke-width: 2.5; stroke-linejoin: round; transform-origin: 0 0; animation: star-pop .7s cubic-bezier(.2, 1.8, .4, 1) both .1s; }
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+@keyframes star-pop { from { transform: scale(0) rotate(-90deg); } to { transform: none; } }
+.celebrate-unlocks { margin: .8rem 0 .2rem; text-align: left; display: flex; flex-direction: column; gap: .4rem; }
+.celebrate-unlocks .small-title { text-align: center; }
+.unlock { display: flex; gap: .7rem; align-items: center; padding: .35rem; border-radius: 12px; background: var(--surface2); color: var(--text); text-decoration: none; }
+.unlock small { display: block; color: var(--muted); font-size: .8rem; }
+.btn-row.center { justify-content: center; }
+.skill.just-mastered { animation: mastered-glow 2.4s ease-out 2 both; }
+@keyframes mastered-glow { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px #f2c14e, 0 0 24px rgba(242, 193, 78, .7); } }
+
+@media (max-width: 640px) {
+  .ach-grid { grid-template-columns: 1fr; }
+  .plinth { width: 84px; height: 84px; }
+  .plinth .badge-img { width: 80px; height: 80px; }
+  .nav-ach .ach-count { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .burst .rays, .burst .star, .ach-toast, .skill.just-mastered, .ach-card.earned:hover .badge-img, .ach-card.earned:hover .badge-emoji { animation: none; }
+  .celebrate-card { transition: none; }
+}
+details.unit { scroll-margin-top: 72px; }

@@ -4,6 +4,8 @@ import { generateSafely } from '../core.js';
 import { state, save, points, recordAnswer, difficultyFor, skillStatus, MASTERY_POINTS, CORRECT_POINTS, HINT_POINTS } from './state.js';
 import { esc, gradeBadge, higherBadge, progressBar, STATUS, areaStyle, AREA, isDev, randomSeed, toast } from './ui.js';
 import { mountQuestion } from './question.js';
+import { playSound } from './sounds.js';
+import { celebrateMastery, celebrating, syncAchievements } from './awards.js';
 import { visibleSkills, hasQuestions, isSecure, readyToLearn } from './plan.js';
 
 let session = null;
@@ -55,7 +57,7 @@ export function renderPractice(root, skillId) {
   root.innerHTML = `
     <section class="practice" style="${skill ? areaStyle(skill.area) : ''}">
       <header class="practice-head">
-        <nav class="crumbs"><a href="#/">Topics</a>${unit ? ` › <a href="#/" data-open-unit="${unit.id}">${esc(unit.title)}</a>` : ''}</nav>
+        <nav class="crumbs"><a href="#/">Topics</a>${unit ? ` › <a href="#/topic/${unit.id}">${esc(unit.title)}</a>` : ''}</nav>
         <div class="practice-title">
           ${mixed ? '<h1>🔀 Mixed practice</h1><p class="muted">Questions from skills you have started – great for keeping them fresh.</p>'
     : `<h1>${gradeBadge(skill.grade)} ${esc(skill.title)} ${higherBadge(skill)}</h1><p class="muted">${esc(skill.summary)}</p>${(TUTORIALS_BY_SKILL[skill.id] || []).slice(0, 2).map((t) => `<a class="btn small learn-btn" href="#/learn/${t.id}">📖 Learn: ${esc(t.title)}</a>`).join(' ')}`}
@@ -70,6 +72,7 @@ export function renderPractice(root, skillId) {
       <div class="next-bar" hidden>
         <span class="delta"></span>
         <button type="button" class="btn ghost flag-btn" title="Report a problem with this question">⚑ Report</button>
+        <button type="button" class="btn keep-btn" hidden>Keep practising</button>
         <button type="button" class="btn primary next-btn">Next question →</button>
       </div>
       <footer class="session-bar">
@@ -79,11 +82,10 @@ export function renderPractice(root, skillId) {
         <button type="button" class="btn ghost finish-btn">Finish</button>
       </footer>
     </section>`;
-  root.querySelector('[data-open-unit]')?.addEventListener('click', () => {
-    const open = new Set(JSON.parse(sessionStorage.getItem('gcse_open_units') || '[]'));
-    open.add(unit.id); sessionStorage.setItem('gcse_open_units', JSON.stringify([...open]));
+  root.querySelector('.next-btn').addEventListener('click', () => {
+    if (session.returnTo) backToTopic(session.returnTo); else nextQuestion(root);
   });
-  root.querySelector('.next-btn').addEventListener('click', () => nextQuestion(root));
+  root.querySelector('.keep-btn').addEventListener('click', () => { session.returnTo = null; nextQuestion(root); });
   root.querySelector('.finish-btn').addEventListener('click', () => finishSession(root));
   root.querySelector('.flag-btn').addEventListener('click', (e) => flagCurrent(e.currentTarget));
   root.querySelector('.dev-arch')?.addEventListener('change', (e) => { session.forceArchetype = e.target.value || null; nextQuestion(root); });
@@ -131,6 +133,8 @@ function nextQuestion(root) {
   }
   s.current = q; s.lastArchetype = g.id; s.lastSkill = skillId;
   root.querySelector('.next-bar').hidden = true;
+  root.querySelector('.keep-btn').hidden = true;
+  root.querySelector('.next-btn').textContent = 'Next question →';
   const area = root.querySelector('.q-area');
   const skill = SKILL[skillId];
   if (s.mixed) area.dataset.skill = skillId;
@@ -149,8 +153,9 @@ function nextQuestion(root) {
 function answered(root, q, outcome) {
   const s = session;
   const before = points(q.skill_id);
-  const delta = recordAnswer(q.skill_id, q.archetype_id, outcome);
+  const { delta, mastered, first } = recordAnswer(q.skill_id, q.archetype_id, outcome);
   const good = outcome === 'correct' || outcome === 'hint';
+  if (!mastered && outcome !== 'skip') playSound(good ? 'correct' : 'wrong');
   s.answered += 1;
   if (good) { s.correct += 1; s.streak += 1; s.best = Math.max(s.best, s.streak); } else s.streak = 0;
   s.gained += delta;
@@ -158,13 +163,29 @@ function answered(root, q, outcome) {
   nb.hidden = false;
   const label = outcome === 'correct' ? `+${CORRECT_POINTS} points` : outcome === 'hint' ? `+${HINT_POINTS} points (hint used)` : delta < 0 ? `${delta} points` : before >= MASTERY_POINTS ? 'Mastered skills keep their star' : '';
   nb.querySelector('.delta').innerHTML = `<span class="${good ? 'pos' : 'neg'}">${label}</span>`;
-  if (before < MASTERY_POINTS && points(q.skill_id) >= MASTERY_POINTS) celebrate(SKILL[q.skill_id]);
   updateHeader(root);
   nb.querySelector('.next-btn').focus({ preventScroll: true });
+  if (mastered) celebrate(root, SKILL[q.skill_id], first);
+  else syncAchievements();
 }
 
-function celebrate(skill) {
-  toast(`★ <b>${esc(skill.title)}</b> mastered! Brilliant work.`, 'big');
+/** The first time a skill reaches 100 points the learner goes back to its topic to pick the next one. */
+async function celebrate(root, skill, first) {
+  const s = session;
+  const choice = await celebrateMastery(skill, { first, mixed: s.mixed });
+  if (choice === 'topic') { backToTopic(skill); return; }
+  if (choice === 'stay' && first && !s.mixed && session === s) {
+    s.returnTo = skill;
+    const nb = root.querySelector('.next-bar');
+    nb.hidden = false;
+    nb.querySelector('.next-btn').textContent = `Back to ${UNIT[skill.unit].title} →`;
+    nb.querySelector('.keep-btn').hidden = false;
+    nb.querySelector('.next-btn').focus({ preventScroll: true });
+  }
+}
+
+function backToTopic(skill) {
+  location.hash = `#/topic/${skill.unit}/${skill.id}`;
 }
 
 function finishSession(root) {
@@ -201,15 +222,16 @@ function flagCurrent(btn) {
 }
 
 export function practiceKey(e) {
-  if (!session?.ctl) return false;
+  if (!session?.ctl || celebrating()) return false;
   if (session.ctl.key(e)) return true;
   const next = document.querySelector('.next-bar:not([hidden]) .next-btn');
   if (next && (e.key === 'Enter' || e.key === ' ') && document.activeElement?.tagName !== 'INPUT') { next.click(); return true; }
   if (isDev() && (e.key === 'x' || e.key === 'X') && !session.ctl.done && session.current) {
-    recordAnswer(session.current.skill_id, session.current.archetype_id, 'correct');
+    const { mastered, first } = recordAnswer(session.current.skill_id, session.current.archetype_id, 'correct');
     session.answered += 1; session.correct += 1;
     updateHeader(document);
-    nextQuestion(document);
+    if (mastered) celebrate(document, SKILL[session.current.skill_id], first);
+    else { syncAchievements(); nextQuestion(document); }
     return true;
   }
   return false;

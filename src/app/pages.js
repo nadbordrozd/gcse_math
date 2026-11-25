@@ -102,7 +102,7 @@ export function renderSettings(root) {
     } catch (err) { alert(`Could not import: ${err.message}`); }
   });
   root.querySelector('.reset').addEventListener('click', () => {
-    if (confirm('Delete all progress, quick-check results and mock exam history? This cannot be undone.')) { resetState(); applyTheme(); toast('Progress reset'); renderSettings(root); }
+    if (confirm('Delete all progress, quick-check results and mock exam history? This cannot be undone. Achievements you have already earned are kept.')) { resetState(); applyTheme(); toast('Progress reset'); renderSettings(root); }
   });
   root.querySelector('.clear-flags')?.addEventListener('click', () => { state.flagged = []; save(); renderSettings(root); });
 }
@@ -130,6 +130,8 @@ export function renderAbout(root) {
       <p>Every question has a worked solution under <b>How to solve it</b>. Keyboard: <kbd>1</kbd>–<kbd>5</kbd> pick an answer, <kbd>Enter</kbd> for the next question, <kbd>H</kbd> for a hint.</p>
       <h2>Learn pages</h2>
       <p>Every topic has a short <b>Learn</b> page: the key idea, where it comes from, a method, worked examples and common mistakes. Pages link back to the ideas they build on, so if something is new you can step back as far as you need. Worked solutions link to the relevant page under <b>📖 New to this?</b></p>
+      <h2>Achievements</h2>
+      <p>Mastering a skill sets off a fanfare and sends you back to its topic to pick the next one. Along the way you collect <a href="#/achievements">🏆 achievements</a>: trophies for milestones, and a bestiary with one creature for each topic, tamed by mastering every skill in it. The 🔊 button in the top bar turns sounds on or off.</p>
       <h2>Quick checks</h2>
       <p>A quick check is a short adaptive test on one topic – usually 3 to 6 questions. It works out which skills already look secure and which need practice, and builds your study plan. It never locks anything.</p>
       <h2>Mock exams</h2>

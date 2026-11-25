@@ -18,6 +18,8 @@ function defaultState() {
     tally: { attempted: 0, correct: 0 },
     days: {}, // 'YYYY-MM-DD' -> questions answered (for the streak)
     last: null, // last skill practised
+    completions: {}, // skillId -> { at, wrong } the first time the skill reached 100 points
+    achievements: {}, // achievementId -> time earned (kept even when progress is reset)
   };
 }
 
@@ -40,7 +42,12 @@ export function replaceState(next) {
   state = { ...defaultState(), ...next, settings: { ...defaultState().settings, ...next.settings } };
   save();
 }
-export function resetState() { state = defaultState(); save(); }
+/** Earned achievements and settings survive a reset: they were really earned. */
+export function resetState() {
+  const { achievements, settings } = state;
+  state = { ...defaultState(), achievements, settings };
+  save();
+}
 
 export const skillRecord = (id) => (state.skills[id] ||= { points: 0, attempts: 0, correct: 0, lastSeen: 0, archetypes: {} });
 export const points = (id) => state.skills[id]?.points ?? 0;
@@ -55,7 +62,11 @@ export function difficultyFor(id) {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** Record an answer. outcome: 'correct' | 'hint' (correct after hint) | 'wrong' | 'skip'. Returns points delta. */
+/**
+ * Record an answer. outcome: 'correct' | 'hint' (correct after hint) | 'wrong' | 'skip'.
+ * Returns { delta, mastered, first }: mastered when this answer took the skill to 100 points, first when
+ * that has never happened before (so the app celebrates in full and sends the learner back to the topic).
+ */
 export function recordAnswer(skillId, archetypeId, outcome) {
   const r = skillRecord(skillId);
   const before = r.points;
@@ -74,8 +85,23 @@ export function recordAnswer(skillId, archetypeId, outcome) {
   if (outcome === 'correct' || outcome === 'hint') state.tally.correct += 1;
   state.days[today()] = (state.days[today()] || 0) + 1;
   state.last = skillId;
+  const mastered = before < MASTERY_POINTS && r.points >= MASTERY_POINTS;
+  const first = mastered && !state.completions[skillId];
+  if (first) state.completions[skillId] = { at: Date.now(), wrong: r.attempts - r.correct };
   save();
-  return r.points - before;
+  return { delta: r.points - before, mastered, first };
+}
+
+/** Skills mastered before completions were recorded still count. */
+export function backfillCompletions() {
+  let changed = false;
+  for (const [id, r] of Object.entries(state.skills)) {
+    if (r.points >= MASTERY_POINTS && !state.completions[id]) {
+      state.completions[id] = { at: r.lastSeen || Date.now(), wrong: r.attempts - r.correct };
+      changed = true;
+    }
+  }
+  if (changed) save();
 }
 
 /** Consecutive days (ending today or yesterday) with at least one answer. */

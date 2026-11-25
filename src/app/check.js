@@ -11,6 +11,7 @@ import { state, save, isMastered } from './state.js';
 import { esc, gradeBadge, higherBadge, areaStyle, AREA, randomSeed, STATUS } from './ui.js';
 import { mountQuestion } from './question.js';
 import { visibleUnitSkills, hasQuestions, unitLevel, unitSummary } from './plan.js';
+import { syncAchievements } from './awards.js';
 
 let run = null;
 
@@ -130,6 +131,7 @@ function finish(root) {
   const level = unitLevel(unit);
   state.checks[unit.id] = { at: now, level, results: { ...status } };
   save();
+  syncAchievements();
   const start = skills.find((s) => status[s.id] !== 'secure' && !isMastered(s.id));
   const rows = skills.map((s) => {
     const st = isMastered(s.id) ? 'mastered' : status[s.id];

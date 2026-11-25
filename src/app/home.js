@@ -7,7 +7,9 @@ import { visibleUnitSkills, recommendations, unitSummary, overallSummary, hasQue
 let searchTerm = '';
 const openUnits = new Set(JSON.parse(sessionStorage.getItem('gcse_open_units') || '[]'));
 
-export function renderHome(root) {
+/** focus: { unit, skill } – open that topic, scroll to it and highlight a skill (#/topic/<unit>/<skill>). */
+export function renderHome(root, focus = {}) {
+  if (focus.unit) { searchTerm = ''; openUnits.add(focus.unit); sessionStorage.setItem('gcse_open_units', JSON.stringify([...openUnits])); }
   const o = overallSummary();
   const recs = recommendations(4);
   const streak = dayStreak();
@@ -58,6 +60,12 @@ export function renderHome(root) {
   root.querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', () => {
     state.settings.tier = b.dataset.tier; save(); renderHome(root);
   }));
+  const unitEl = focus.unit && root.querySelector(`details.unit[data-unit="${focus.unit}"]`);
+  if (unitEl) {
+    requestAnimationFrame(() => unitEl.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    const row = focus.skill && unitEl.querySelector(`a.skill[href="#/skill/${focus.skill}"]`);
+    row?.classList.add('just-mastered');
+  }
 }
 
 function greeting() {
