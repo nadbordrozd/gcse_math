@@ -203,7 +203,7 @@ export const fmSameOutput = G('gr-fm-same', 'gr-function-machines', (rng, d) => 
       `Answer: $${sol.tex()}$ (both machines output $${e1.a.mul(sol).add(e1.b).tex()}$)`,
     ],
   };
-}, { title: 'Missing operations and equal outputs' });
+}, { title: 'Missing operations and equal outputs', learn: ['gr-function-machines', 'alg-solve-brackets-both-sides'] });
 
 /* ================================================================== */
 /* gr-function-notation                                                */
@@ -508,7 +508,7 @@ export const ciInverseExpr = G('gr-ci-inverse-expr', 'gr-composite-inverse', (rn
       `Note: $f^{-1}(x)$ is the inverse function, not $\\frac{1}{f(x)}$. Answer: $${ans}$`,
     ],
   };
-}, { title: 'Find an inverse function' });
+}, { title: 'Find an inverse function', learn: ['gr-composite-inverse', 'alg-rearrange-simple'] });
 
 export const ciInverseValue = G('gr-ci-inverse-value', 'gr-composite-inverse', (rng, d) => {
   const a = int(rng, 2, 6); const b = nz(rng, -9, 9); const c = d === 'easy' ? 1 : pick(rng, [1, 2, 3, 5]);

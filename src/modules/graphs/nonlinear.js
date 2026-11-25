@@ -98,7 +98,7 @@ export const quadRootsGraph = G('gr-quad-roots-graph', 'gr-quadratic-graphs', (r
       `Answer: ${opt(p, q)}`,
     ],
   };
-}, { title: 'Roots from a quadratic graph' });
+}, { title: 'Roots from a quadratic graph', learn: ['gr-quadratic-graphs', 'alg-solve-quad-factorising'] });
 
 export const quadTurning = G('gr-quad-turning', 'gr-quadratic-graphs', (rng, d) => {
   const mode = d === 'easy' ? 'graph' : d === 'medium' ? pick(rng, ['graph', 'form']) : pick(rng, ['complete', 'complete', 'form']);
@@ -155,7 +155,7 @@ export const quadTurning = G('gr-quad-turning', 'gr-quadratic-graphs', (rng, d) 
       `Answer: ${ans2}`,
     ],
   };
-}, { title: 'Turning point of a quadratic' });
+}, { title: 'Turning point of a quadratic', learn: ['gr-quadratic-graphs', 'alg-completing-square'] });
 
 export const quadSolveK = G('gr-quad-solve-k', 'gr-quadratic-graphs', (rng, d) => {
   const p = int(rng, -4, 2); const q = p + int(rng, 2, 6);
@@ -396,7 +396,7 @@ export const gsTwoLines = G('gr-gs-two-lines', 'gr-graphical-solutions', (rng, d
       `Answer: $x = ${X0}$`,
     ],
   };
-}, { title: 'Solve equations using two straight lines' });
+}, { title: 'Solve equations using two straight lines', learn: ['gr-graphical-solutions', 'alg-simultaneous-linear'] });
 
 export const gsQuadLine = G('gr-gs-quad-line', 'gr-graphical-solutions', (rng, d) => {
   const p = int(rng, -3, 1); const q = p + int(rng, 2, 5);
@@ -462,14 +462,14 @@ const REL = { '<': '\\lt', '>': '\\gt', '<=': '\\leqslant', '>=': '\\geqslant' }
 const flip = { '<': '>', '>': '<', '<=': '>=', '>=': '<=' };
 const strictSwap = { '<': '<=', '<=': '<', '>': '>=', '>=': '>' };
 /** An inequality a·x + b·y REL k, displayed via tex(). */
-function ineq(kind, params, rel) {
+export function ineq(kind, params, rel) {
   const q = { kind, ...params, rel };
   q.g = (x, y) => (kind === 'x' ? x - params.k : kind === 'y' ? y - params.k : kind === 'line' ? y - (params.m * x + params.c) : params.p * x + params.q * y - params.k);
   q.ok = (x, y) => { const v = q.g(x, y); const r = q.rel; return r === '<' ? v < -1e-9 : r === '>' ? v > 1e-9 : r === '<=' ? v <= 1e-9 : v >= -1e-9; };
   q.tex = (r = q.rel) => (kind === 'x' ? `x ${REL[r]} ${params.k}` : kind === 'y' ? `y ${REL[r]} ${params.k}` : kind === 'line' ? `y ${REL[r]} ${lin(params.m, params.c)}` : `${lin(params.p, 0).replace(/^0$/, '')}${params.q < 0 ? ' - ' : ' + '}${Math.abs(params.q) === 1 ? '' : Math.abs(params.q)}y ${REL[r]} ${params.k}`);
   return q;
 }
-function clipHalf(poly, q) {
+export function clipHalf(poly, q) {
   const s = q.rel === '<' || q.rel === '<=' ? -1 : 1;
   const inside = (p) => s * q.g(p[0], p[1]) >= -1e-9;
   const out = [];
@@ -513,7 +513,7 @@ function makeRegion(rng, d) {
   }
   throw new Error('r');
 }
-function regionVisual(qs, poly, { label = 'R' } = {}) {
+export function regionVisual(qs, poly, { label = "R" } = {}) {
   const c = coordGrid({ xmin: -6, xmax: 6, ymin: -6, ymax: 6, unit: 24 });
   // Draw every boundary first, then place the labels so they can avoid all of the lines.
   const mk = (q) => (q.kind === 'x' ? [null, q.k] : q.kind === 'y' ? [0, q.k] : q.kind === 'line' ? [q.m, q.c] : [-q.p / q.q, q.k / q.q]);
@@ -638,7 +638,7 @@ const Cs = (deg) => Math.cos((deg * Math.PI) / 180);
 const Tn = (deg) => Math.tan((deg * Math.PI) / 180);
 const deg = (v) => `${v}^\\circ`;
 
-function trigChart({ tan = false, ymin = -1.5, ymax = 1.5, ystep = 0.5, xmax = 360, xmin = 0 } = {}) {
+export function trigChart({ tan = false, ymin = -1.5, ymax = 1.5, ystep = 0.5, xmax = 360, xmin = 0 } = {}) {
   const c = chart({
     xmin, xmax, ymin, ymax, xstep: 30, ystep, xlabelEvery: xmax - xmin > 400 ? 6 : 3, ylabelIf: (y) => Math.abs(y - Math.round(y)) < 1e-9, w: 380, h: tan ? 260 : 180,
     zeroAxes: true, fontSize: 12.5, fmtX: (v) => `${v}°`, padL: 34, padR: 30,
@@ -715,7 +715,7 @@ export const trigSolve = G('gr-trig-solve', 'gr-trig-graphs', (rng, d) => {
       `Answer: $${deg(other)}$`,
     ],
   };
-}, { title: 'Use symmetry of trig graphs to solve equations' });
+}, { title: 'Use symmetry of trig graphs to solve equations', learn: ['gr-trig-graphs', 'trig-exact-values'] });
 
 export const trigValues = G('gr-trig-values', 'gr-trig-graphs', (rng, d) => {
   const mode = d === 'easy' ? pick(rng, ['value', 'maxpt', 'zeros']) : d === 'medium' ? pick(rng, ['value', 'maxpt', 'count', 'amp']) : pick(rng, ['shift', 'count', 'amp', 'maxpt']);
@@ -943,13 +943,13 @@ export const circleTangent = G('gr-circle-tangent', 'gr-circle-equation', (rng, 
     solution: [
       ...(hidden ? [`$(${a})^2 + y^2 = ${N}$, so $y^2 = ${b * b}$ and $y = ${b}$ (${b > 0 ? 'above' : 'below'} the axis): P is ${P(a, b)}.`.replace(`$(${a})^2`, a < 0 ? `$(${a})^2` : `$${a}^2`)] : []),
       `Gradient of the radius OP $= ${fracEq(b, a)}$.`,
-      `The tangent is perpendicular to the radius, so its gradient is $${m.tex()}$ (negative reciprocal).`,
+      `The tangent is perpendicular to the radius, so its gradient is $${m.tex()}$ (the [[gr-parallel-perpendicular|negative reciprocal]]).`,
       `$y = ${lin(m, 0)} + c$ through ${P(a, b)}: $${b} = ${m.mul(a).tex()} + c$, so $c = ${c.tex()}$.`,
       ...(general ? [`$y = ${lin(m, c)}$. Multiply by $${s0 * b}$ and rearrange: $${gen(s0 * a, s0 * b, s0 * N)}$.`] : []),
       `Answer: ${ans}`,
     ],
   };
-}, { title: 'Equation of a tangent to a circle' });
+}, { title: 'Equation of a tangent to a circle', learn: ['gr-circle-equation', 'gr-parallel-perpendicular'] });
 
 export const circleTangentIntercept = G('gr-circle-tangent-intercept', 'gr-circle-equation', (rng, d) => {
   const { a, b, N, m, c } = tangentData(rng, 'hard');
@@ -988,7 +988,7 @@ export const circleTangentIntercept = G('gr-circle-tangent-intercept', 'gr-circl
       `Answer: $${val.tex()}$`,
     ],
   };
-}, { title: 'Where a tangent to a circle meets the axes' });
+}, { title: 'Where a tangent to a circle meets the axes', learn: ['gr-circle-equation', 'gr-parallel-perpendicular'] });
 
 export const circlePoint = G('gr-circle-point', 'gr-circle-equation', (rng, d) => {
   const [a0, b0] = pick(rng, PYTH.concat([[0, 5], [7, 24], [24, 7], [9, 12], [12, 9], [8, 15], [15, 8]]).filter(([u, v]) => u !== v));

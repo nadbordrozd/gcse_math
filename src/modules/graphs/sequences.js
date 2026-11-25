@@ -861,7 +861,7 @@ export const specialRecurrence = G('seq-special-recurrence', 'seq-special', (rng
     };
   }
   throw new Error('retry');
-}, { title: 'Iterative (recurrence) sequences' });
+}, { title: 'Iterative (recurrence) sequences', learn: ['seq-special', 'alg-iteration'] });
 
 /* ================================================================== */
 /* seq-geometric                                                       */

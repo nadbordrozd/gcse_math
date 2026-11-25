@@ -624,7 +624,7 @@ export const dtSpeed = G('gr-dt-speed', 'gr-distance-time', (rng, d) => {
       `Answer: ${num(ans)} km/h`,
     ],
   };
-}, { title: 'Speed from a distance–time graph', word: true });
+}, { title: 'Speed from a distance–time graph', word: true, learn: ['gr-distance-time', 'rat-speed'] });
 
 export const dtAverage = G('gr-dt-average', 'gr-distance-time', (rng, d) => {
   const jn = makeJourney(rng);
@@ -667,7 +667,7 @@ export const dtAverage = G('gr-dt-average', 'gr-distance-time', (rng, d) => {
       `Answer: ${num(ans)} km/h`,
     ],
   };
-}, { title: 'Average speed from a distance–time graph', word: true });
+}, { title: 'Average speed from a distance–time graph', word: true, learn: ['gr-distance-time', 'rat-speed'] });
 
 export const dtInterpret = G('gr-dt-interpret', 'gr-distance-time', (rng, d) => {
   const jn = makeJourney(rng);
@@ -826,7 +826,7 @@ export const rocDistance = G('gr-roc-distance', 'gr-rates-of-change', (rng, d) =
       `Answer: ${num(ans)} m`,
     ],
   };
-}, { title: 'Distance from the area under a velocity–time graph' });
+}, { title: 'Distance from the area under a velocity–time graph', learn: ['gr-rates-of-change', 'geo-area-trapezium-compound'] });
 
 // Smooth curves with nice values at grid points: v(t) = p t (q − t) / r + s
 function curveTrip(rng, n = 4, hs = [2, 4]) {
