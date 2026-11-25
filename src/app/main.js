@@ -5,6 +5,7 @@ import { renderPractice, practiceKey } from './practice.js';
 import { renderCheck, renderCheckPicker, checkKey } from './check.js';
 import { renderMockSetup, examActive } from './mock.js';
 import { renderPlan, renderSettings, renderAbout, applyTheme } from './pages.js';
+import { renderLearnIndex, renderTutorial, learnKey } from './learn.js';
 
 const root = document.getElementById('app');
 let current = '';
@@ -25,6 +26,7 @@ function route() {
     case 'check-pick': renderCheckPicker(root); break;
     case 'check': renderCheck(root, arg); break;
     case 'mock': renderMockSetup(root); break;
+    case 'learn': if (arg) renderTutorial(root, arg); else renderLearnIndex(root); break;
     case 'plan': renderPlan(root); break;
     case 'settings': renderSettings(root); break;
     case 'about': renderAbout(root); break;
@@ -39,7 +41,7 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (['TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
   if (document.activeElement?.tagName === 'INPUT' && document.activeElement.type !== 'radio' && document.activeElement.type !== 'checkbox' && !document.activeElement.classList.contains('typed-input')) return;
-  const handled = (current === 'skill' || current === 'mixed') ? practiceKey(e) : current === 'check' ? checkKey(e) : false;
+  const handled = (current === 'skill' || current === 'mixed') ? practiceKey(e) : current === 'check' ? checkKey(e) : current === 'learn' ? learnKey(e) : false;
   if (handled) e.preventDefault();
 });
 

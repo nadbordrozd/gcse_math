@@ -1,6 +1,7 @@
 // Renders one generated question and handles answering, hints and the worked solution.
 import { checkTyped } from '../core.js';
 import { math, esc, typedHelp } from './ui.js';
+import { learnLinksFor } from '../registry.js';
 
 /** Should this question be answered by typing? */
 export const useTyped = (q, mode) => Boolean(q.typed) && mode === 'typed';
@@ -12,9 +13,11 @@ export function optionsClass(q) {
   return longest > 26 ? 'options long' : 'options';
 }
 
-export function solutionHTML(q, { open = true } = {}) {
+export function solutionHTML(q, { open = true, learn = true } = {}) {
   const steps = q.solution.map((s) => `<li>${math(s)}</li>`).join('');
-  return `<details class="solution" ${open ? 'open' : ''}><summary>How to solve it</summary><ol>${steps}</ol></details>`;
+  const tuts = learn ? learnLinksFor(q.skill_id, q.archetype_id) : [];
+  const learnLine = tuts.length ? `<p class="learn-more">📖 New to this? ${tuts.map((t) => `<a href="#/learn/${t.id}">${esc(t.title)}</a>`).join(' · ')}</p>` : '';
+  return `<details class="solution" ${open ? 'open' : ''}><summary>How to solve it</summary><ol>${steps}</ol>${learnLine}</details>`;
 }
 
 export function questionBodyHTML(q, { number = null, marks = null } = {}) {
@@ -80,7 +83,7 @@ export function mountQuestion(root, q, opts = {}) {
     const answerLine = good && !typed ? '' : `<div class="right-answer">Answer: ${math(q.answerText)}</div>`;
     feedback.hidden = false;
     feedback.className = `feedback ${good ? 'good' : 'bad'}`;
-    feedback.innerHTML = `${msg}${answerLine}${opts.solution === false ? '' : solutionHTML(q, { open: !good })}`;
+    feedback.innerHTML = `${msg}${answerLine}${opts.solution === false ? '' : solutionHTML(q, { open: !good, learn: opts.learn !== false })}`;
     opts.onAnswer?.({ outcome, response });
   };
 

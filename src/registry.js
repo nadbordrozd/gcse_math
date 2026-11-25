@@ -5,9 +5,13 @@ export const LOAD_ERRORS = {};
 const loaded = await Promise.all(MODULE_NAMES.map(async (name) => {
   let units = [];
   let generators = [];
+  let tutorials = [];
   try { ({ units } = await import(`./modules/${name}/skills.js`)); } catch (e) { LOAD_ERRORS[`${name}/skills`] = e; }
   try { ({ generators } = await import(`./modules/${name}/generators.js`)); } catch (e) { LOAD_ERRORS[`${name}/generators`] = e; }
-  return [name, { units, generators }];
+  try { ({ tutorials = [] } = await import(`./modules/${name}/tutorials.js`)); } catch (e) {
+    if (!/Cannot find module|Failed to fetch|ERR_MODULE_NOT_FOUND|404/.test(String(e?.message || e) + (e?.code || ''))) LOAD_ERRORS[`${name}/tutorials`] = e;
+  }
+  return [name, { units, generators, tutorials }];
 }));
 for (const [k, e] of Object.entries(LOAD_ERRORS)) console.error(`Failed to load module ${k}:`, e?.message || e);
 
@@ -50,4 +54,32 @@ export function ancestors(id, seen = new Set()) {
 export function descendants(id, seen = new Set()) {
   for (const d of DEPENDENTS[id] || []) if (!seen.has(d)) { seen.add(d); descendants(d, seen); }
   return seen;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tutorials ("Learn" pages)                                           */
+/* ------------------------------------------------------------------ */
+
+export const TUTORIALS = Object.entries(MODULES).flatMap(([module, m]) => (m.tutorials || []).map((t) => ({ ...t, module })));
+export const TUTORIAL = Object.fromEntries(TUTORIALS.map((t) => [t.id, t]));
+/** skill id -> tutorials that teach it (first one is the main page). */
+export const TUTORIALS_BY_SKILL = {};
+for (const t of TUTORIALS) for (const s of t.skills || []) (TUTORIALS_BY_SKILL[s] ||= []).push(t);
+
+/** Resolve a tutorial id or a skill id to a tutorial (or null). */
+export function resolveTutorial(id) {
+  return TUTORIAL[id] || TUTORIALS_BY_SKILL[id]?.[0] || null;
+}
+/** Tutorials to suggest for a question: the archetype's own `learn` list, else the skill's tutorials. */
+export function learnLinksFor(skillId, archetypeId = null) {
+  const g = archetypeId ? GENERATOR[archetypeId] : null;
+  const ids = g?.learn?.length ? g.learn : (TUTORIALS_BY_SKILL[skillId] || []).map((t) => t.id);
+  const seen = new Set();
+  return ids.map(resolveTutorial).filter((t) => t && !seen.has(t.id) && seen.add(t.id));
+}
+/** Tutorials listing `id` (or one of its skills) as a prerequisite. */
+export function tutorialDependents(id) {
+  const t = TUTORIAL[id];
+  if (!t) return [];
+  return TUTORIALS.filter((o) => o.id !== id && (o.prereqs || []).some((p) => resolveTutorial(p)?.id === id));
 }

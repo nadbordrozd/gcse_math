@@ -1,17 +1,25 @@
 // Small DOM and rendering helpers shared by the views.
-import { AREAS } from '../registry.js';
+import { AREAS, resolveTutorial } from '../registry.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const texCache = new Map();
-/** Render a generator string: HTML with $TeX$ segments. */
+/** Turn [[id]] / [[id|text]] cross-links into links to Learn pages (outside maths only). */
+export function links(html) {
+  return String(html).replace(/\[\[([a-z0-9-]+)(?:\|([^\]]+))?\]\]/g, (m, id, label) => {
+    const t = resolveTutorial(id);
+    if (!t) return label || id;
+    return `<a class="learn-link" href="#/learn/${t.id}">${label || t.title}</a>`;
+  });
+}
+/** Render a generator or tutorial string: HTML with $TeX$ segments and [[links]]. */
 export function math(html) {
   const parts = String(html ?? '').split('$');
-  if (parts.length === 1 || !window.katex) return parts.join('');
+  if (parts.length === 1 || !window.katex) return links(parts.join(''));
   return parts.map((part, i) => {
-    if (i % 2 === 0) return part;
+    if (i % 2 === 0) return links(part);
     if (texCache.has(part)) return texCache.get(part);
     let out;
     try { out = window.katex.renderToString(part, { throwOnError: false, output: 'html' }); } catch { out = esc(part); }

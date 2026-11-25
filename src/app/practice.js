@@ -1,5 +1,5 @@
 // Practice sessions: one skill (#/skill/<id>) or mixed review (#/mixed).
-import { SKILL, UNIT, GENERATORS_BY_SKILL, GENERATOR, DEPENDENTS } from '../registry.js';
+import { SKILL, UNIT, GENERATORS_BY_SKILL, GENERATOR, DEPENDENTS, TUTORIALS_BY_SKILL } from '../registry.js';
 import { generateSafely } from '../core.js';
 import { state, save, points, recordAnswer, difficultyFor, skillStatus, MASTERY_POINTS, CORRECT_POINTS, HINT_POINTS } from './state.js';
 import { esc, gradeBadge, higherBadge, progressBar, STATUS, areaStyle, AREA, isDev, randomSeed, toast } from './ui.js';
@@ -58,7 +58,7 @@ export function renderPractice(root, skillId) {
         <nav class="crumbs"><a href="#/">Topics</a>${unit ? ` › <a href="#/" data-open-unit="${unit.id}">${esc(unit.title)}</a>` : ''}</nav>
         <div class="practice-title">
           ${mixed ? '<h1>🔀 Mixed practice</h1><p class="muted">Questions from skills you have started – great for keeping them fresh.</p>'
-    : `<h1>${gradeBadge(skill.grade)} ${esc(skill.title)} ${higherBadge(skill)}</h1><p class="muted">${esc(skill.summary)}</p>`}
+    : `<h1>${gradeBadge(skill.grade)} ${esc(skill.title)} ${higherBadge(skill)}</h1><p class="muted">${esc(skill.summary)}</p>${(TUTORIALS_BY_SKILL[skill.id] || []).slice(0, 2).map((t) => `<a class="btn small learn-btn" href="#/learn/${t.id}">📖 Learn: ${esc(t.title)}</a>`).join(' ')}`}
         </div>
         ${mixed ? '' : `<div class="skill-progress">
           <div class="sp-row"><span class="sp-status"></span><span class="sp-points"></span><span class="sp-level"></span></div>
