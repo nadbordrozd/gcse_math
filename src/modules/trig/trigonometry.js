@@ -98,6 +98,7 @@ export const sohSide = gen('trig-soh-side', 'trig-sohcahtoa-side', (rng, d) => {
 }, { title: 'Find a side with sin, cos or tan' });
 
 export const sohWhich = gen('trig-soh-which', 'trig-sohcahtoa-side', (rng, d) => {
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
   const th = trigAngle(rng);
   const unit = 'cm';
   const [kr, ur] = pick(rng, d === 'easy' ? [['hyp', 'opp'], ['hyp', 'adj'], ['adj', 'opp']] : [['hyp', 'opp'], ['hyp', 'adj'], ['adj', 'opp'], ['opp', 'hyp'], ['adj', 'hyp'], ['opp', 'adj']]);
@@ -149,7 +150,53 @@ const SIDE_CONTEXTS = [
   { kr: 'hyp', ur: 'opp', unit: 'm', k: [100, 800], ang: [3, 10], make: (k, a) => `A straight road up a hill is ${k} m long and slopes at ${a}° to the horizontal. How much height does a cyclist gain by riding up the road?` },
 ];
 
+// Hard two-stage contexts: each returns { prompt, value, unit, wrong, sol } given (rng, r).
+const HARD_SIDE_CONTEXTS = [
+  (rng) => {
+    const eye = pick(rng, [1.5, 1.6, 1.7]); const dd = int(rng, 12, 40); const th = trigAngle(rng, 25, 55);
+    const v = dd * tanD(th) + eye;
+    return { prompt: `${pick(rng, ['Maya', 'Priya', 'Isla', 'Zara'])} stands ${dd} m from the foot of a vertical tree on level ground. Her eyes are ${num(eye)} m above the ground. The angle of elevation of the top of the tree from her eyes is ${th}°. How tall is the tree?`, unit: 'm', value: v,
+      wrong: [dd * tanD(th), dd * tanD(th) - eye, dd * sinD(th) + eye, dd / tanD(th) + eye],
+      sol: [`From her eyes: the height above eye level is opposite the ${th}° angle and the ${dd} m is adjacent, so use tan.`, `Height above eye level $= ${dd} \\times \\tan ${At(th)} = ${approxT(dd * tanD(th))}$ m`, `Add her eye height: $${approxT(dd * tanD(th))} + ${tnum(eye)} = ${approxT(v)}$ m`] };
+  },
+  (rng) => {
+    const h = int(rng, 30, 90); const a1 = trigAngle(rng, 25, 40); const a2 = a1 + int(rng, 8, 20);
+    const near = h / tanD(a2); const far = h / tanD(a1); const v = far - near;
+    return { prompt: `From the top of a lighthouse ${h} m above sea level, the angles of depression of two boats are ${a1}° and ${a2}°. The boats are in a straight line with the foot of the lighthouse. How far apart are the boats?`, unit: 'm', value: v,
+      wrong: [far + near, h * tanD(a2) - h * tanD(a1), far, h / tanD(a2 - a1)],
+      sol: [`The angles of depression equal the angles of elevation from the boats (alternate angles). Each boat gives a right-angled triangle with the ${h} m height opposite the angle.`, `Further boat: $\\frac{${h}}{\\tan ${At(a1)}} = ${approxT(far)}$ m. Nearer boat: $\\frac{${h}}{\\tan ${At(a2)}} = ${approxT(near)}$ m.`, `Distance apart $= ${approxT(far)} - ${approxT(near)} = ${approxT(v)}$ m`] };
+  },
+  (rng) => {
+    const L0 = int(rng, 25, 70); const th = trigAngle(rng, 30, 65); const hand = pick(rng, [1.2, 1.4, 1.5]);
+    const v = L0 * sinD(th) + hand;
+    return { prompt: `A kite is on a straight string ${L0} m long. The string makes an angle of ${th}° with the horizontal and is held ${num(hand)} m above the ground. How high is the kite above the ground?`, unit: 'm', value: v,
+      wrong: [L0 * sinD(th), L0 * cosD(th) + hand, L0 * tanD(th) + hand, L0 * sinD(th) - hand],
+      sol: [`The string is the hypotenuse; the height above the hand is opposite the ${th}° angle, so use sin.`, `Height above the hand $= ${L0} \\times \\sin ${At(th)} = ${approxT(L0 * sinD(th))}$ m`, `Add the height of the hand: $${approxT(L0 * sinD(th))} + ${tnum(hand)} = ${approxT(v)}$ m`] };
+  },
+  (rng) => {
+    const L0 = roundTo(4 + 4 * rng(), 1); const t1 = trigAngle(rng, 55, 65); const t2 = t1 + int(rng, 8, 15);
+    const v = L0 * sinD(t2) - L0 * sinD(t1);
+    return { prompt: `A ladder ${num(L0)} m long leans against a vertical wall at ${t1}° to the ground. It is moved so that it makes an angle of ${t2}° with the ground. How much higher up the wall does the top of the ladder now reach?`, unit: 'm', value: v,
+      wrong: [L0 * sinD(t2), L0 * cosD(t1) - L0 * cosD(t2), L0 * sinD(t2 - t1), L0 * (tanD(t2) - tanD(t1))],
+      sol: [`In each position the ladder is the hypotenuse and the height up the wall is opposite the angle: height $= ${tnum(L0)}\\sin\\theta$.`, `Before: $${tnum(L0)} \\sin ${At(t1)} = ${approxT(L0 * sinD(t1))}$ m. After: $${tnum(L0)} \\sin ${At(t2)} = ${approxT(L0 * sinD(t2))}$ m.`, `Difference $= ${approxT(v)}$ m`] };
+  },
+];
+
 export const sohSideWord = gen('trig-soh-side-word', 'trig-sohcahtoa-side', (rng, d) => {
+  if (d === 'hard' && chance(rng, 0.6)) {
+    const hc = pick(rng, HARD_SIDE_CONTEXTS)(rng);
+    const r = roundingFor(rng, d);
+    const f = (v) => `${r.fmt(v)} ${hc.unit}`;
+    return {
+      prompt: `${hc.prompt} ${r.text}`,
+      answer: f(hc.value),
+      distractors: fmtVals(hc.wrong, f),
+      typed: r.typed(hc.value),
+      calculator: true,
+      hint: 'Sketch it. Which right-angled triangle can you solve first?',
+      solution: [...hc.sol, `Answer: <b>${f(hc.value)}</b> (${r.short})`],
+    };
+  }
   const ctx = pick(rng, SIDE_CONTEXTS);
   let th = int(rng, ctx.ang[0], ctx.ang[1]);
   if (th === 45 || th === 30 || th === 60) th += 1;
@@ -229,7 +276,7 @@ function angleWrong(fn, ratio, th) {
     ...['sin', 'cos'].filter((f) => f !== fn && ratio <= 1).map((f) => INV[f](ratio)),
     fn !== 'tan' ? atanD(ratio) : NaN,
     atanD(1 / ratio),
-    (th * Math.PI) / 180, // calculator in radians gives the answer in radians
+    INV[fn](Math.min(1, roundTo(ratio, 1))), // rounded the ratio too early
     fn === 'tan' ? NaN : INV[fn](Math.min(1, 1 / ratio)),
   ];
 }
@@ -282,7 +329,7 @@ const ANGLE_CONTEXTS = [
   { fn: 'tan', unit: 'm', top: [25, 60], bottom: [80, 300], make: (t, b) => `The top of a cliff is ${t} m above sea level. A boat is ${b} m from the foot of the cliff. Work out the angle of depression of the boat from the top of the cliff.`, note: 'The angle of depression from the top equals the angle of elevation from the boat (alternate angles).' },
   { fn: 'sin', unit: 'km', top: [0.5, 1.8], bottom: [4, 9], make: (t, b) => `After flying ${b} km along a straight climbing path, a plane is ${t} km above the runway. Work out the angle at which the plane is climbing.` },
   { fn: 'sin', unit: 'm', top: [4, 9], bottom: [12, 25], make: (t, b) => `An escalator is ${b} m long and rises a vertical height of ${t} m. Work out the angle between the escalator and the horizontal.` },
-  { fn: 'tan', unit: 'm', top: [1], bottom: [5, 12], make: (t, b) => `A road sign says that a hill has a gradient of 1 in ${b} (the road rises 1 m for every ${b} m horizontally). Work out the angle the road makes with the horizontal.`, intB: true },
+  { fn: 'tan', unit: 'm', top: [1], bottom: [3, 8], make: (t, b) => `A road sign says that a hill has a gradient of 1 in ${b} (the road rises 1 m for every ${b} m horizontally). Work out the angle the road makes with the horizontal.`, intB: true },
   { fn: 'tan', unit: 'm', top: [4, 15], bottom: [3, 25], make: (t, b) => `A vertical flagpole ${t} m tall casts a shadow ${b} m long on flat ground. Work out the angle of elevation of the sun.` },
   { fn: 'sin', unit: 'm', top: [1.2, 2.5], bottom: [3, 5], make: (t, b) => `A straight slide is ${b} m long. The top of the slide is ${t} m above the ground. Work out the angle between the slide and the ground.` },
   { fn: 'sin', unit: 'm', top: [3, 8], bottom: [6, 12], make: (t, b) => `A rope ${b} m long is tied to the top of a vertical pole ${t} m tall and pegged tight to the flat ground. Work out the angle between the rope and the ground.` },
@@ -294,7 +341,8 @@ const ANGLE_CONTEXTS = [
 
 export const sohAngleWord = gen('trig-soh-angle-word', 'trig-sohcahtoa-angle', (rng, d) => {
   const ctx = pick(rng, ANGLE_CONTEXTS);
-  const rv = (range, isInt) => (range.length === 1 ? range[0] : isInt || (d !== 'hard' && range[1] - range[0] >= 6) ? int(rng, Math.ceil(range[0]), Math.floor(range[1])) : roundTo(range[0] + rng() * (range[1] - range[0]), 1));
+  const rv = (range, isInt) => (range.length === 1 ? range[0] : isInt || (d !== 'hard' && range[1] - range[0] >= 6) ? int(rng, Math.ceil(range[0]), Math.floor(range[1])) : roundTo(range[0] + rng() * (range[1] - range[0]), range[1] >= 100 ? 0 : 1));
+  if (d === 'hard') rng();
   let t; let b;
   for (let i = 0; i < 50; i += 1) {
     t = rv(ctx.top); b = rv(ctx.bottom, ctx.intB);
@@ -358,7 +406,7 @@ export const sohAngleTwoStep = gen('trig-soh-angle-two-step', 'trig-sohcahtoa-an
       prompt: 'This shape is made from two right-angled triangles and a rectangle.<br>Work out the size of angle $x$. Give your answer to 1 decimal place.',
       visual: vis,
       answer: f(x),
-      distractors: fmtVals([90 - x, acosD(h / q > 1 ? 1 : h / q), atanD(h / q), asinD(Math.min(1, p / q)), (x * Math.PI) / 180, asinD(Math.min(1, p * sinD(alpha) / q))], f),
+      distractors: fmtVals([90 - x, acosD(h / q > 1 ? 1 : h / q), atanD(h / q), asinD(Math.min(1, p / q)), asinD(Math.min(1, roundTo(h / q, 1))), asinD(Math.min(1, p * sinD(alpha) / q))], f),
       typed: DP1.typed(x),
       calculator: true,
       solution: [
@@ -378,7 +426,7 @@ export const sohAngleTwoStep = gen('trig-soh-angle-two-step', 'trig-sohcahtoa-an
     prompt: '$DBC$ is a straight line and $AB$ is perpendicular to $DC$.<br>Work out the size of angle $x$. Give your answer to 1 decimal place.',
     visual: vis,
     answer: f(x),
-    distractors: fmtVals([90 - x, atanD(ad / bc), asinD(Math.min(1, ab / ad)), atanD(db / bc), (x * Math.PI) / 180, acosD(Math.min(1, bc / ad))], f),
+    distractors: fmtVals([90 - x, atanD(ad / bc), asinD(Math.min(1, ab / ad)), atanD(db / bc), atanD(roundTo(ab / bc, 1)), acosD(Math.min(1, bc / ad))], f),
     typed: DP1.typed(x),
     calculator: true,
     solution: [
@@ -428,8 +476,8 @@ const evKey = (e) => evNum(e).toFixed(9);
 const ALL_EXACT = [EV(0, 1), EV(1, 2), EV(1, 2, 2), EV(1, 2, 3), EV(1, 1), EV(1, 1, 3), EV(1, 3, 3), EV(1, 1, 2), EV(3, 2), EV(2, 1)];
 
 export const exactRecall = gen('trig-exact-recall', 'trig-exact-values', (rng, d) => {
-  const mode = d === 'easy' ? pick(rng, ['value', 'value', 'same']) : pick(rng, ['value', 'value', 'angle', 'same']);
-  const angles = d === 'easy' ? [30, 60, 45] : [0, 30, 45, 60, 90];
+  const mode = d === 'easy' ? pick(rng, ['value', 'value', 'same']) : d === 'medium' ? pick(rng, ['value', 'value', 'angle', 'same']) : pick(rng, ['angle', 'same', 'value']);
+  const angles = d === 'easy' ? [30, 60, 45] : d === 'medium' ? [0, 30, 45, 60, 90] : [0, 90, 30, 60];
   if (mode === 'same') {
     // Which expression has the same value as fn(ang)?
     const all = [];
@@ -464,7 +512,7 @@ export const exactRecall = gen('trig-exact-recall', 'trig-exact-values', (rng, d
     const other = fn === 'sin' ? 'cos' : fn === 'cos' ? 'sin' : 'tan';
     const swapAng = ang === 30 ? 60 : ang === 60 ? 30 : ang;
     const tempting = [TABLE[other][ang], TABLE[fn][swapAng], ...(fn === 'tan' ? [TABLE.tan[swapAng]] : [TABLE.tan[ang]])].filter(Boolean);
-    const ds = [...tempting, ...shuffle(rng, ALL_EXACT)].filter((e) => evKey(e) !== evKey(val));
+    const ds = [...tempting, ...shuffle(rng, ALL_EXACT)].filter((e) => evKey(e) !== evKey(val) && (fn === 'tan' || evNum(e) <= 1 + 1e-9));
     const uniq = []; const seen = new Set([evKey(val)]);
     for (const e of ds) if (!seen.has(evKey(e))) { seen.add(evKey(e)); uniq.push(tex(e)); }
     return {
@@ -572,18 +620,19 @@ export const exactExpr = gen('trig-exact-expression', 'trig-exact-values', (rng,
     distractors: ds,
     solution: [
       `Replace each trig value by its exact value: ${parts.map((t) => `$\\${t.fn} ${At(t.ang)} = ${evTex(t.v, { tan30: true })}$`).join(', ')}.`,
-      `Then do the arithmetic${e.kind === 'prod' ? ' (multiply tops and bottoms; $\\sqrt{3} \\times \\sqrt{3} = 3$)' : e.kind === 'sq' ? ' (square first, then multiply)' : ''}: $${e.tex} = ${evTex(e.value)}$`,
+      `Then do the arithmetic${e.kind === 'prod' ? (e.a.v.r > 1 && e.a.v.r === e.b.v.r ? ` (multiply tops and bottoms; $\\sqrt{${e.a.v.r}} \\times \\sqrt{${e.a.v.r}} = ${e.a.v.r}$)` : ' (multiply tops and bottoms)') : e.kind === 'sq' ? ' (square first, then multiply)' : ''}: $${e.tex} = ${evTex(e.value)}$`,
       `Answer: ${tex(e.value)}`,
     ],
   };
 }, { title: 'Evaluate expressions with exact trig values' });
 
 export const exactTriangle = gen('trig-exact-triangle', 'trig-exact-values', (rng, d) => {
-  const ang = pick(rng, d === 'easy' ? [30, 60] : [30, 45, 60]);
   // Cases (known role -> unknown role)
   const cases = d === 'easy' ? [['hyp', 'opp'], ['hyp', 'adj']] : d === 'medium' ? [['hyp', 'opp'], ['hyp', 'adj'], ['adj', 'opp'], ['opp', 'hyp']] : [['opp', 'hyp'], ['adj', 'hyp'], ['opp', 'adj'], ['adj', 'opp']];
   const [kr, ur] = pick(rng, cases);
   const fn = RATIO[`${kr},${ur}`];
+  // hard: only angles whose exact value involves a root, so the answer is a surd
+  const ang = pick(rng, d === 'easy' ? [30, 60] : d === 'medium' ? [30, 45, 60] : [30, 45, 60].filter((t) => TABLE[fn][t].r > 1));
   const numerator = ur === NUM_ROLE[fn];
   const tv = TABLE[fn][ang];
   // Choose known k so the answer is q√r with integer q.
@@ -619,7 +668,9 @@ export const exactTriangle = gen('trig-exact-triangle', 'trig-exact-values', (rn
       `From the $${At(ang)}$ angle, $x$ is the ${ROLE_NAME[ur]} and ${k} cm is the ${ROLE_NAME[kr]} → ${MNEMONIC[fn]}.`,
       `Exact value: $\\${fn} ${At(ang)} = ${evTex(tv, { tan30: true })}$.`,
       numerator ? `$x = ${k} \\times \\${fn} ${At(ang)} = ${k} \\times ${evTex(tv, { tan30: true })} = ${evTex(ans)}$`
-        : `$x = \\frac{${k}}{\\${fn} ${At(ang)}} = ${k} \\div ${evTex(tv, { tan30: true })} = ${evTex(ans)}$${tv.r > 1 ? ' (rationalise: multiply top and bottom by $\\sqrt{' + tv.r + '}$)' : ''}`,
+        : (tv.r > 1 && !(fn === 'tan' && ang === 30)
+          ? `$x = \\frac{${k}}{\\${fn} ${At(ang)}} = ${k} \\div ${evTex(tv)} = \\frac{${k * tv.q.d}}{${tv.q.n === 1 ? '' : tv.q.n}\\sqrt{${tv.r}}}$. Rationalise (multiply top and bottom by $\\sqrt{${tv.r}}$): $\\frac{${k * tv.q.d}\\sqrt{${tv.r}}}{${tv.q.n * tv.r}} = ${evTex(ans)}$`
+          : `$x = \\frac{${k}}{\\${fn} ${At(ang)}} = ${k} \\div ${evTex(tv, { tan30: true })} = ${evTex(ans)}$`),
       `Answer: ${tex(ans)}`,
     ],
   };

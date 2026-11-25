@@ -1,5 +1,5 @@
 // Column vectors and vector geometry.
-import { gen, pick, int, intExcept, shuffle, num, tnum, chance, frac, Frac } from '../../core.js';
+import { gen, pick, int, intExcept, shuffle, num, tnum, chance, frac, Frac, gcd, lcm, terms, signed, paren } from '../../core.js';
 import { fig, vectorGrid, ACCENT, ACCENT2 } from './diagrams.js';
 
 /* ------------------------------------------------------------------ */
@@ -43,9 +43,9 @@ export const cvCombine = gen('trig-cv-combine', 'trig-column-vectors', (rng, d) 
     typed: { kind: 'coord', x: r[0], y: r[1] },
     hint: 'Multiply each component by the number in front, then add the top numbers and the bottom numbers separately.',
     solution: [
-      ...(p !== 0 && p !== 1 ? [`$${p}\\mathbf{a} = ${cv(p * a[0], p * a[1])}$ (multiply <b>both</b> numbers by ${p})`] : []),
-      ...(q !== 0 && Math.abs(q) !== 1 ? [`$${Math.abs(q)}\\mathbf{b} = ${cv(Math.abs(q) * b[0], Math.abs(q) * b[1])}$`] : []),
-      `${q < 0 ? 'Subtract' : 'Add'} the top numbers and the bottom numbers: $\\begin{pmatrix} ${tnum(p * a[0])} ${q < 0 ? '-' : '+'} ${q < 0 ? `(${tnum(-q * b[0])})` : `(${tnum(q * b[0])})`} \\\\ ${tnum(p * a[1])} ${q < 0 ? '-' : '+'} ${q < 0 ? `(${tnum(-q * b[1])})` : `(${tnum(q * b[1])})`} \\end{pmatrix} = ${cv(r[0], r[1])}$`.replace(/\(([0-9]+)\)/g, '$1'),
+      ...(p !== 0 && p !== 1 ? [`$${coefTex(p)}\\mathbf{a} = ${cv(p * a[0], p * a[1])}$ (multiply <b>both</b> numbers by ${tnum(p)})`] : []),
+      ...(q !== 0 && Math.abs(q) !== 1 ? [`$${Math.abs(q)}\\mathbf{b} = ${cv(Math.abs(q) * b[0], Math.abs(q) * b[1])}$ (multiply <b>both</b> numbers by ${Math.abs(q)})`] : []),
+      ...(p !== 0 && q !== 0 ? [`${q < 0 ? 'Subtract' : 'Add'} the top numbers and the bottom numbers: $\\begin{pmatrix} ${tnum(p * a[0])} ${q < 0 ? '-' : '+'} ${paren(Math.abs(q) * b[0])} \\\\ ${tnum(p * a[1])} ${q < 0 ? '-' : '+'} ${paren(Math.abs(q) * b[1])} \\end{pmatrix} = ${cv(r[0], r[1])}$`] : []),
       `Answer: ${cvo(r)}`,
     ],
   };
@@ -97,8 +97,10 @@ export const cvSolve = gen('trig-cv-solve', 'trig-column-vectors', (rng, d) => {
       distractors: [opt(n, m), opt(-m, n), opt(m, -n), opt(-m, -n), opt(m + 1, n - 1), opt(m - 1, n + 1)].filter((s) => s !== opt(m, n)),
       solution: [
         `Top row: $${a[0]}m ${b[0] < 0 ? '-' : '+'} ${Math.abs(b[0])}n = ${v[0]}$. Bottom row: $${a[1]}m ${b[1] < 0 ? '-' : '+'} ${Math.abs(b[1])}n = ${v[1]}$.`,
-        'Solve these simultaneous equations (eliminate one letter).',
-        `Check: $${m} ${cv(a[0], a[1])} + ${n < 0 ? `(${n})` : n} ${cv(b[0], b[1])} = ${cv(v[0], v[1])}$ ✓`,
+        `Make the $m$ terms match: multiply the top row by $${tnum(a[1])}$ and the bottom row by $${tnum(a[0])}$: $${terms([[a[0] * a[1], 'm'], [b[0] * a[1], 'n']])} = ${tnum(v[0] * a[1])}$ and $${terms([[a[0] * a[1], 'm'], [b[1] * a[0], 'n']])} = ${tnum(v[1] * a[0])}$.`,
+        `Subtract: $${terms([[b[0] * a[1] - b[1] * a[0], 'n']])} = ${tnum(v[0] * a[1] - v[1] * a[0])}$, so $n = ${tnum(n)}$.`,
+        `Substitute into the top row: $${terms([[a[0], 'm']])} ${signed(b[0] * n)} = ${tnum(v[0])}$, so $${terms([[a[0], 'm']])} = ${tnum(v[0] - b[0] * n)}$ and $m = ${tnum(m)}$.`,
+        `Check: $${tnum(m)} ${cv(a[0], a[1])} + ${paren(n)} ${cv(b[0], b[1])} = ${cv(v[0], v[1])}$ ✓`,
         `Answer: ${opt(m, n)}`,
       ],
     };
@@ -116,14 +118,14 @@ export const cvSolve = gen('trig-cv-solve', 'trig-column-vectors', (rng, d) => {
     solution: [
       `Rearrange: $${q === 1 ? '' : q === -1 ? '-' : q}\\mathbf{c} = \\mathbf{b} - ${combTex(p, 0)}$`,
       `$\\mathbf{b} - ${combTex(p, 0)} = ${cv(bb[0], bb[1])} - ${cv(p * a[0], p * a[1])} = ${cv(bb[0] - p * a[0], bb[1] - p * a[1])}$`,
-      ...(q !== 1 ? [`Divide by ${q}: $\\mathbf{c} = ${cv(c[0], c[1])}$`] : []),
+      ...(q === -1 ? [`Multiply by $-1$ (change every sign): $\\mathbf{c} = ${cv(c[0], c[1])}$`] : q !== 1 ? [`Divide by ${q}: $\\mathbf{c} = ${cv(c[0], c[1])}$`] : []),
       `Answer: ${cvo(c)}`,
     ],
   };
 }, { title: 'Solve vector equations' });
 
 export const cvTranslate = gen('trig-cv-translate', 'trig-column-vectors', (rng, d) => {
-  const mode = d === 'easy' ? 'reverse' : pick(rng, ['reverse', 'points', 'points']);
+  const mode = d === 'easy' ? 'reverse' : d === 'medium' ? pick(rng, ['reverse', 'points']) : 'points';
   if (mode === 'reverse') {
     const v = [intExcept(rng, -7, 7, [0]), intExcept(rng, -7, 7, [0])];
     const r = [-v[0], -v[1]];
@@ -174,22 +176,45 @@ function vtex(u, names = ['\\mathbf{a}', '\\mathbf{b}']) {
 const vopt = (u, names) => `$${vtex(u, names)}$`;
 /** Typed-answer forms for an expression in a and b. */
 function vAccept(u, letters = ['a', 'b']) {
-  const forms = (c, s) => {
+  // Every reasonable way of typing the expression: expanded (either order) and factorised.
+  const termForms = (c, sym) => {
     if (c.n === 0) return [''];
     const neg = c.n < 0; const a = neg ? c.neg() : c; const sg = neg ? '-' : '';
-    if (a.d === 1) return [`${sg}${a.n === 1 ? '' : a.n}${s}`];
-    const out = [`${sg}${a.n}/${a.d}${s}`, `${sg}(${a.n}/${a.d})${s}`, `${sg}${a.n}${s}/${a.d}`];
-    const dec = a.n / a.d; if (Number.isInteger(dec * 100)) out.push(`${sg}${dec}${s}`);
+    if (a.d === 1) return a.n === 1 ? [`${sg}${sym}`, `${sg}1${sym}`] : [`${sg}${a.n}${sym}`, `${sg}${a.n}*${sym}`];
+    const top = a.n === 1 ? '' : a.n;
+    const out = [`${sg}${a.n}/${a.d}${sym}`, `${sg}(${a.n}/${a.d})${sym}`, `${sg}${top}${sym}/${a.d}`, `${sg}${a.n}${sym}/${a.d}`, `${sg}${a.n}/${a.d}*${sym}`];
+    const dec = a.n / a.d;
+    if (Number.isInteger(dec * 100)) { out.push(`${sg}${dec}${sym}`); if (dec < 1) out.push(`${sg}${String(dec).replace(/^0/, '')}${sym}`); }
     return out;
   };
-  const A = forms(u.p, letters[0]); const B = forms(u.q, letters[1]);
-  const out = new Set();
-  for (const x of A) for (const y of B) {
-    if (!x) out.add(y);
-    else if (!y) out.add(x);
-    else {
-      out.add(`${x}${y.startsWith('-') ? '' : '+'}${y}`);
-      out.add(`${y}${x.startsWith('-') ? '' : '+'}${x}`);
+  const expanded = (p, q) => {
+    const A = termForms(p, letters[0]); const B = termForms(q, letters[1]); const out = [];
+    for (const x of A) for (const y of B) {
+      if (!x) out.push(y);
+      else if (!y) out.push(x);
+      else { out.push(`${x}${y.startsWith('-') ? '' : '+'}${y}`, `${y}${x.startsWith('-') ? '' : '+'}${x}`); }
+    }
+    return out;
+  };
+  const out = new Set(expanded(u.p, u.q));
+  if (u.p.n !== 0 && u.q.n !== 0) {
+    // factor out f = N/D (and -f) where D = lcm of denominators, N = gcd of the scaled numerators
+    const D = lcm(u.p.d, u.q.d);
+    const pn = (u.p.n * D) / u.p.d; const qn = (u.q.n * D) / u.q.d;
+    const N = gcd(Math.abs(pn), Math.abs(qn));
+    for (const sgn of [1, -1]) {
+      const f = frac(sgn * N, D);
+      if (f.n === 1 && f.d === 1) continue;
+      const inner = expanded(u.p.div(f), u.q.div(f)).filter((t) => !/[/.*]/.test(t));
+      const fa = Math.abs(f.n); const fs = f.n < 0 ? '-' : '';
+      for (const t of inner) {
+        if (f.d === 1) { out.add(`${fs}${fa === 1 ? '' : fa}(${t})`); if (fa !== 1) out.add(`${fs}${fa}*(${t})`); }
+        else {
+          out.add(`${fs}${fa}/${f.d}(${t})`); out.add(`${fs}(${fa}/${f.d})(${t})`); out.add(`${fs}${fa}/${f.d}*(${t})`);
+          out.add(`${fs}${fa === 1 ? '' : fa}(${t})/${f.d}`);
+          const dec = fa / f.d; if (Number.isInteger(dec * 100)) out.add(`${fs}${dec}(${t})`);
+        }
+      }
     }
   }
   return [...out];
@@ -219,7 +244,7 @@ function vecShapeFig(pts, { polys = [], arrows = [], segs = [], dots = [], rotat
 }
 
 export const vgPath = gen('trig-vg-path', 'trig-vector-geometry', (rng, d) => {
-  const shape = d === 'easy' ? pick(rng, ['triangle', 'parallelogram']) : pick(rng, ['parallelogram', 'triangle', 'trapezium']);
+  const shape = d === 'easy' ? pick(rng, ['triangle', 'parallelogram']) : d === 'medium' ? pick(rng, ['parallelogram', 'triangle', 'trapezium']) : 'trapezium';
   const a = V(1, 0); const b = V(0, 1);
   let pts; let given; let questions; let polys; let arrows;
   if (shape === 'triangle') {
@@ -241,7 +266,9 @@ export const vgPath = gen('trig-vg-path', 'trig-vector-geometry', (rng, d) => {
     questions = [['OB', vadd(b, vmul(a, k))], ['AB', vadd(b, vmul(a, k - 1))], ['BA', vmul(vadd(b, vmul(a, k - 1)), -1)], ['AC', vsub(b, a)]];
     polys = ['OABC']; arrows = [{ from: 'O', to: 'A', label: 'a' }, { from: 'O', to: 'C', label: 'b' }, { from: 'C', to: 'B', label: `${k}a` }];
   }
-  const [qName, ans] = pick(rng, questions);
+  // easy: one-step routes; hard: the trapezium routes that need two or more vectors
+  const pool = d === 'hard' ? questions.filter(([, v]) => v.p.n !== 0 && v.q.n !== 0) : questions;
+  const [qName, ans] = pick(rng, pool.length ? pool : questions);
   const c = Object.values(pts).reduce((s, p) => [s[0] + p[0] / Object.keys(pts).length, s[1] + p[1] / Object.keys(pts).length], [0, 0]);
   const vis = vecShapeFig({ ...pts, _c: c }, { polys, arrows, rotate: pick(rng, [0, 0, 10, -10]) });
   const wrong = [vmul(ans, -1), V(ans.q, ans.p), vadd(ans, vmul(a, ans.p.n === 0 ? 1 : 0)), V(ans.p, ans.q.neg()), V(ans.p.neg(), ans.q), vadd(a, b), vsub(a, b), vsub(b, a), V(2, 1), V(1, 2)];
@@ -333,7 +360,7 @@ export const vgParallel = gen('trig-vg-parallel', 'trig-vector-geometry', (rng, 
     typed: { kind: 'number', value: kAns },
     solution: [
       'If $X$, $Y$ and $Z$ are on a straight line, $\\overrightarrow{XZ}$ is a multiple of $\\overrightarrow{XY}$ (they are parallel and share the point $X$).',
-      `Compare the $\\mathbf{a}$ parts: $${P} \\div ${p} = ${mlt}$, so $\\overrightarrow{XY} = ${mlt} \\times \\overrightarrow{XZ}$.`,
+      `Compare the $\\mathbf{a}$ parts: $${tnum(P)} \\div ${paren(p)} = ${tnum(mlt)}$, so $\\overrightarrow{XY} = ${mlt} \\times \\overrightarrow{XZ}$.`,
       `Then the $\\mathbf{b}$ parts must match too: $${Q} = ${mlt}k$, so $k = ${kAns}$.`,
       `Answer: <b>${kAns}</b>`,
     ],

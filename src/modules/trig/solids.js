@@ -12,7 +12,9 @@ const clampDims = (dims) => {
 
 /** Cuboid figure: labels { AB, BC, CG } (edge -> label), lines: extra segments, angle at A between AC and AG. */
 function cuboidFig({ w, d, h, labels = {}, diag = true, base = false, angle = null, width = 360, height = 250 }) {
-  const [dw, dd, dh] = clampDims([w, d * 1.15, h]);
+  let [dw, dd, dh] = clampDims([w, d * 1.15, h]);
+  // In this projection AG runs through F when width : height = 0.5 : 0.36; keep clear of that
+  if (Math.abs(dw / dh - 0.5 / 0.36) < 0.3) dw = dw / dh > 0.5 / 0.36 ? dh * 1.75 : dh * 1.05;
   const cb = cuboid(dw, dd, dh);
   return fig({
     pts: cb.pts, width, height, pad: 36,
@@ -23,8 +25,9 @@ function cuboidFig({ w, d, h, labels = {}, diag = true, base = false, angle = nu
       if (diag) out += g.seg('A', 'G', { width: 2.2, color: ACCENT });
       if (angle) out += g.angle('A', 'C', 'G', angle, { r: 30 });
       for (const [e, lab] of Object.entries(labels)) if (lab) out += g.side(e[0], e[1], lab, { inside: e === 'AB' ? 'E' : e === 'BC' ? 'A' : 'B' });
-      const dirs = { A: [-0.8, 0.6], B: [0.4, 1], C: [1, 0.25], D: [-0.9, -0.45], E: [-1, -0.3], F: [-0.3, -1], G: [0.7, -0.7], H: [-0.2, -1] };
+      const dirs = { A: [-0.8, 0.6], B: [0.4, 1], C: [1, 0.25], E: [-1, -0.3], F: [-0.3, -1], G: [0.7, -0.7], H: [-0.2, -1] };
       out += Object.entries(dirs).map(([v, dir]) => g.name(v, v, { dir, size: 14, offset: 4 })).join('');
+      out += g.freeName('D', 'D', { size: 14, offset: 3 });
       return out;
     },
   });
@@ -239,8 +242,9 @@ function prismFig({ base, height, l, labels = {}, line = null, angle = null, mid
       if (line) out += g.seg(line[0], line[1], { width: 2.2, color: ACCENT }) + g.seg('B', line[1], { dash: '5 4', width: 1.6, color: ACCENT });
       if (angle) out += g.angle(line[1], 'B', line[0], angle, { r: 30 });
       for (const [e, lab] of Object.entries(labels)) if (lab) out += g.side(e[0], e[1], lab, { inside: e === 'AB' ? 'C' : e === 'BC' ? 'A' : 'A' });
-      const dirs = { A: [-1, -0.2], B: [-0.7, 0.7], C: [0.3, 1], D: [0, -1], E: [-1, 0.4], F: [1, 0] };
+      const dirs = { A: [-1, -0.2], B: [-0.7, 0.7], C: [0.3, 1], D: [0, -1], F: [1, 0] };
       out += Object.entries(dirs).map(([v, dir]) => g.name(v, v, { dir, size: 14, offset: 4 })).join('');
+      out += g.freeName('E', 'E', { size: 14, offset: 3 });
       if (mid) out += g.dot('M', 2.6) + g.name('M', 'M', { dir: [1, 0.4], size: 14, offset: 5 });
       return out;
     },

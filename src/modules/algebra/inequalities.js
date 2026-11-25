@@ -1,5 +1,5 @@
 // Inequalities: number lines, solving linear inequalities, integer solutions, quadratic inequalities.
-import { pick, int, intExcept, size, chance, tnum, shuffle, gcd } from '../../core.js';
+import { pick, int, intExcept, size, chance, tnum, shuffle, gcd, frac } from '../../core.js';
 import { numberLine, inequalityMark } from '../../svg.js';
 import { G as G0, P, br, tf, $, rat, tv, factored } from './lib.js';
 
@@ -13,8 +13,10 @@ const G = (id, skill, build, meta) => G0(id, skill, (rng, d) => {
 const SYM = { '<': '<', '>': '>', '<=': '\\leq', '>=': '\\geq' };
 const FLIP = { '<': '>', '>': '<', '<=': '>=', '>=': '<=' };
 const TOGGLE = { '<': '<=', '<=': '<', '>': '>=', '>=': '>' };
-const one = (v, op, b) => `${v} ${SYM[op]} ${tv(b)}`;
-const two = (a, opA, v, opB, b) => `${tv(a)} ${SYM[opA]} ${v} ${SYM[opB]} ${tv(b)}`;
+/** Number or Frac as TeX; decimals become fractions so every option uses the same form. */
+const tvF = (b) => (typeof b === 'number' && !Number.isInteger(b) ? frac(Math.round(b * 60), 60).tex() : tv(b));
+const one = (v, op, b) => `${v} ${SYM[op]} ${tvF(b)}`;
+const two = (a, opA, v, opB, b) => `${tvF(a)} ${SYM[opA]} ${v} ${SYM[opB]} ${tvF(b)}`;
 const range = (lo, hi) => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
 const listTex = (xs) => (xs.length ? xs.map((v) => tnum(v)).join(', \\ ') : '\\text{none}');
 
@@ -133,7 +135,7 @@ export const ineqWords = G('alg-ineq-words', 'alg-inequality-number-line', (rng,
     words = `$${v}$ is ${opL === '<' ? 'greater than' : 'greater than or equal to'} ${tnum(a)} and ${opR === '<' ? 'less than' : 'less than or equal to'} ${tnum(b)}.`;
     ans = two(a, opL, v, opR, b);
     dis = [two(a, TOGGLE[opL], v, TOGGLE[opR], b), two(a, opL, v, TOGGLE[opR], b), two(b, opL, v, opR, a), two(a, TOGGLE[opL], v, opR, b)];
-    why = `Write the smaller number on the left. "Greater than ${tnum(a)}" becomes $${tnum(a)} ${SYM[opL]} ${v}$ and "less than ${tnum(b)}" becomes $${v} ${SYM[opR]} ${tnum(b)}$; "or equal to" adds the line underneath ($\\leq$).`;
+    why = `Write the smaller number on the left. "${opL === '<' ? 'Greater than' : 'Greater than or equal to'} ${tnum(a)}" becomes $${tnum(a)} ${SYM[opL]} ${v}$ and "${opR === '<' ? 'less than' : 'less than or equal to'} ${tnum(b)}" becomes $${v} ${SYM[opR]} ${tnum(b)}$. "Or equal to" adds the line underneath ($\\leq$).`;
   } else if (phrase === 'max' || phrase === 'min') {
     words = `The ${phrase === 'max' ? 'largest' : 'smallest'} possible value of $${v}$ is ${tnum(a)}.`;
     ans = one(v, op, a);
@@ -197,7 +199,7 @@ export const ineqSolveLinear = G('alg-ineq-solve-linear', 'alg-solve-inequalitie
       steps = [`Subtract ${c} from both sides: $-${a}${x} ${SYM[op]} ${tnum(dd - c)}$`, `Divide both sides by $-${a}$. <b>Dividing by a negative number reverses the inequality sign</b>: $${one(x, finalOp, sol)}$`];
       wrongs = [one(x, op, sol), one(x, finalOp, -sv), one(x, op, -sv), one(x, finalOp, rat(dd + c, a))];
     } else {
-      const k = int(rng, 2, 4); const bb = intExcept(rng, -6, 6, [0]);
+      const k = int(rng, 2, 4); const bb = int(rng, 2, 8);
       // k(bb − x) ? r
       const r = k * (bb - sv); if (!Number.isInteger(r)) throw new Error('');
       lhs = `${k}(${bb} - ${x})`; rhs = tnum(r);

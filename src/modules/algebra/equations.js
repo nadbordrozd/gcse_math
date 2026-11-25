@@ -140,7 +140,7 @@ const THINK = [
 export const solveThinkNumber = G('alg-solve-think-of-number', 'alg-solve-one-two-step', (rng, d) => {
   const a = int(rng, 2, size(d, 5, 8, 9)); const b = int(rng, 1, size(d, 10, 15, 20));
   let n = int(rng, 2, size(d, 12, 20, 25));
-  const idx = int(rng, 0, THINK.length - 1);
+  const idx = pick(rng, size(d, [0, 1, 4, 5, 6, 9], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [2, 3, 7, 8, 10, 11, 12]));
   const who = names(rng, 1)[0];
   if (idx === 12 && 2 * n - b <= 0) n = b + int(rng, 1, 5);
   const t = THINK[idx](a, b, n, who);
@@ -254,10 +254,13 @@ export const solveBrackets = G('alg-solve-brackets', 'alg-solve-brackets-both-si
 export const solveFindError = G('alg-solve-find-error', 'alg-solve-brackets-both-sides', (rng, d) => {
   const x = 'x';
   const who = names(rng, 1)[0];
-  const k = int(rng, 2, 6); const a = intExcept(rng, -7, 7, [0]); const c = intExcept(rng, 1, 9, [k]);
-  const v = intExcept(rng, -6, 9, [0]);
+  // Easy: positive numbers throughout; hard: negatives and larger coefficients.
+  const k = int(rng, size(d, 3, 3, 4), size(d, 6, 7, 9)); const a = size(d, int(rng, 1, 7), intExcept(rng, -7, 7, [0]), -int(rng, 2, 9));
+  const c = int(rng, 1, 9);
+  const v = size(d, int(rng, 1, 9), intExcept(rng, -6, 9, [0]), intExcept(rng, -9, 9, [0, 1]));
   const e = k * (v + a) - c * v;
-  if (k <= c) throw new Error('keep it simple');
+  // k − c ≥ 2 so that the last two lines ("2x = …" and "x = …") are different.
+  if (k - c < 2) throw new Error('keep it simple');
   if (e === 0) throw new Error('');
   const errLine = int(rng, 1, size(d, 3, 4, 4));
   // Correct chain: L1 kx + ka = cx + e ; L2 kx - cx = e - ka ; L3 (k-c)x = e - ka ; L4 x = v
@@ -342,7 +345,13 @@ export const solveFracBoth = G('alg-solve-frac-both', 'alg-solve-fractions', (rn
   // (p x + a)/m = (r x + b)/n  ->  n(p x + a) = m(r x + b). Choose a so that b comes out a whole number.
   if (n * p === m * r) throw new Error('');
   const choices = shuffle(rng, [-9, -8, -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    .filter((t) => { const bb = (n * (p * val(v) + t)) / m - r * val(v); return Number.isInteger(bb) && bb !== 0 && Math.abs(bb) <= 15; });
+    .filter((t) => {
+      const bb = (n * (p * val(v) + t)) / m - r * val(v);
+      if (!Number.isInteger(bb) || bb === 0 || Math.abs(bb) > 15) return false;
+      if (p === r && t === bb) return false; // identical numerators: trivial
+      if (gcdInt(gcdInt(p, Math.abs(t)), m) > 1 || gcdInt(gcdInt(r, Math.abs(bb)), n) > 1) return false; // a fraction that simplifies
+      return true;
+    });
   if (!choices.length) throw new Error('');
   const a = choices[0];
   const b = (n * (p * val(v) + a)) / m - r * val(v);
@@ -415,10 +424,12 @@ export const solveFracSum = G('alg-solve-frac-sum', 'alg-solve-fractions', (rng,
 // Each context returns { text, eq (TeX of the equation in x), wrong: [TeX], x (unknown value), ask, answer, answerTex, unit, steps }
 function ctxBank(rng, d) {
   const [n1, n2, n3] = names(rng, 3);
-  const big = d === 'hard';
+  void d;
   return [
     () => { // ages
-      const xv = int(rng, 6, 15); const a = int(rng, 2, 6); const m = int(rng, 3, 4);
+      const xv = int(rng, 6, 14); const a = int(rng, 2, 6); const m = int(rng, 4, 6);
+      // The parent must have been an adult (20+) when the older child was born.
+      if (m * xv - (xv + a) < 20 || m * xv > 60) return null;
       const tot = xv + (xv + a) + m * xv;
       return { text: `${n1} is $x$ years old. ${n2} is ${a} years older than ${n1}. Their mother is ${m} times as old as ${n1}. Their three ages add up to ${tot} years.`, ask: `How old is ${n1}?`, eq: `x + (x + ${a}) + ${m}x = ${tot}`, wrong: [`x + ${a} + ${m} = ${tot}`, `x + ${a}x + ${m}x = ${tot}`, `${m}(x + ${a}) = ${tot}`], A: m + 2, B: a, C: tot, value: xv, fmt: (v) => `${v} years`, unitWord: 'years' };
     },
@@ -492,11 +503,14 @@ function ctxBank(rng, d) {
       if (c2 >= 0) return null;
       return { text: `${n1} thinks of a number, $x$. ${a} times the number plus ${c1} gives the same answer as ${b} times the number minus ${-c2}.`, ask: 'What is the number?', eq: `${a}x + ${c1} = ${b}x - ${-c2}`, wrong: [`${a}x + ${c1} = ${b}(x - ${-c2})`, `${a}(x + ${c1}) = ${b}x - ${-c2}`, `${a}x - ${c1} = ${b}x + ${-c2}`], A: a, B: c1, C: c2, D: b, value: xv, fmt: (v) => `${v}` };
     },
-  ].map((f) => f).filter(() => !big || true);
+  ];
 }
+// Difficulty of each context above, in order: 1 = one-sided, simple; 2 = brackets / several parts; 3 = unknown on both sides.
+const CTX_LEVEL = [1, 2, 2, 2, 1, 2, 1, 1, 3, 3, 2, 3, 2, 1, 3];
 
 function contextFor(rng, d) {
-  const bank = ctxBank(rng, d);
+  const want = size(d, [1], [1, 2], [2, 3]);
+  const bank = ctxBank(rng, d).filter((_, i) => want.includes(CTX_LEVEL[i]));
   for (let i = 0; i < 40; i += 1) {
     const c = pick(rng, bank)();
     if (c) return c;
@@ -601,7 +615,7 @@ function geoContext(rng, d) {
   if (t === 'squarePerim') {
     const s = [k(), cst()]; if (s[0] * xv + s[1] <= 0) return null;
     const per = 4 * (s[0] * xv + s[1]);
-    return ret({ text: `A square has sides of length $(${L(s)})$ cm. Its perimeter is ${per} cm.`, fact: 'A square has four equal sides.', eq: `4(${L(s)}) = ${per}`, A: 4 * s[0], B: 4 * s[1], C: per, askText: 'Work out the length of one side.', answerVal: s[0] * xv + s[1], unit: ' cm' });
+    return ret({ text: `A square has sides of length $(${L(s)})$ cm. Its perimeter is ${per} cm.`, fact: 'A square has four equal sides.', eq: `4(${L(s)}) = ${per}`, A: 4 * s[0], B: 4 * s[1], C: per, askText: 'Work out the value of $x$.', answerVal: xv, unit: '' });
   }
   if (t === 'equalPerim') {
     // square side (x + a) and rectangle x by (x + b)?  perimeter square 4x + 4a; equilateral triangle 3(px + q)

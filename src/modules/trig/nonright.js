@@ -101,7 +101,8 @@ export const sineAngle = gen('trig-sine-angle', 'trig-sine-rule', (rng, d) => {
   // Known: side a = QR opposite angle P (given), side b = PR (b < a), find acute angle Q.
   let angP; let a; let b; let angQ;
   for (let i = 0; i < 200; i += 1) {
-    angP = int(rng, 40, 115); a = d === 'hard' ? int(rng, 60, 200) / 10 : int(rng, 8, 25);
+    angP = int(rng, 40, 115); if (angP >= 84 && angP <= 96) continue;
+    a = d === 'hard' ? int(rng, 60, 200) / 10 : int(rng, 8, 25);
     b = d === 'hard' ? int(rng, 40, Math.round(a * 10) - 5) / 10 : int(rng, 5, a - 1);
     angQ = asinD((b * sinD(angP)) / a);
     if (angQ > 20 && angP + angQ < 160 && Math.abs(angQ - 90) > 5 && Math.abs(angQ - angP) > 4) break;
@@ -113,8 +114,8 @@ export const sineAngle = gen('trig-sine-angle', 'trig-sine-rule', (rng, d) => {
   const f = (v) => A(roundTo(v, 1), 1);
   const inv = (a * sinD(angP)) / b;
   const wrong = askR
-    ? [angQ, 180 - angQ, 180 - angP - (180 - angQ), inv <= 1 ? 180 - angP - asinD(inv) : NaN, (angR * Math.PI) / 180]
-    : [180 - angQ, inv <= 1 ? asinD(inv) : NaN, angR, asinD(Math.min(1, b / a)), (angQ * Math.PI) / 180, asinD(Math.min(1, (b * sinD(angP)) / (a + b)))];
+    ? [angQ, 180 - angQ, 180 - angP - (180 - angQ), inv <= 1 ? 180 - angP - asinD(inv) : NaN, 180 - angP - asinD(roundTo((b * sinD(angP)) / a, 1))]
+    : [180 - angQ, inv <= 1 ? asinD(inv) : NaN, angR, asinD(Math.min(1, b / a)), asinD(roundTo((b * sinD(angP)) / a, 1)), asinD(Math.min(1, (b * sinD(angP)) / (a + b)))];
   return {
     prompt: `Work out the size of angle $x$. Give your answer to 1 decimal place.`,
     visual: vis,
@@ -134,6 +135,7 @@ export const sineAngle = gen('trig-sine-angle', 'trig-sine-rule', (rng, d) => {
 }, { title: 'Sine rule: find an angle' });
 
 export const sineWhich = gen('trig-sine-which', 'trig-sine-rule', (rng, d) => {
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
   const [P, Q, R] = pick(rng, LETTER_SETS);
   const angs = randomAngles(rng, { lo: 30, hi: 110 });
   const a = int(rng, 6, 30);
@@ -178,6 +180,7 @@ export const cosSide = gen('trig-cos-side', 'trig-cosine-rule', (rng, d) => {
   else if (d === 'hard') { b = int(rng, 40, 180) / 10; c = int(rng, 40, 180) / 10; ang = chance(rng, 0.6) ? int(rng, 95, 140) : int(rng, 25, 85); }
   else { b = int(rng, 5, 20); c = int(rng, 5, 20); ang = int(rng, 25, 130); if (ang === 90 || ang === 60) ang += 3; }
   if (b === c) c += 1;
+  if (!exact && Math.max(b, c) > 2.2 * Math.min(b, c)) { if (b > c) b = roundTo(c * (1.3 + 0.8 * rng()), d === 'hard' ? 1 : 0); else c = roundTo(b * (1.3 + 0.8 * rng()), d === 'hard' ? 1 : 0); }
   const a2 = b * b + c * c - 2 * b * c * cosD(ang);
   const a = Math.sqrt(a2);
   const r = exact ? null : roundingFor(rng, d);
@@ -226,7 +229,7 @@ export const cosAngle = gen('trig-cos-angle', 'trig-cosine-rule', (rng, d) => {
   const angs = [ang, angQ, 180 - ang - angQ];
   const vis = triFig({ angs, n: [P, Q, R], sides: { [P + Q]: L(c, unit), [P + R]: L(b, unit), [Q + R]: L(a, unit) }, angles: { [P]: 'x' }, ...orient(rng) });
   const f = (v) => A(roundTo(v, 1), 1);
-  const wrong = [180 - ang, angQ, 180 - ang - angQ, Math.abs((b * b + c * c - a * a) / (b * c)) <= 1 ? acosD((b * b + c * c - a * a) / (b * c)) : NaN, (ang * Math.PI) / 180, acosD(Math.max(-1, Math.min(1, (a * a + b * b + c * c) / (2 * b * c) - 1)))];
+  const wrong = [180 - ang, angQ, 180 - ang - angQ, Math.abs((b * b + c * c - a * a) / (b * c)) <= 1 ? acosD((b * b + c * c - a * a) / (b * c)) : NaN, acosD(roundTo(cosv, 1)), acosD(Math.max(-1, Math.min(1, (a * a + b * b + c * c) / (2 * b * c) - 1)))];
   return {
     prompt: 'Work out the size of angle $x$. Give your answer to 1 decimal place.',
     visual: vis,
@@ -253,10 +256,16 @@ export const areaFind = gen('trig-area-find', 'trig-area-sine', (rng, d) => {
   const unit = 'cm';
   const exact = d === 'easy' && chance(rng, 0.5);
   let a; let b; let C;
-  if (exact) { a = 2 * int(rng, 2, 9); b = int(rng, 3, 15); C = pick(rng, [30, 150]); }
-  else if (d === 'hard') { a = int(rng, 40, 180) / 10; b = int(rng, 40, 180) / 10; C = int(rng, 25, 140); }
-  else { a = int(rng, 4, 20); b = int(rng, 4, 20); C = int(rng, 25, 140); }
-  if (C === 90) C = 88;
+  if (exact) { a = 2 * int(rng, 2, 9); b = int(rng, 3, 15); C = 30; }
+  else {
+    for (let i = 0; i < 100; i += 1) {
+      if (d === 'hard') { a = int(rng, 40, 180) / 10; b = int(rng, 40, 180) / 10; } else { a = int(rng, 4, 20); b = int(rng, 4, 20); }
+      C = int(rng, 25, 140);
+      // keep away from 90 degrees (sin C close to 1 would let "forgot sin" give the same answer) and from very thin triangles
+      if ((C < 75 || C > 105) && a !== b && Math.max(a, b) <= 2.2 * Math.min(a, b)) break;
+    }
+  }
+  if (exact && Math.max(a, b) > 2 * Math.min(a, b)) b = Math.round(a * 0.75) + 1;
   if (a === b) b += 1;
   const area = 0.5 * a * b * sinD(C);
   const hardSplit = d === 'hard' && chance(rng, 0.5); // angle at R not given; given the two other angles instead
@@ -274,14 +283,14 @@ export const areaFind = gen('trig-area-find', 'trig-area-sine', (rng, d) => {
     prompt: `Work out the area of triangle $${P}${Q}${R}$.${r ? ` ${r.text}` : ' Do not use a calculator.'}`,
     visual: vis,
     answer: fa(area),
-    distractors: fmtVals(exact ? wrong.filter((v) => Math.abs(v * 2 - Math.round(v * 2)) < 1e-9) : wrong, fa),
+    distractors: fmtVals(exact ? [a * b / 2, a * b, a * b / 8, a + b, 0.5 * (a + b), (a * b) / 6].filter((v) => Math.abs(v * 2 - Math.round(v * 2)) < 1e-9 && Math.abs(v - area) > 1e-9) : wrong, fa),
     typed: r ? r.typed(area) : { kind: 'number', value: roundTo(area, 6) },
     calculator: !exact,
     hint: 'Area $= \\frac{1}{2}ab\\sin C$, where $C$ is the angle <b>between</b> sides $a$ and $b$.',
     solution: [
       ...(hardSplit ? [`The formula needs the angle <b>between</b> the two known sides, at $${R}$: $${R} = 180^\\circ - ${At(shownP)} - ${At(shownQ)} = ${At(C)}$.`] : []),
       `Area $= \\frac{1}{2}ab\\sin C$ with the two sides ${L(a, unit)} and ${L(b, unit)} and the angle between them, $${At(C)}$.`,
-      exact ? `$\\sin ${At(C)} = \\frac{1}{2}$, so area $= \\frac{1}{2} \\times ${a} \\times ${b} \\times \\frac{1}{2} = ${tnum(area)}$`
+      exact ? `$\\sin ${At(C)} = \\frac{1}{2}$${C === 150 ? ' (the same as $\\sin 30^\\circ$)' : ''}, so area $= \\frac{1}{2} \\times ${a} \\times ${b} \\times \\frac{1}{2} = ${tnum(area)}$`
         : `Area $= \\frac{1}{2} \\times ${tnum(a)} \\times ${tnum(b)} \\times \\sin ${At(C)} = ${approxT(area)}$`,
       `Answer: <b>${fa(area)}</b>`,
     ],
@@ -308,7 +317,7 @@ export const areaReverse = gen('trig-area-reverse', 'trig-area-sine', (rng, d) =
       prompt: `The area of triangle $${P}${Q}${R}$ is ${num(area)} cm². Angle $x$ is acute.<br>Work out the size of angle $x$. Give your answer to 1 decimal place.`,
       visual: vis,
       answer: f(x),
-      distractors: fmtVals([180 - x, area / (a * b) <= 1 ? asinD(area / (a * b)) : NaN, acosD(Math.min(1, s)), (x * Math.PI) / 180, (2 * area) / (a * b) * 90, 90 - x], f),
+      distractors: fmtVals([180 - x, area / (a * b) <= 1 ? asinD(area / (a * b)) : NaN, acosD(Math.min(1, s)), asinD(roundTo(s, 1)), (2 * area) / (a * b) * 90, 90 - x], f),
       typed: DP1.typed(x),
       calculator: true,
       solution: [
@@ -345,7 +354,7 @@ export const areaReverse = gen('trig-area-reverse', 'trig-area-sine', (rng, d) =
 
 export const areaSegment = gen('trig-area-segment', 'trig-area-sine', (rng, d) => {
   const rr = d === 'hard' ? int(rng, 40, 150) / 10 : int(rng, 4, 15);
-  const th = d === 'easy' ? pick(rng, [40, 50, 70, 80, 100, 110, 120]) : int(rng, 35, 140);
+  const th = d === 'easy' ? pick(rng, [70, 80, 100, 110, 120, 130]) : int(rng, 60, 140);
   const sector = (th / 360) * Math.PI * rr * rr; const tri = 0.5 * rr * rr * sinD(th);
   const seg = sector - tri;
   const r = roundingFor(rng, d);
@@ -385,9 +394,10 @@ export const areaSegment = gen('trig-area-segment', 'trig-area-sine', (rng, d) =
 /* ------------------------------------------------------------------ */
 
 export const scWhichEquation = gen('trig-sc-which-equation', 'trig-sine-cosine-problems', (rng, d) => {
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
   const [P, Q, R] = pick(rng, LETTER_SETS);
   const unit = 'cm';
-  const kind = pick(rng, d === 'easy' ? ['cosSide', 'sineSide'] : ['cosSide', 'sineSide', 'cosAngle', 'sineAngle']);
+  const kind = pick(rng, d === 'easy' ? ['cosSide', 'sineSide'] : d === 'medium' ? ['cosSide', 'sineSide', 'cosAngle', 'sineAngle'] : ['cosAngle', 'sineAngle', 'cosAngle', 'sineSide']);
   const angs = randomAngles(rng, { lo: 32, hi: 108 });
   const s1 = int(rng, 5, 20); let s2 = int(rng, 5, 20); if (s2 === s1) s2 += 2;
   const [pa, qa] = [At(angs[0]), At(angs[1])];
@@ -401,7 +411,7 @@ export const scWhichEquation = gen('trig-sc-which-equation', 'trig-sine-cosine-p
   } else if (kind === 'sineSide') {
     vis = triFig({ angs, n: [P, Q, R], sides: { [Q + R]: L(s1, unit), [P + R]: 'x' }, angles: { [P]: `${angs[0]}°`, [Q]: `${angs[1]}°` }, ...orient(rng) });
     ans = `$\\frac{x}{\\sin ${qa}} = \\frac{${s1}}{\\sin ${pa}}$`;
-    ds = [`$\\frac{x}{\\sin ${pa}} = \\frac{${s1}}{\\sin ${qa}}$`, cosEq('x', s1, s1, At(angs[2])), `$x = ${s1}\\sin ${qa}$`, `$x^2 = ${s1}^2 + ${s1}^2$`];
+    ds = [`$\\frac{x}{\\sin ${pa}} = \\frac{${s1}}{\\sin ${qa}}$`, `$\\frac{\\sin ${qa}}{x} = \\frac{${s1}}{\\sin ${pa}}$`, `$x = ${s1}\\sin ${qa}$`, `$\\frac{x}{${s1}} = \\frac{\\sin ${pa}}{\\sin ${qa}}$`, `$x = \\frac{${s1}}{\\sin ${qa}}$`];
     why = 'You know two angles and a side opposite one of them: pair each side with its opposite angle in the sine rule.';
   } else if (kind === 'cosAngle') {
     let third = int(rng, Math.abs(s1 - s2) + 2, s1 + s2 - 2);
@@ -567,7 +577,7 @@ const SC_CONTEXTS = [
   (rng) => {
     const base = int(rng, 200, 800); const a1 = int(rng, 35, 75); const a2 = int(rng, 35, 75);
     const top = 180 - a1 - a2; const x = (base * sinD(a2)) / sinD(top);
-    return { prompt: `Two coastguards, A and B, stand ${base} m apart on a straight shore. They both see a boat. Angle between the shore and the line from A to the boat is ${a1}°; at B it is ${a2}°. How far is the boat from A?`, unit: 'm', kind: 'sine', value: x, base, a1, a2, top };
+    return { prompt: `Two coastguards, A and B, stand ${base} m apart on a straight shore. They both see a boat. The angle between the shore and the line from A to the boat is ${a1}°. At B the angle is ${a2}°. How far is the boat from A?`, unit: 'm', kind: 'sine', value: x, base, a1, a2, top };
   },
   // Plane flight: two legs, distance back (cosine)
   (rng) => {
@@ -601,13 +611,13 @@ export const scWord = gen('trig-sc-word', 'trig-sine-cosine-problems', (rng, d) 
     sol = [`Two sides and the angle between them: area $= \\frac{1}{2}ab\\sin C$.`, `$\\frac{1}{2} \\times ${ctx.b} \\times ${ctx.c} \\times \\sin ${At(ctx.ang)} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'angle') {
     const cv = (ctx.b * ctx.b + ctx.c * ctx.c - ctx.a * ctx.a) / (2 * ctx.b * ctx.c);
-    wrong = [180 - ctx.value, acosD(Math.max(-1, Math.min(1, (ctx.a * ctx.a + ctx.c * ctx.c - ctx.b * ctx.b) / (2 * ctx.a * ctx.c)))), (ctx.value * Math.PI) / 180, 90 - ctx.value / 2, acosD(Math.max(-1, Math.min(1, cv * 2)))];
+    wrong = [180 - ctx.value, acosD(Math.max(-1, Math.min(1, (ctx.a * ctx.a + ctx.c * ctx.c - ctx.b * ctx.b) / (2 * ctx.a * ctx.c)))), acosD(roundTo(cv, 1)), 90 - ctx.value / 2, acosD(Math.max(-1, Math.min(1, cv * 2)))];
     sol = [`Three sides known → cosine rule for an angle. The angle wanted is opposite the side of ${num(ctx.a)}.`, `$\\cos\\theta = \\frac{${tnum(ctx.b)}^2 + ${tnum(ctx.c)}^2 - ${tnum(ctx.a)}^2}{2 \\times ${tnum(ctx.b)} \\times ${tnum(ctx.c)}} = ${cv < 0 ? '-' : ''}${approxT(Math.abs(cv))}$`, `$\\theta = ${approxT(ctx.value)}^\\circ$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'sine') {
     wrong = [(ctx.base * sinD(ctx.a1)) / sinD(ctx.top), (ctx.base * sinD(ctx.top)) / sinD(ctx.a2), ctx.base * sinD(ctx.a2), (ctx.base * sinD(ctx.a2)) / sinD(ctx.a1)];
     sol = [`The angle at the boat is $180^\\circ - ${ctx.a1}^\\circ - ${ctx.a2}^\\circ = ${ctx.top}^\\circ$.`, `The distance from A to the boat is opposite the ${ctx.a2}° angle at B; the ${ctx.base} m shore is opposite the ${ctx.top}° angle. Sine rule:`, `$x = \\frac{${ctx.base} \\times \\sin ${At(ctx.a2)}}{\\sin ${At(ctx.top)}} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'sineAngle') {
-    wrong = [180 - ctx.value, 180 - ctx.angAtTop - ctx.value, ctx.jib * sinD(ctx.angAtTop) / ctx.cable <= 1 ? asinD((ctx.jib * sinD(ctx.angAtTop)) / ctx.cable) : NaN, (ctx.value * Math.PI) / 180, asinD(ctx.cable / ctx.jib)];
+    wrong = [180 - ctx.value, 180 - ctx.angAtTop - ctx.value, ctx.jib * sinD(ctx.angAtTop) / ctx.cable <= 1 ? asinD((ctx.jib * sinD(ctx.angAtTop)) / ctx.cable) : NaN, asinD(roundTo((ctx.cable * sinD(ctx.angAtTop)) / ctx.jib, 1)), asinD(ctx.cable / ctx.jib)];
     sol = [`In triangle $PQR$: $QR = ${ctx.cable}$ m is opposite angle $QPR$, and $PQ = ${ctx.jib}$ m is opposite the ${ctx.angAtTop}° angle at $R$.`, `Sine rule: $\\frac{\\sin QPR}{${ctx.cable}} = \\frac{\\sin ${At(ctx.angAtTop)}}{${ctx.jib}}$, so $\\sin QPR = ${approxT((ctx.cable * sinD(ctx.angAtTop)) / ctx.jib)}$`, `$QPR = ${approxT(ctx.value)}^\\circ$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else {
     const x = ctx.kind === 'perimeter' ? ctx.third : ctx.value;

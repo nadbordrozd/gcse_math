@@ -196,7 +196,7 @@ export const pythExact = gen('trig-pyth-exact', 'trig-pythagoras', (rng, d) => {
     prompt: `Work out the <b>exact</b> value of $x$. Give your answer as a surd in its simplest form.`,
     visual: vis,
     answer: ans,
-    distractors: ds.filter((t) => t && !/\\sqrt\{1\}|^\$1\\sqrt/.test(t) && t !== ans),
+    distractors: ds.filter((t) => t && !/\\sqrt\{1\}|^\$1\\sqrt/.test(t) && t !== ans && [...t.matchAll(/\\sqrt\{(\d+)\}/g)].every((m) => surd(Number(m[1])).k === 1)),
     solution: hyp ? [
       `$x$ is the hypotenuse: $x^2 = ${p}^2 + ${q}^2 = ${p * p} + ${q * q} = ${n}$`,
       `So $x = \\sqrt{${n}}$.`,
@@ -213,6 +213,7 @@ export const pythExact = gen('trig-pyth-exact', 'trig-pythagoras', (rng, d) => {
 
 // Spot the error in a student's working.
 export const pythError = gen('trig-pyth-error', 'trig-pythagoras', (rng, d) => {
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
   const [p0, q0, c0] = triple(rng, { maxC: d === 'easy' ? 15 : 30 });
   const [p, q] = [Math.min(p0, q0), Math.max(p0, q0)];
   const c = c0;
@@ -268,7 +269,7 @@ const PYTH_CONTEXTS = [
     make: (v, u) => `The foot of a ladder is ${W(v.a, u)} from a vertical wall. The top of the ladder reaches ${W(v.b, u)} up the wall. How long is the ladder?` },
   { find: 'leg', shown: 'a', aSmall: true, unit: 'm', k: [0.5, 1], lead: 'The ladder is the hypotenuse; the height up the wall is a shorter side.',
     make: (v, u) => `A ladder ${W(v.c, u)} long leans against a vertical wall. Its foot is ${W(v.a, u)} from the wall on horizontal ground. How far up the wall does the ladder reach?` },
-  { find: 'hyp', unit: 'cm', k: [2, 4], lead: 'The diagonal of the rectangular screen is the hypotenuse of a right-angled triangle.',
+  { find: 'hyp', aSmall: true, unit: 'cm', k: [2, 4], lead: 'The diagonal of the rectangular screen is the hypotenuse of a right-angled triangle.',
     make: (v, u) => `A rectangular TV screen is ${W(v.b, u)} wide and ${W(v.a, u)} high. Screens are measured by their diagonal. Work out the length of the diagonal.` },
   { find: 'hyp', unit: 'km', k: [1, 2], lead: 'North and east are at right angles, so the straight-line distance back is the hypotenuse.',
     make: (v, u) => `A ship sails ${W(v.a, u)} due north and then ${W(v.b, u)} due east. How far is the ship from its starting point?` },
@@ -284,11 +285,11 @@ const PYTH_CONTEXTS = [
     make: (v, u) => `A rectangular photo frame has a diagonal of ${W(v.c, u)}. It is ${W(v.a, u)} wide. How tall is the frame?` },
   { find: 'hyp', unit: 'km', k: [5, 10], lead: 'West and south are at right angles, so the direct distance is the hypotenuse.',
     make: (v, u) => `A plane flies ${W(v.b, u)} due west and then ${W(v.a, u)} due south. How far is the plane from where it started?` },
-  { find: 'leg', shown: 'b', unit: 'm', k: [0.5, 1], lead: 'The guy rope is the hypotenuse; the tent pole is vertical.',
+  { find: 'leg', shown: 'b', aSmall: true, unit: 'm', k: [0.2], lead: 'The guy rope is the hypotenuse; the tent pole is vertical.',
     make: (v, u) => `A vertical tent pole is ${W(v.b, u)} tall. A guy rope ${W(v.c, u)} long is tied to the top of the pole and pegged to flat ground. How far is the peg from the bottom of the pole?` },
   { find: 'hyp', unit: 'm', k: [1, 2], lead: 'Swimming corner to corner across a rectangle: the diagonal is the hypotenuse.',
     make: (v, u) => `A rectangular swimming pool is ${W(v.b, u)} long and ${W(v.a, u)} wide. Ana swims in a straight line from one corner to the opposite corner. How far does she swim?` },
-  { find: 'leg', shown: 'a', aSmall: true, unit: 'm', k: [0.5, 1], lead: 'The slide is the hypotenuse; the ladder of the slide is vertical.',
+  { find: 'leg', shown: 'a', aSmall: true, unit: 'm', k: [0.2], lead: 'The slide is the hypotenuse; the ladder of the slide is vertical.',
     make: (v, u) => `A playground slide is ${W(v.c, u)} long. The top of the slide is ${W(v.a, u)} above the ground, directly above the bottom of the vertical ladder. How far is the bottom of the slide from the bottom of the ladder?` },
   { find: 'hyp', unit: 'm', k: [5, 10], lead: 'The path cuts diagonally across a rectangle, so it is the hypotenuse.',
     make: (v, u) => `A rectangular park is ${W(v.b, u)} long and ${W(v.a, u)} wide. A straight path goes diagonally from one corner to the opposite corner. How long is the path?` },
@@ -463,7 +464,10 @@ export const pythIsosceles = gen('trig-pyth-isosceles', 'trig-pythagoras-problem
   // equal sides s, base b = 2h0, height h
   let half; let h; let s;
   if (d === 'hard') {
-    half = int(rng, 30, 90) / 10; s = roundTo(half + int(rng, 15, 60) / 10, 1); h = Math.sqrt(s * s - half * half);
+    for (let i = 0; i < 100; i += 1) {
+      half = int(rng, 30, 90) / 10; s = roundTo(half + int(rng, 15, 60) / 10, 1); h = Math.sqrt(s * s - half * half);
+      if (!Number.isInteger(half) && !nice(h, 1)) break;
+    }
   } else {
     [half, h, s] = triple(rng, { maxC: 26 });
     if (half > h * 1.6) [half, h] = [h, half];
@@ -553,8 +557,8 @@ export const pythTwoTriangles = gen('trig-pyth-two-triangles', 'trig-pythagoras-
       calculator: Boolean(r),
       solution: [
         `Two steps. First use triangle $ABD$ to find the shared side $AB$. $AD$ is its hypotenuse, so subtract:`,
-        `$AB^2 = ${tnum(ad)}^2 - ${tnum(db)}^2 = ${tnum(tidy(sq(ad) - sq(db)))}$, so $AB = ${r ? approxT(h) : tnum(h)}$ cm. (Keep the full value on your calculator.)`,
-        `Now triangle $ABC$: $AC$ is the hypotenuse, so add: $AC^2 = AB^2 + ${tnum(bc)}^2 = ${r ? approxT(h * h) : tnum(h * h)} + ${tnum(sq(bc))} = ${r ? approxT(h * h + bc * bc) : tnum(h * h + bc * bc)}$`,
+        `$AB^2 = ${tnum(ad)}^2 - ${tnum(db)}^2 = ${tnum(tidy(sq(ad) - sq(db)))}$, so $AB = ${r ? approxT(h) : tnum(h)}$ cm.${nice(h, 3) ? '' : ' (Keep the full value on your calculator.)'}`,
+        `Now triangle $ABC$: $AC$ is the hypotenuse, so add: $AC^2 = AB^2 + ${tnum(bc)}^2 = ${tnum(roundTo(h * h, 4))} + ${tnum(sq(bc))} = ${tnum(roundTo(h * h + bc * bc, 4))}$`,
         `$AC = ${r ? approxT(ac) : tnum(ac)}$. Answer: <b>${f(ac)}</b>`,
       ],
     };

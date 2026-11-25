@@ -24,7 +24,7 @@ for (const g of gens) {
   console.log(`\n================ ${g.id} (${g.skillId}) ================`);
   for (const d of diffs) {
     for (let i = 0; i < n; i += 1) {
-      const seed = (seed0 + i) * 104729 + d.length;
+      const seed = (seed0 + i) * 104729 + ['easy', 'medium', 'hard'].indexOf(d) * 7;
       const q = generateSafely(g, seed, { difficulty: d });
       console.log(`\n[${d} #${i + 1}]${q.calculator ? ' (calculator)' : ''}${q.typed ? ` typed:${JSON.stringify(q.typed)}` : ''}`);
       console.log(strip(q.prompt));

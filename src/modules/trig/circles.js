@@ -1,6 +1,6 @@
 // Parts of a circle and circle theorems. Every diagram is built from the actual angles: points are placed on
 // the unit circle at positions whose arcs give exactly the angles stated in the question.
-import { gen, pick, int, shuffle, num, tnum, chance } from '../../core.js';
+import { gen, pick, int, shuffle, num, tnum, chance, terms } from '../../core.js';
 import { fig, onCircle, FILL, FILL2, ACCENT, ACCENT2 } from './diagrams.js';
 import { path as svgPath } from '../../svg.js';
 import { At } from './helpers.js';
@@ -86,7 +86,8 @@ const PART_DEFS = {
 };
 
 export const circlePartName = gen('trig-circle-part-name', 'trig-circle-parts', (rng, d) => {
-  const pool = d === 'easy' ? ['radius', 'diameter', 'chord', 'tangent', 'circumference'] : PARTS;
+  const pool = d === 'easy' ? ['radius', 'diameter', 'chord', 'tangent', 'circumference'] : d === 'medium' ? PARTS : ['sector', 'segment', 'arc', 'chord', 'tangent', 'circumference'];
+  if (d === 'hard') rng();
   const part = pick(rng, pool);
   const isRegion = ['sector', 'segment'].includes(part);
   const isLine = ['radius', 'diameter', 'chord', 'tangent'].includes(part);
@@ -131,8 +132,10 @@ export const circlePartDef = gen('trig-circle-part-def', 'trig-circle-parts', (r
 }, { title: 'Circle vocabulary' });
 
 export const circleRadiusDiameter = gen('trig-circle-radius-diameter', 'trig-circle-parts', (rng, d) => {
-  const r = d === 'easy' ? int(rng, 2, 15) : d === 'medium' ? int(rng, 3, 30) + pick(rng, [0, 0.5]) : int(rng, 10, 90) / 10;
-  const mode = pick(rng, ['r2d', 'd2r', 'chord', 'op']);
+  let r = d === 'easy' ? int(rng, 2, 15) : d === 'medium' ? int(rng, 3, 30) + pick(rng, [0, 0.5]) : int(rng, 31, 199) / 20;
+  if (d === 'hard' && Number.isInteger(r * 2)) r += 0.05;
+  r = Math.round(r * 100) / 100;
+  const mode = d === 'hard' ? pick(rng, ['d2r', 'op', 'chord']) : pick(rng, ['r2d', 'd2r', 'chord', 'op']);
   const u = pick(rng, ['cm', 'mm', 'm']);
   const f = (v) => `${num(v)} ${u}`;
   let prompt; let ans; let wrong; let sol;
@@ -143,7 +146,7 @@ export const circleRadiusDiameter = gen('trig-circle-radius-diameter', 'trig-cir
   return {
     prompt,
     answer: f(ans),
-    distractors: wrong.filter((v) => v > 0).map(f),
+    distractors: wrong.filter((v) => v > 0).map(f).filter((t) => !/\.\d{3,}/.test(t)),
     typed: { kind: 'number', value: ans },
     solution: [...sol, `Answer: <b>${f(ans)}</b>`],
   };
@@ -167,7 +170,7 @@ function centreConfig(rng, x, labels, { reflex = false } = {}) {
   // keep C away from the points diametrically opposite A and B, so no chord runs through O
   for (let i = 0; i < 30; i += 1) {
     on.C = a0 + 2 * x + spare * (0.3 + 0.4 * rng());
-    const far = (t) => Math.abs((((on.C - t - 180) % 360) + 540) % 360 - 180) > 22;
+    const far = (t) => Math.abs((((on.C - t - 180) % 360) + 540) % 360 - 180) > 35;
     if (far(on.A) && far(on.B)) break;
   }
   const r = rot(rng);
@@ -259,7 +262,7 @@ export const ctSemicircle = gen('trig-ct-semicircle', 'trig-circle-theorems', (r
     const visA = circleFig({
       on, rotate: r, nameDirs: { O: awayDir([rotP(onCircle([0, 0], 1, on.C), r)]) },
       draw: (g) => g.seg('A', 'B') + g.seg('A', 'C') + g.seg('B', 'C')
-        + g.angle(atA ? 'A' : 'B', 'C', atA ? 'B' : 'A', `${ex(p, q)}°`.replace(/ /g, '')) + g.angle(atA ? 'B' : 'A', atA ? 'A' : 'B', 'C', `${ex(r2, s2)}°`.replace(/ /g, '')),
+        + g.angle(atA ? 'A' : 'B', 'C', atA ? 'B' : 'A', `(${ex(p, q)})°`.replace(/ /g, '')) + g.angle(atA ? 'B' : 'A', atA ? 'A' : 'B', 'C', `(${ex(r2, s2)})°`.replace(/ /g, '')),
     });
     const sumC = q + s2;
     return {
@@ -271,7 +274,7 @@ export const ctSemicircle = gen('trig-ct-semicircle', 'trig-circle-theorems', (r
       solution: [
         '<b>The angle in a semicircle is $90^\\circ$</b>, so the other two angles of triangle $ABC$ add up to $90^\\circ$.',
         `$(${ex(p, q)}) + (${ex(r2, s2)}) = 90$`,
-        `$${p + r2}x ${sumC < 0 ? '-' : '+'} ${Math.abs(sumC)} = 90$, so $${p + r2}x = ${90 - sumC}$ and $x = ${xv}$`,
+        `$${terms([[p + r2, 'x'], [sumC, '']])} = 90$${sumC ? `, so $${p + r2}x = ${90 - sumC}$` : ''} and $x = ${xv}$`,
         `Answer: <b>${xv}</b>`,
       ],
     };
@@ -303,7 +306,7 @@ export const ctSameSegment = gen('trig-ct-same-segment', 'trig-circle-theorems',
   let k = 0; let c = 0; let xVal = 0;
   if (algebra) { k = pick(rng, [2, 3]); xVal = int(rng, 5, Math.floor((y - 5) / k)); c = y - k * xVal; if (c <= 0) { c = 5; xVal = (y - 5) / k; } }
   const algTex = algebra ? `${k}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}` : '';
-  const labelD = algebra ? `${k}x+${c}°` : 'x';
+  const labelD = algebra ? `(${k}x+${c})°` : 'x';
   const vis = circleFig({
     on, rotate: rot(rng), showO: false,
     draw: (g) => g.seg('A', 'C') + g.seg('B', 'C') + g.seg('A', 'D') + g.seg('B', 'D') + g.angle('C', 'A', 'B', deg(y)) + g.angle('D', 'A', 'B', labelD),
@@ -344,7 +347,7 @@ export const ctCyclic = gen('trig-ct-cyclic', 'trig-circle-theorems', (rng, d) =
   const tC = tB + 2 * a * (0.35 + 0.3 * rng());
   const spare = 360 - 2 * a; const tA = tD + spare * (0.35 + 0.3 * rng());
   const on = { A: tA, B: tB, C: tC, D: tD };
-  const algebra = d === 'hard' && chance(rng, 0.6);
+  const algebra = d === 'hard';
   let p; let q; let xv; let pTex; let qTex;
   if (algebra) {
     // angle A = p*x + q1, angle C = 180 - that, written as r*x + q2
@@ -357,7 +360,7 @@ export const ctCyclic = gen('trig-ct-cyclic', 'trig-circle-theorems', (rng, d) =
   }
   const vis = circleFig({
     on, rotate: 0, showO: false,
-    draw: (g) => g.poly('ABCD', { fill: FILL, fillOpacity: 0.6 }) + g.angle('A', 'B', 'D', algebra ? `${pTex}°`.replace(/ /g, '') : deg(a)) + g.angle('C', 'D', 'B', algebra ? `${qTex}°`.replace(/ /g, '') : 'x'),
+    draw: (g) => g.poly('ABCD', { fill: FILL, fillOpacity: 0.6 }) + g.angle('A', 'B', 'D', algebra ? `(${pTex})°`.replace(/ /g, '') : deg(a)) + g.angle('C', 'D', 'B', algebra ? `(${qTex})°`.replace(/ /g, '') : 'x'),
   });
   if (algebra) {
     return {
@@ -369,7 +372,7 @@ export const ctCyclic = gen('trig-ct-cyclic', 'trig-circle-theorems', (rng, d) =
       solution: [
         '<b>Opposite angles of a cyclic quadrilateral add up to $180^\\circ$.</b>',
         `$(${pTex}) + (${qTex}) = 180$`,
-        `$${p[0] + q[0]}x ${p[1] + q[1] < 0 ? '-' : '+'} ${Math.abs(p[1] + q[1])} = 180$, so $${p[0] + q[0]}x = ${180 - p[1] - q[1]}$ and $x = ${xv}$`,
+        `$${terms([[p[0] + q[0], 'x'], [p[1] + q[1], '']])} = 180$${p[1] + q[1] ? `, so $${p[0] + q[0]}x = ${180 - p[1] - q[1]}$` : ''} and $x = ${xv}$`,
         `Answer: <b>${xv}</b>`,
       ],
     };
@@ -479,7 +482,8 @@ const REASONS = {
 };
 
 export const ctReason = gen('trig-ct-reason', 'trig-circle-theorems', (rng, d) => {
-  const key = pick(rng, d === 'easy' ? ['centre', 'semicircle', 'segment', 'cyclic', 'tangentRadius'] : Object.keys(REASONS));
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
+  const key = pick(rng, d === 'easy' ? ['centre', 'semicircle', 'segment', 'cyclic', 'tangentRadius'] : d === 'medium' ? Object.keys(REASONS) : ['alternate', 'chord', 'tangentsEqual', 'segment', 'cyclic', 'centre']);
   let vis; let statement;
   if (key === 'centre') {
     const x = int(rng, 25, 70);
@@ -562,7 +566,7 @@ export const ctmAltSegment = gen('trig-ctm-alt-segment', 'trig-circle-theorems-m
   const { a, b, c } = triAngles(rng);
   const mode = d === 'easy' ? 'direct' : d === 'medium' ? pick(rng, ['triangle', 'direct2']) : pick(rng, ['triangle', 'both']);
   let labels; let ans; let wrong; let sol;
-  const TS = 'ST is a tangent to the circle at $A$.';
+  const TS = '$ST$ is a tangent to the circle at $A$.';
   if (mode === 'direct') {
     labels = { TAB: deg(c), C: 'x' }; ans = c; wrong = [180 - c, 90 - c, 2 * c, b, a];
     sol = ['<b>Alternate segment theorem</b>: the angle between a tangent and a chord equals the angle in the alternate segment.', `The angle between tangent $AT$ and chord $AB$ is ${At(c).replace(/^/, '$').replace(/$/, '$')}, so the angle at $C$ (in the other segment) is the same.`, `Answer: <b>${deg(c)}</b>`];
@@ -616,6 +620,7 @@ export const ctmTangentsCircumference = gen('trig-ctm-tangents-circumference', '
 }, { title: 'Two tangents and the angle at the circumference' });
 
 export const ctmCentreIsosceles = gen('trig-ctm-centre-isosceles', 'trig-circle-theorems-multi', (rng, d) => {
+  if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
   const a = int(rng, 25, 75); // angle BAC at circumference
   // B and C with arc BC = 2a; A on the major arc
   const tB = 270 - a + int(rng, -10, 10); const tC = tB + 2 * a;
@@ -726,6 +731,26 @@ export const ctmSemicircleSegment = gen('trig-ctm-semicircle-segment', 'trig-cir
     on, rotate: r, nameDirs: { O: [0.25, -1] },
     draw: (g) => g.seg('A', 'B') + g.seg('A', 'C') + g.seg('B', 'C') + g.seg('D', 'A') + g.seg('D', 'C') + g.angle('A', 'C', 'B', deg(a)) + g.angle('D', 'A', 'C', 'x'),
   });
+  if (d === 'hard') {
+    const y = 90 - a; // angle ADC
+    const visH = circleFig({
+      on, rotate: r,
+      draw: (g) => g.seg('A', 'B') + g.seg('A', 'C') + g.seg('B', 'C') + g.seg('D', 'A') + g.seg('D', 'C') + g.seg('O', 'C') + g.angle('D', 'A', 'C', deg(y)) + g.angle('C', 'O', 'A', 'x'),
+    });
+    return {
+      prompt: '$A$, $B$, $C$ and $D$ are points on a circle with centre $O$. $AB$ is a diameter.<br>Work out the size of angle $x$ (angle $OCA$).',
+      visual: visH,
+      answer: deg(a),
+      distractors: angOpts(a, [y, 180 - 2 * y, 90 + y, 2 * y, 180 - y, 90 - y / 2].map((v) => (Number.isInteger(v) ? v : -1))),
+      typed: { kind: 'number', value: a },
+      solution: [
+        `<b>Angles in the same segment are equal</b>: angle $ABC$ = angle $ADC = ${y}^\\circ$ (both stand on chord $AC$).`,
+        `<b>The angle in a semicircle is $90^\\circ$</b>, so angle $CAB = 180 - 90 - ${y} = ${a}^\\circ$.`,
+        `$OA = OC$ (radii), so triangle $OAC$ is isosceles and $x$ = angle $OAC = ${a}^\\circ$.`,
+        `Answer: <b>${deg(a)}</b>`,
+      ],
+    };
+  }
   const ans = 90 - a;
   return {
     prompt: '$A$, $B$, $C$ and $D$ are points on a circle with centre $O$. $AB$ is a diameter.<br>Work out the size of angle $x$.',

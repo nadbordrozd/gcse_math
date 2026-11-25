@@ -4,16 +4,22 @@ import { pick, int, intExcept, size, chance, tnum, terms, gcd, num, shuffle } fr
 import { svg, rect, text, line, notDrawnAccurately, FILL, FILL2 } from '../../svg.js';
 import { G, P, br, coefTex, factored, expandFactors, typedFactors, pmul, peq, tf, $, rootsText, sgn, rat } from './lib.js';
 
-const plain = (tex) => tex.replace(/-/g, '−').replace(/[{}]/g, '');
+const plain = (tex) => tex.replace(/-/g, '−').replace(/\^\{2\}/g, '²').replace(/\^\{3\}/g, '³').replace(/[{}]/g, '');
 const kx = (c, v = 'x') => terms([[c, v]]);
 const pk = (c, v = "x") => (c < 0 ? `(${kx(c, v)})` : kx(c, v));
 
-/** Distractor TeX strings from factor lists, dropping any that expand to the right answer. */
+/**
+ * Distractor TeX strings from factor lists, dropping any that expand to the right answer and any that are
+ * the same wrong factorisation with the brackets in a different order.
+ */
 function factorDistractors(rightCoefs, cands, v = 'x') {
   const out = [];
+  const seen = new Set();
   for (const [k, fs] of cands) {
     if (fs.some((f) => f[0] === 0)) continue;
-    if (peq(expandFactors(k, fs), rightCoefs)) continue;
+    const e = expandFactors(k, fs);
+    if (peq(e, rightCoefs) || seen.has(e.join())) continue;
+    seen.add(e.join());
     out.push($(factored(k, fs, v)));
   }
   return out;
@@ -605,7 +611,7 @@ export const fracSimplifyLinear = G('alg-frac-simplify-linear', 'alg-fractions-s
   return {
     prompt: `Simplify fully &nbsp; $${tex}$`,
     answer: $(ans),
-    distractors: dis.filter((t) => t !== ans).map($),
+    distractors: dis.filter((t) => t !== ans && sensibleFrac(t, false)).map($),
     solution: [...sol, `Answer: $${ans}$`],
   };
 }, { title: 'Simplify algebraic fractions with linear factors' });
@@ -645,7 +651,7 @@ export const fracSimplifyQuad = G('alg-frac-simplify-quadratic', 'alg-fractions-
   return {
     prompt: `Simplify fully &nbsp; $${F(P(top, x), P(bot, x))}$`,
     answer: $(ans),
-    distractors: dis.filter((t) => t !== ans).map($),
+    distractors: dis.filter((t) => t !== ans && sensibleFrac(t, false)).map($),
     hint: 'Factorise the top and the bottom first. You can only cancel whole factors (brackets), never single terms.',
     solution: [
       `Factorise the numerator: $${P(top, x)} = ${topF}$`,
@@ -681,7 +687,7 @@ export const fracSimplifyNonMonic = G('alg-frac-simplify-a-ne-1', 'alg-fractions
   return {
     prompt: `Simplify fully &nbsp; $${F(P(top, x), P(bot, x))}$`,
     answer: $(ans),
-    distractors: dis.filter((t) => t !== ans && !/\\frac\{(.+)\}\{\1\}$/.test(t)).map($),
+    distractors: dis.filter((t) => t !== ans && sensibleFrac(t, false) && !/\\frac\{(.+)\}\{\1\}$/.test(t)).map($),
     solution: [
       `Factorise the numerator: $${P(top, x)} = ${topF}$`,
       useDots ? `The denominator is a difference of two squares: $${P(bot, x)} = ${botF}$` : `Factorise the denominator: $${P(bot, x)} = ${botF}$`,
@@ -694,6 +700,11 @@ export const fracSimplifyNonMonic = G('alg-frac-simplify-a-ne-1', 'alg-fractions
 /* ================================================================== */
 /* alg-fractions-operations                                            */
 /* ================================================================== */
+
+/** Numerator in exam style: "11 - 2x" rather than "-2x + 11". */
+const NP = (arr, x = 'x') => (arr.length === 2 && arr[0] < 0 && arr[1] > 0 ? terms([[arr[1], ''], [arr[0], x]]) : P(arr, x));
+/** Drop distractors that are silly at a glance: zero numerators, or numbers where an x-expression is expected. */
+const sensibleFrac = (t, needX) => !/^\\frac\{0\}/.test(t) && !/\\frac\{[^}]*\}\{-/.test(t) && (!needX || /^\\frac\{[^}]*x/.test(t));
 
 export const fracAddNumeric = G('alg-frac-add-numeric', 'alg-fractions-operations', (rng, d) => {
   const x = 'x';
@@ -708,25 +719,26 @@ export const fracAddNumeric = G('alg-frac-add-numeric', 'alg-fractions-operation
   const g = gcd(gcd(Math.abs(numC[0]), Math.abs(numC[1])), L);
   if (g > 1) throw new Error('simplifies further');
   const tex = `${F(P([pa, a], x), m)} ${op} ${F(P([pb, b], x), n)}`;
-  const ans = F(P(numC, x), L);
-  const dis = [
-    F(P([pa + s * pb, a + s * b], x), m + n),
-    F(P(numC, x), m * n === L ? m * n + 1 : m * n).replace(/.*/, F(P([pa + s * pb, a + s * b], x), L)),
-    F(P([numC[0], fm * a + fn * b * (s === -1 ? 1 : -1)], x), L),
-    F(P([numC[0], a + s * b], x), L),
-    F(P([fn * pa + s * fm * pb, fn * a + s * fm * b], x), L),
-    F(P([numC[0], numC[1] + 2], x), L),
+  const ans = F(NP(numC, x), L);
+  const cands = [
+    [[pa + s * pb, a + s * b], m + n], // added tops and bottoms
+    [[pa + s * pb, a + s * b], L], // did not multiply the numerators
+    [[numC[0], fm * a - s * fn * b], L], // sign slip on the second numerator
+    [[numC[0], a + s * b], L], // multiplied only the x terms
+    [[fn * pa + s * fm * pb, fn * a + s * fm * b], L], // multiplied by the wrong factors
+    [[numC[0], numC[1] + 2], L],
+    [numC, m * n === L ? L + 1 : m * n],
   ];
+  const dis = cands.filter(([nm]) => nm[0] !== 0).map(([nm, dd]) => F(NP(nm, x), dd)).filter((t) => t !== ans && sensibleFrac(t, true));
   return {
     prompt: `Write as a single fraction in its simplest form.<br>$${tex}$`,
     answer: $(ans),
-    distractors: dis.filter((t) => t !== ans).map($),
+    distractors: dis.map($),
     hint: 'Use a common denominator, and put brackets round each numerator when you multiply it.',
     solution: [
       `The lowest common denominator of ${m} and ${n} is ${L}.`,
       `$${tex} = ${F(`${fm === 1 ? '' : fm}(${P([pa, a], x)})`, L)} ${op} ${F(`${fn === 1 ? '' : fn}(${P([pb, b], x)})`, L)}$`,
       `Expand the numerators: $${P([fm * pa, fm * a], x)}$ ${op === '-' ? `and subtract <b>all</b> of $${P([fn * pb, fn * b], x)}$` : `and $${P([fn * pb, fn * b], x)}$`}`,
-      `$= ${ans}$`,
       `Answer: $${ans}$`,
     ],
   };
@@ -738,36 +750,30 @@ export const fracAddAlgebraic = G('alg-frac-add-algebraic', 'alg-fractions-opera
   const p = intExcept(rng, -6, 6, [0]); const q = intExcept(rng, -6, 6, [0, p]);
   const op = d === 'easy' ? '+' : pick(rng, ['+', '-']);
   const s = op === '+' ? 1 : -1;
-  // a/(x+p) ± b/(x+q) = (a(x+q) ± b(x+p)) / ((x+p)(x+q))
-  const num = [a + s * b, a * q + s * b * p];
-  if (num[0] === 0 && num[1] === 0) throw new Error('');
   const den = `${br(1, p, x)}${br(1, q, x)}`;
-  const ans = F(P(num, x), den);
-  let tex = `${F(a, P([1, p], x))} ${op} ${F(b, P([1, q], x))}`;
-  let extra = [];
-  if (d === 'hard') {
-    // Third term over the product, or a numerator with x
-    tex = `${F(a, P([1, p], x))} ${op} ${F(b, P([1, q], x))}`;
-    extra = [];
-  }
+  const hardForm = d === 'hard';
+  // Medium/easy: a/(x+p) ± b/(x+q). Hard: ax/(x+p) ± b/(x+q), giving a quadratic numerator.
+  const firstTop = hardForm ? `${a === 1 ? '' : a}x` : `${a}`;
+  const num = hardForm ? [a, a * q + s * b, s * b * p] : [a + s * b, a * q + s * b * p];
+  if (num.every((c) => c === 0) || (!hardForm && num[0] === 0)) throw new Error('');
+  const ans = F(NP(num, x), den);
+  const tex = `${F(firstTop, P([1, p], x))} ${op} ${F(b, P([1, q], x))}`;
+  const cands = hardForm
+    ? [[a, a * q - s * b, s * b * p], [a, a * q + s * b, -s * b * p], [a, s * b, s * b * p], [a, a * p + s * b, s * b * q], [a, a * q + s * b, s * b * p + 1]]
+    : [[a + s * b, a * q + b * p], [a + s * b, a * p + s * b * q], [a + s * b, a + s * b], [a - s * b, a * q + s * b * p], [a + s * b, a * q + s * b * p + 1]];
   const dis = [
-    F(a + s * b, P([2, p + q], x)),
-    F(P([a + s * b, a * q + b * p * (s === 1 ? -1 : 1) * -1 * -1], x), den).replace(/.*/, F(P([a + s * b, a * q + b * p], x), den)),
-    F(P([a + s * b, a * p + s * b * q], x), den),
-    F(P([a + s * b, a + s * b], x), den),
-    F(a + s * b, den),
-    F(P(num, x), P([1, p + q, p * q], x).replace(/.*/, `${br(1, p, x)} + ${br(1, q, x)}`)),
-    ...extra,
-  ];
-  const ansExpanded = F(P(num, x), P(pmul([1, p], [1, q]), x));
+    ...cands.filter((c) => !c.every((t, i) => t === num[i])).map((c) => F(NP(c, x), den)),
+    hardForm ? F(P([a, s * b], x), P([2, p + q], x)) : F(a + s * b, P([2, p + q], x)),
+    F(NP(num, x), `${br(1, p, x)} + ${br(1, q, x)}`),
+  ].filter((t) => t !== ans && sensibleFrac(t, false));
   return {
     prompt: `Write as a single fraction.<br>$${tex}$`,
     answer: $(ans),
-    distractors: dis.filter((t) => t !== ans && t !== ansExpanded).map($),
+    distractors: dis.map($),
     solution: [
       `Common denominator: $${den}$`,
-      `$${F(`${a}${br(1, q, x)}`, den)} ${op} ${F(`${b}${br(1, p, x)}`, den)}$`,
-      `Numerator: $${P([a, a * q], x)} ${op === '-' ? '-' : '+'} (${P([b, b * p], x)}) = ${P(num, x)}$${op === '-' ? ' (the minus changes the sign of both terms)' : ''}`,
+      `$${F(`${firstTop}${br(1, q, x)}`, den)} ${op} ${F(`${b}${br(1, p, x)}`, den)}$`,
+      `Numerator: $${hardForm ? P([a, a * q, 0], x) : P([a, a * q], x)} ${op === '-' ? '-' : '+'} (${P([b, b * p], x)}) = ${NP(num, x)}$${op === '-' ? ' (the minus changes the sign of both terms)' : ''}`,
       `Answer: $${ans}$`,
     ],
   };

@@ -78,7 +78,7 @@ export const simPair = gen('trig-sim-pair', 'trig-similar-lengths', (rng, d) => 
       `Corresponding sides: $${known[0]}$ and $${nameMap[known[0]]}$ are ${num(kn1)} cm and ${num(kn2)} cm.`,
       xInFirst ? `Scale factor from $DEF$ to $ABC$: $${tnum(kn1)} \\div ${tnum(kn2)} = ${ratioTex(kn1, kn2)}$` : `Scale factor from $ABC$ to $DEF$: $${tnum(kn2)} \\div ${tnum(kn1)} = ${ratioTex(kn2, kn1)}$`,
       `$x$ corresponds to the side of ${num(given)} cm, so $x = ${tnum(given)} \\times ${xInFirst ? ratioTex(kn1, kn2) : ratioTex(kn2, kn1)} = ${tnum(roundTo(ans, 6))}$`,
-      `Answer: <b>${f(ans)}</b>. (Similar shapes are multiplied, not added to – adding ${num(Math.abs(kn2 - kn1))} to each side is a common mistake.)`,
+      `Answer: <b>${f(ans)}</b>. (Similar shapes are multiplied, not added to – ${(xInFirst ? kn1 - kn2 : kn2 - kn1) > 0 ? 'adding' : 'subtracting'} ${num(Math.abs(kn2 - kn1))} ${(xInFirst ? kn1 - kn2 : kn2 - kn1) > 0 ? 'to' : 'from'} each side is a common mistake.)`,
     ],
   };
 }, { title: 'Similar triangles side by side: find a length' });
@@ -174,15 +174,16 @@ export const simHourglass = gen('trig-sim-hourglass', 'trig-similar-lengths', (r
     sol = [`Triangles $ABC$ and $EDC$ are similar (vertically opposite angles at $C$, alternate angles from the parallel lines).`, `$DE$ corresponds to $AB$: scale factor $= \\frac{${tnum(de)}}{${ab}} = ${tnum(k)}$`, `$CE$ corresponds to $AC$: $x = ${ac} \\times ${tnum(k)} = ${tnum(ce)}$`, `Answer: <b>${L(ce, unit)}</b>`];
   } else {
     const ae = tidy(ac + ce);
+    const rr = intRatio(ab, de);
     labels['D-E'] = L(de, unit); labels['C-E'] = 'x';
     ans = ce; wrong = [ae / 2, ae * ab / de, ae - ab, ae / k, ae * k / (1 + k) + 1];
     prompt = `$AB$ is parallel to $DE$. $AE$ and $BD$ are straight lines that cross at $C$. $AE = ${tnum(ae)}$ cm.<br>Work out the length $x$.`;
-    sol = [`Triangles $ABC$ and $EDC$ are similar, with scale factor $\\frac{DE}{AB} = \\frac{${tnum(de)}}{${ab}} = ${tnum(k)}$.`, `So $CE = ${tnum(k)} \\times AC$, and $AC + CE = ${tnum(ae)}$: $AE$ is split in the ratio $AC : CE = 1 : ${tnum(k)}$.`, `$x = CE = ${tnum(ae)} \\times \\frac{${tnum(k)}}{1 + ${tnum(k)}} = ${tnum(ce)}$`, `Answer: <b>${L(ce, unit)}</b>`];
+    sol = [`Triangles $ABC$ and $EDC$ are similar, with scale factor $\\frac{DE}{AB} = \\frac{${tnum(de)}}{${ab}} = ${tnum(k)}$.`, `So $AE$ is split in the ratio $AC : CE = AB : DE = ${ab} : ${tnum(de)}${rr[0] === ab && rr[1] === de ? '' : ` = ${rr[0]} : ${rr[1]}`}$ (${rr[0] + rr[1]} parts).`, `$x = CE = ${tnum(ae)} \\times \\frac{${rr[1]}}{${rr[0] + rr[1]}} = ${tnum(ce)}$`, `Answer: <b>${L(ce, unit)}</b>`];
   }
   const vis = fig({
     pts, rotate: pick(rng, [0, 0, 15, -12]), width: 360, height: 240, pad: 34,
     draw: (g) => {
-      let out = g.poly('ABC', { fillOpacity: 0.7 }) + g.poly('CDE', { fillOpacity: 0.7 }) + g.arrows('A', 'B') + g.arrows('E', 'D');
+      let out = g.poly('ABC', { fillOpacity: 0.7 }) + g.poly('CDE', { fillOpacity: 0.7 }) + g.arrows('A', 'B') + g.arrows('D', 'E');
       for (const [s, v] of Object.entries(labels)) { const [p, q] = s.split('-'); out += g.side(p, q, v, { inside: ['A', 'B'].includes(p) || ['A', 'B'].includes(q) ? (p === 'C' || q === 'C' ? 'B' : 'C') : (p === 'C' || q === 'C' ? 'D' : 'C') }); }
       out += ['A', 'B', 'D', 'E'].map((n) => g.name(n, n, { away: 'C' })).join('') + g.name('C', 'C', { dir: [1, 0] });
       return out;
@@ -200,9 +201,9 @@ export const simHourglass = gen('trig-sim-hourglass', 'trig-similar-lengths', (r
 }, { title: 'Crossing lines with parallel sides (hourglass)' });
 
 export const simScale = gen('trig-sim-scale', 'trig-similar-lengths', (rng, d) => {
-  const w = int(rng, 2, 8); let h = int(rng, 3, 12); if (h === w) h += 1;
-  const k = pick(rng, d === 'easy' ? [2, 3, 4] : d === 'medium' ? [1.5, 2.5, 3, 5] : [1.5, 2.5, 1.2, 0.5, 3.5]);
-  const mode = d === 'hard' ? pick(rng, ['which', 'missing']) : pick(rng, ['which', 'which', 'factor']);
+  const w = d === 'hard' ? int(rng, 4, 12) : int(rng, 2, 8); let h = d === 'hard' ? int(rng, 5, 16) : int(rng, 3, 12); if (h === w) h += 1;
+  const k = pick(rng, d === 'easy' ? [2, 3, 4] : d === 'medium' ? [1.5, 2.5, 3, 5] : [1.5, 2.5, 1.25, 0.75, 0.4, 3.5]);
+  const mode = d === 'hard' ? 'missing' : pick(rng, ['which', 'which', 'factor']);
   const dims = (a, b) => `${num(tidy(a))} cm by ${num(tidy(b))} cm`;
   if (mode === 'factor') {
     const W2 = tidy(w * k); const H2 = tidy(h * k);
@@ -221,7 +222,7 @@ export const simScale = gen('trig-sim-scale', 'trig-similar-lengths', (rng, d) =
     return {
       prompt: `Rectangle A is ${dims(w, h)}. Rectangle B is similar to A. The shorter side of B is ${num(Math.min(W2, H2))} cm.<br>Work out the longer side of B.`,
       answer: `${num(Math.max(W2, H2))} cm`,
-      distractors: fmtVals([Math.max(w, h) + Math.min(W2, H2) - Math.min(w, h), Math.max(w, h) * Math.min(W2, H2) / Math.max(w, h) + 1, Math.min(W2, H2) * Math.min(w, h) / Math.max(w, h), Math.max(w, h) * k * k, Math.max(W2, H2) + 1].filter((v) => nice(v, 2)), (v) => `${num(roundTo(v, 4))} cm`),
+      distractors: fmtVals([Math.max(w, h) + Math.min(W2, H2) - Math.min(w, h), Math.min(W2, H2) * Math.min(w, h) / Math.max(w, h), Math.max(w, h) * k * k, Math.max(w, h) / k, Math.min(W2, H2) + Math.max(w, h)].filter((v) => nice(v, 2) && Math.abs(v - Math.max(W2, H2)) > 1e-9), (v) => `${num(roundTo(v, 4))} cm`),
       typed: { kind: 'number', value: Math.max(W2, H2) },
       solution: [`Scale factor $= \\frac{${tnum(Math.min(W2, H2))}}{${Math.min(w, h)}} = ${tnum(k)}$`, `Longer side of B $= ${Math.max(w, h)} \\times ${tnum(k)} = ${tnum(Math.max(W2, H2))}$ cm`, `Answer: <b>${num(Math.max(W2, H2))} cm</b>`],
     };
@@ -237,6 +238,12 @@ export const simScale = gen('trig-sim-scale', 'trig-similar-lengths', (rng, d) =
     solution: [`Similar shapes are enlargements: <b>every</b> length is multiplied by the same scale factor.`, `${ans}: $${tnum(tidy(w * k))} \\div ${w} = ${tnum(k)}$ and $${tnum(tidy(h * k))} \\div ${h} = ${tnum(k)}$ ✓`, `Adding the same amount to each side (e.g. ${dims(w + add, h + add)}) does <b>not</b> give a similar shape.`, `Answer: <b>${ans}</b>`],
   };
 }, { title: 'Similar rectangles and scale factors' });
+
+/** a : b as a ratio of whole numbers in its simplest form (a, b with at most 1 dp). */
+function intRatio(a, b) {
+  const A = Math.round(a * 10); const B = Math.round(b * 10); const g = gcd(A, B);
+  return [A / g, B / g];
+}
 
 function sameRatio(s, w, h) {
   const m = s.match(/([\d.]+) cm by ([\d.]+) cm/);
@@ -263,6 +270,23 @@ export const simRatio = gen('trig-sim-ratio', 'trig-similar-lengths', (rng, d) =
     draw: (g) => g.poly([R, P, T]) + g.seg(Q, S) + g.arrows(S, Q) + g.arrows(T, P) + g.polyNames([R, P, T]) + g.name(Q, Q, { away: T }) + g.name(S, S, { away: P }),
   });
   const fr = (a, b) => `$\\frac{${a}}{${b}}$`;
+  if (d === 'hard') {
+    // parts of the sides: RQ/QP = RS/ST
+    const [tg, an] = shuffle(rng, [[`${R}${Q}`, `${Q}${P}`], [`${R}${S}`, `${S}${T}`]]);
+    const bad = [[`${R}${Q}`, `${R}${P}`], [`${R}${S}`, `${R}${T}`], [`${Q}${S}`, `${P}${T}`], [`${Q}${P}`, `${R}${Q}`], [`${S}${T}`, `${R}${S}`], [`${Q}${S}`, `${S}${T}`], [`${Q}${P}`, `${R}${P}`]];
+    return {
+      prompt: `$${Q}$ is on $${R}${P}$ and $${S}$ is on $${R}${T}$, with $${Q}${S}$ parallel to $${P}${T}$.<br>Which of these is equal to ${fr(tg[0], tg[1])}?`,
+      visual: vis,
+      answer: fr(an[0], an[1]),
+      distractors: shuffle(rng, bad).map((x) => fr(x[0], x[1])),
+      solution: [
+        `Triangles $${Q}${R}${S}$ and $${P}${R}${T}$ are similar, so $${Q}$ and $${S}$ are the same fraction of the way along $${R}${P}$ and $${R}${T}$: $\\frac{${R}${Q}}{${R}${P}} = \\frac{${R}${S}}{${R}${T}}$.`,
+        `So the two sides are cut in the same ratio: $${R}${Q} : ${Q}${P} = ${R}${S} : ${S}${T}$, i.e. $\\frac{${R}${Q}}{${Q}${P}} = \\frac{${R}${S}}{${S}${T}}$.`,
+        `$\\frac{${Q}${S}}{${P}${T}}$ compares a part with a whole, so it is <b>not</b> equal to a ratio of parts.`,
+        `Answer: ${fr(an[0], an[1])}`,
+      ],
+    };
+  }
   // target ratio: QR/PR; equal ratios: RS/RT and QS/PT
   const target = pick(rng, [[`${Q}${R}`, `${P}${R}`], [`${R}${S}`, `${R}${T}`], [`${Q}${S}`, `${P}${T}`]]);
   const equals = [[`${Q}${R}`, `${P}${R}`], [`${R}${S}`, `${R}${T}`], [`${Q}${S}`, `${P}${T}`]].filter((x) => x[0] !== target[0]);
@@ -321,6 +345,9 @@ function solidPair(kind, h1, h2, lab1, lab2, inner1 = '', inner2 = '') {
   return svg(Math.max(380, x2 + p2.w + 60), 210, out, { label: 'Two similar solids' });
 }
 
+/** k = l2/l1 written once if it is already in lowest terms, otherwise "\frac{10}{4} = \frac{5}{2}". */
+const kTex = (a, b) => (gcd(a, b) === 1 ? frac(a, b).tex() : `\\frac{${a}}{${b}} = ${frac(a, b).tex()}`);
+
 export const savArea = gen('trig-sav-area', 'trig-similar-area-volume', (rng, d) => {
   const [p, q] = pick(rng, SCALE_PAIRS[d]);
   const base = int(rng, 2, 6);
@@ -343,9 +370,9 @@ export const savArea = gen('trig-sav-area', 'trig-similar-area-volume', (rng, d)
     typed: { kind: 'number', value: A2 },
     hint: 'Areas scale by the square of the length scale factor.',
     solution: [
-      `Length scale factor $k = \\frac{${l2}}{${l1}} = ${frac(l2, l1).tex()}$.`,
+      `Length scale factor $k = ${kTex(l2, l1)}$.`,
       `Areas are multiplied by $k^2 = \\left(${frac(l2, l1).tex()}\\right)^2 = ${frac(l2 * l2, l1 * l1).tex()}$ (not by $k$).`,
-      `${kind.charAt(0).toUpperCase() + kind.slice(1)} of B $= ${num(A1)} \\times ${frac(l2 * l2, l1 * l1).tex()} = ${tnum(A2)}$`,
+      `${kind.charAt(0).toUpperCase() + kind.slice(1)} of B $= ${tnum(A1)} \\times ${frac(l2 * l2, l1 * l1).tex()} = ${tnum(A2)}$`,
       `Answer: <b>${f(A2)}</b>`,
     ],
   };
@@ -371,9 +398,9 @@ export const savVolume = gen('trig-sav-volume', 'trig-similar-area-volume', (rng
     typed: { kind: 'number', value: V2 },
     hint: 'Volumes scale by the cube of the length scale factor.',
     solution: [
-      `Length scale factor $k = \\frac{${l2}}{${l1}} = ${frac(l2, l1).tex()}$.`,
+      `Length scale factor $k = ${kTex(l2, l1)}$.`,
       `Volumes are multiplied by $k^3 = \\left(${frac(l2, l1).tex()}\\right)^3 = ${frac(l2 ** 3, l1 ** 3).tex()}$.`,
-      `Volume of B $= ${num(V1)} \\times ${frac(l2 ** 3, l1 ** 3).tex()} = ${tnum(V2)}$`,
+      `Volume of B $= ${tnum(V1)} \\times ${frac(l2 ** 3, l1 ** 3).tex()} = ${tnum(V2)}$`,
       `Answer: <b>${f(V2)}</b>`,
     ],
   };
@@ -397,7 +424,7 @@ export const savReverse = gen('trig-sav-reverse', 'trig-similar-area-volume', (r
       distractors: fmtVals(wrong.filter((v) => nice(v, 2) && Math.abs(v - l2) > 1e-9), (v) => `${num(roundTo(v, 4))} cm`),
       typed: { kind: 'number', value: l2 },
       solution: [
-        `${isA ? 'Area' : 'Volume'} scale factor $= \\frac{${num(s2)}}{${num(s1)}} = ${(isA ? fr2 : fr3).tex()}$.`,
+        `${isA ? 'Area' : 'Volume'} scale factor $= \\frac{${tnum(s2)}}{${tnum(s1)}} = ${(isA ? fr2 : fr3).tex()}$.`,
         `${isA ? 'Area factor $= k^2$, so square root' : 'Volume factor $= k^3$, so cube root'}: $k = ${frac(q, p).tex()}$.`,
         `Height of B $= ${l1} \\times ${frac(q, p).tex()} = ${tnum(l2)}$ cm`,
         `Answer: <b>${num(l2)} cm</b>`,
@@ -413,9 +440,9 @@ export const savReverse = gen('trig-sav-reverse', 'trig-similar-area-volume', (r
       distractors: fmtVals(wrong.filter((v) => nice(v, 2) && Math.abs(v - S2) > 1e-9), (v) => `${num(roundTo(v, 4))} cm²`),
       typed: { kind: 'number', value: S2 },
       solution: [
-        `Volume factor $= \\frac{${num(V2)}}{${num(V1)}} = ${fr3.tex()} = k^3$, so $k = ${frac(q, p).tex()}$ (cube root).`,
+        `Volume factor $= \\frac{${tnum(V2)}}{${tnum(V1)}} = ${fr3.tex()} = k^3$, so $k = ${frac(q, p).tex()}$ (cube root).`,
         `Area factor $= k^2 = ${fr2.tex()}$.`,
-        `Surface area of B $= ${num(S1)} \\times ${fr2.tex()} = ${num(S2)}$`,
+        `Surface area of B $= ${tnum(S1)} \\times ${fr2.tex()} = ${tnum(S2)}$`,
         `Answer: <b>${num(S2)} cm²</b>`,
       ],
     };
@@ -428,9 +455,9 @@ export const savReverse = gen('trig-sav-reverse', 'trig-similar-area-volume', (r
     distractors: fmtVals(wrong.filter((v) => nice(v, 2) && Math.abs(v - V2) > 1e-9), (v) => `${num(roundTo(v, 4))} cm³`),
     typed: { kind: 'number', value: V2 },
     solution: [
-      `Area factor $= \\frac{${num(S2)}}{${num(S1)}} = ${fr2.tex()} = k^2$, so $k = ${frac(q, p).tex()}$ (square root).`,
+      `Area factor $= \\frac{${tnum(S2)}}{${tnum(S1)}} = ${fr2.tex()} = k^2$, so $k = ${frac(q, p).tex()}$ (square root).`,
       `Volume factor $= k^3 = ${fr3.tex()}$.`,
-      `Volume of B $= ${num(V1)} \\times ${fr3.tex()} = ${num(V2)}$`,
+      `Volume of B $= ${tnum(V1)} \\times ${fr3.tex()} = ${tnum(V2)}$`,
       `Answer: <b>${num(V2)} cm³</b>`,
     ],
   };
@@ -443,7 +470,11 @@ export const savRatio = gen('trig-sav-ratio', 'trig-similar-area-volume', (rng, 
   const pw = { length: 1, area: 2, volume: 3 };
   const r = (n) => `${p ** n} : ${q ** n}`;
   const ans = r(pw[want]);
-  const ds = [r(pw[given]), r(1), r(2), r(3), r(4), `${p * pw[want]} : ${q * pw[want]}`, `${p + pw[want]} : ${q + pw[want]}`].filter((s, i, arr) => s !== ans && arr.indexOf(s) === i);
+  const red = (x, y) => { const g2 = gcd(x, y); return `${x / g2} : ${y / g2}`; };
+  const cand = [[p ** pw[given], q ** pw[given]], [p, q], [p ** 2, q ** 2], [p ** 3, q ** 3], [p ** 4, q ** 4], [p * pw[want], q * pw[want] + pw[want]], [p + pw[want], q + pw[want]], [2 * p, 3 * q], [p ** 2, q ** 3], [p ** 3, q ** 2]];
+  const seenR = new Set([red(p ** pw[want], q ** pw[want])]);
+  const ds = [];
+  for (const [x, y] of cand) { const t = red(x, y); if (!seenR.has(t) && x !== y) { seenR.add(t); ds.push(t); } }
   const word = { length: 'lengths', area: 'surface areas', volume: 'volumes' };
   return {
     prompt: `Two solids are mathematically similar. The ratio of their ${word[given]} is $${r(pw[given])}$.<br>What is the ratio of their ${word[want]}?`,
@@ -476,6 +507,21 @@ const SAV_CONTEXTS = [
   { q: 'length', make: (a, b, x) => `Two similar posters need ${a} m² and ${b} m² of paper. The smaller poster is ${x} cm wide. How wide is the larger poster?`, unit: 'cm', fromArea: true },
 ];
 
+/** Says which kind of quantity a context is about. */
+function savWhat(text) {
+  const t = text.toLowerCase();
+  if (t.includes('paint')) return 'Paint covers the <b>surface</b> of the car, so it depends on area';
+  if (t.includes('glass')) return 'The glass covers the <b>area</b> of the frame';
+  if (t.includes('cheese')) return 'The cheese covers the <b>top surface</b> of the pizza, so it depends on area';
+  if (t.includes('ink')) return 'Ink covers the <b>area</b> of the logo';
+  if (t.includes('fabric')) return 'Fabric covers the <b>surface</b> of the tent, so it depends on area';
+  if (t.includes('clean')) return 'The cleaning cost is proportional to <b>area</b>';
+  if (t.includes('wax')) return 'The wax fills the whole candle, so it depends on <b>volume</b>';
+  if (t.includes('mass')) return 'Mass depends on how much material there is, which is a <b>volume</b>';
+  if (t.includes('cereal')) return 'The cereal fills the box, so it depends on <b>volume</b>';
+  return 'The amount a container holds is its capacity, a <b>volume</b>';
+}
+
 export const savWord = gen('trig-sav-word', 'trig-similar-area-volume', (rng, d) => {
   const ctx = pick(rng, SAV_CONTEXTS);
   const [p, q] = pick(rng, SCALE_PAIRS[d === 'hard' ? 'medium' : 'easy'].filter(([x, y]) => x < y));
@@ -496,7 +542,7 @@ export const savWord = gen('trig-sav-word', 'trig-similar-area-volume', (rng, d)
     x = ctx.unit === '£' ? int(rng, 1, 4) * a ** n : int(rng, 2, 20) * (a === 1 ? 1 : p ** n) * (ctx.unit === 'g' ? 5 : 1);
     ans = x * kk ** n;
     wrong = [x * kk, x * kk ** (n === 2 ? 3 : 2), x + (b - a), x * kk * n];
-    sol = [`The context tells you what kind of quantity it is: ${n === 2 ? 'paint/ink/fabric/cheese/cost-per-area cover a <b>surface</b> → area factor $k^2$' : 'capacity/mass/wax fill a <b>space</b> → volume factor $k^3$'}.`, `Length scale factor $k = ${frac(b, a).tex()}$, so the factor is $k^{${n}} = ${frac(b ** n, a ** n).tex()}$.`, `$${ctx.unit === '£' ? `£${x}` : x} \\times ${frac(b ** n, a ** n).tex()} = ${ctx.unit === '£' ? `£${num(roundTo(ans, 2), nice(ans) ? 0 : 2)}` : tnum(roundTo(ans, 4))}$`, `Answer: <b>${fmtU(ans)}</b>`];
+    sol = [`${savWhat(ctx.make(1, 2, 3))} → ${n === 2 ? 'area factor $k^2$' : 'volume factor $k^3$'}.`, `Length scale factor $k = ${frac(b, a).tex()}$, so the factor is $k^{${n}} = ${frac(b ** n, a ** n).tex()}$.`, `$${ctx.unit === '£' ? `£${x}` : x} \\times ${frac(b ** n, a ** n).tex()} = ${ctx.unit === '£' ? `£${num(roundTo(ans, 2), nice(ans) ? 0 : 2)}` : tnum(roundTo(ans, 4))}$`, `Answer: <b>${fmtU(ans)}</b>`];
   }
   return {
     prompt: ctx.make(a, b, x),
@@ -532,7 +578,7 @@ function congruentPair(rng, cond) {
 const CONDS = ['SSS', 'SAS', 'ASA', 'RHS'];
 
 export const congReason = gen('trig-cong-reason', 'trig-congruence', (rng, d) => {
-  const cond = pick(rng, CONDS);
+  const cond = d === 'hard' ? pick(rng, ['ASA', 'ASA', 'RHS', 'SAS', 'SSS']) : pick(rng, CONDS);
   const { T1, T2, sides, angs } = congruentPair(rng, cond);
   const L1 = (v) => `${num(roundTo(v, 1))} cm`;
   // what to mark: lists of side keys (BC/CA/AB) and angle indices
@@ -541,11 +587,10 @@ export const congReason = gen('trig-cong-reason', 'trig-congruence', (rng, d) =>
   else if (cond === 'SAS') { const v = pick(rng, [0, 1, 2]); angIdx = [v]; sideKeys = [['AB', 'CA'], ['AB', 'BC'], ['BC', 'CA']][v]; }
   else if (cond === 'ASA') { const s = pick(rng, ['AB', 'BC', 'CA']); sideKeys = [s]; angIdx = { AB: [0, 1], BC: [1, 2], CA: [2, 0] }[s]; if (d === 'hard' && chance(rng)) angIdx = [angIdx[0], 3 - angIdx[0] - angIdx[1]]; }
   else { right = true; sideKeys = ['BC', pick(rng, ['CA', 'AB'])]; }
-  if (cond === 'RHS' && d !== 'easy' && chance(rng, 0.3)) { /* keep */ }
   const nm1 = ['A', 'B', 'C']; const nm2 = ['P', 'Q', 'R'];
   const pts = { A: T1[0], B: T1[1], C: T1[2], P: T2[0], Q: T2[1], R: T2[2], G1: centroidOf(T1), G2: centroidOf(T2) };
   const vis = fig({
-    pts, width: 440, height: 210, pad: 30,
+    pts, width: 460, height: 210, pad: 44,
     draw: (g) => {
       let out = g.poly('ABC') + g.poly('PQR');
       for (const [nm, G] of [[nm1, 'G1'], [nm2, 'G2']]) {
@@ -572,6 +617,7 @@ export const congReason = gen('trig-cong-reason', 'trig-congruence', (rng, d) =>
     distractors: CONDS.filter((c) => c !== cond),
     count: 4,
     keepOrder: true,
+    order: CONDS,
     solution: [
       'Look at what is marked as equal in both triangles.',
       why,
@@ -658,9 +704,10 @@ export const congValid = gen('trig-cong-valid', 'trig-congruence', (rng, d) => {
     SSA2: `$${s(A0, C0)} = ${s(P0, R0)}$, $${s(B0, C0)} = ${s(Q0, R0)}$, $${ang(B0)} = ${ang(Q0)}$`,
   };
   const valid = ['SSS', 'SAS', 'ASA', 'AAS', 'RHS']; const invalid = ['AAA', 'SSA', 'SSA2'];
-  const askValid = chance(rng, 0.5);
-  const ansKey = askValid ? pick(rng, valid) : pick(rng, invalid);
-  const ds = askValid ? shuffle(rng, invalid).concat([]) : shuffle(rng, valid);
+  const askValid = d === 'easy' ? true : d === 'hard' ? false : chance(rng, 0.5);
+  const ansKey = askValid ? pick(rng, d === 'easy' ? ['SSS', 'SAS', 'RHS'] : valid) : pick(rng, d === 'hard' ? ['SSA', 'SSA2', 'SSA2'] : invalid);
+  // hard: the valid options include the less obvious AAS and RHS
+  const ds = askValid ? shuffle(rng, invalid) : d === 'hard' ? ['AAS', 'RHS', pick(rng, ['SAS', 'ASA'])] : shuffle(rng, valid);
   const count = 4;
   return {
     prompt: askValid

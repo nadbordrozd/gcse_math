@@ -16,8 +16,8 @@ export const notationSimplify = G('alg-notation-simplify', 'alg-notation', (rng,
   const k = int(rng, 2, 6); const m = int(rng, 2, 5);
   const forms = size(d,
     ['repeatAdd', 'numTimesTerm', 'divide', 'threeFactors'],
-    ['cube', 'twoTimesSquare', 'productSquare', 'numTimesTerm'],
-    ['productSquare', 'mixed', 'cubeCoef', 'twoTimesSquare']);
+    ['cube', 'twoTimesSquare', 'productSquare'],
+    ['mixed', 'cubeCoef', 'mixed', 'productSquare']);
   const f = pick(rng, forms);
   let expr; let ans; let dis; let sol;
   switch (f) {
@@ -225,7 +225,8 @@ export const simplifyCollect = G('alg-simplify-collect', 'alg-simplify', (rng, d
   // Lumping everything into one term.
   const total = list.reduce((s, [c]) => s + c, 0);
   const letters = [...new Set(result.map(([, t]) => t).filter(Boolean))];
-  if (letters.length >= 2) dis.push(terms([[total, letters.join('').replace(/\^\{2\}/g, '')]]));
+  // Lumping everything into one term: use each letter once, in order (e.g. 9mn).
+  if (letters.length >= 2) dis.push(terms([[total, [...new Set(letters.join('').replace(/\^\{2\}/g, '').split(''))].sort().join('')]]));
   // Swap the final sign.
   dis.push(exprOf(result.map(([c, t], i) => (i === result.length - 1 ? [-c, t] : [c, t]))));
   dis.push(exprOf(result.map(([c, t], i) => (i === 0 ? [c + 1, t] : [c, t]))));
@@ -240,7 +241,7 @@ export const simplifyCollect = G('alg-simplify-collect', 'alg-simplify', (rng, d
       ...groups.map((g) => {
         const parts = norm(list).filter(([, t]) => t === g);
         const sum = parts.reduce((s, [c]) => s + c, 0);
-        return g === '' ? `Numbers: $${parts.map(([c]) => paren(c)).join(' + ')} = ${tnum(sum)}$` : `$${g}$ terms: $${parts.map(([c]) => paren(c)).join(' + ')} = ${tnum(sum)}$, giving $${terms([[sum, g]])}$`;
+        return g === '' ? (parts.length === 1 ? `The number term is $${tnum(sum)}$.` : `Numbers: $${parts.map(([c]) => paren(c)).join(' + ')} = ${tnum(sum)}$`) : `$${g}$ terms: $${parts.map(([c]) => paren(c)).join(' + ')} = ${tnum(sum)}$, giving $${terms([[sum, g]])}$`;
       }),
       ...(list.some(([, t]) => t === `${v}${u}`) ? [`Remember $${v}${u}$ is the same as $${u}${v}$.`] : []),
       `Answer: $${ans}$`,
@@ -303,7 +304,9 @@ export const simplifyPerimeter = G('alg-simplify-perimeter', 'alg-simplify', (rn
   let sides; let labels; let pts; let ticks = '';
   const lab = (s) => plainExpr(lin(s[0], s[1], x));
   if (shape === 'rectangle') {
-    const s1 = side(); let s2 = side(); if (s2[0] === s1[0] && s2[1] === s1[1]) s2 = [s1[0] + 1, s1[1]];
+    let s1 = side(); let s2 = side(); if (s2[0] === s1[0] && s2[1] === s1[1]) s2 = [s1[0] + 1, s1[1]];
+    // The longer (top) side gets the expression that is bigger for typical x (compare at x = 5 and x = 10).
+    if (s2[0] * 10 + s2[1] > s1[0] * 10 + s1[1] || (s2[0] * 10 + s2[1] === s1[0] * 10 + s1[1] && s2[0] * 5 + s2[1] > s1[0] * 5 + s1[1])) [s1, s2] = [s2, s1];
     sides = [s1, s2, s1, s2];
     pts = [[60, 40], [300, 40], [300, 160], [60, 160]];
     labels = [[180, 24, lab(s1)], [340, 100, lab(s2)]];
@@ -397,7 +400,7 @@ export const substitutionEvaluate = G('alg-sub-evaluate', 'alg-substitution', (r
       c = pick(rng, divs);
       tex = tf(`${A}^{2} + ${B}`, C); val = top / c;
       wrong = [(a * a - b) / c, (-(a * a) + b) / c, a * a + b / c, (2 * a + b) / c].filter(Number.isInteger);
-      work = `${tf(`${paren(a)}^{2} + ${paren(b)}`, paren(c))} = ${tf(tnum(top), tnum(c))}`;
+      work = `${tf(`${paren(a)}^{2} + ${paren(b)}`, paren(c))} = ${tnum(top)} \\div ${paren(c)}`;
       break;
     }
     case 'kAB-C2': tex = `${k}${A}${B} - ${C}^{2}`; val = k * a * b - c * c; wrong = [k * a * b + c * c, k * a * b - 2 * c, k * a * b + 2 * c, -(k * a * b) - c * c]; work = `${k} \\times ${paren(a)} \\times ${paren(b)} - ${paren(c)}^{2} = ${tnum(k * a * b)} - ${tnum(c * c)}`; break;
@@ -467,18 +470,24 @@ export const substitutionCompare = G('alg-sub-compare', 'alg-substitution', (rng
   const v = half ? frac(1, pick(rng, [2, 4])) : d === 'easy' ? int(rng, 3, 6) : -int(rng, 2, 4);
   const want = pick(rng, ['greatest', 'smallest']);
   const k = int(rng, 2, 5);
+  // Exact values with fractions; √x only appears when it is exact.
+  const V = frac(typeof v === 'number' ? v : v.n, typeof v === 'number' ? 1 : v.d);
+  const rootN = Math.sqrt(Math.abs(V.n)); const rootD = Math.sqrt(V.d);
+  const exactRoot = V.n > 0 && Number.isInteger(rootN) && Number.isInteger(rootD);
   const pool = [
-    [`${x}^{2}`, (t) => t * t], [`${x}^{3}`, (t) => t ** 3], [`${k}${x}`, (t) => k * t], [`-${x}`, (t) => -t],
-    [`${x} + ${k}`, (t) => t + k], [`${x} - ${k}`, (t) => t - k], [tf(1, x), (t) => 1 / t], [`${k} - ${x}`, (t) => k - t], [tf(x, 2), (t) => t / 2], [`\\sqrt{${x}}`, (t) => Math.sqrt(t)],
-  ].filter(([s]) => !(typeof v === 'number' && v < 0 && s.includes('sqrt')));
-  const vv = typeof v === 'number' ? v : v.value();
+    [`${x}^{2}`, (t) => t.mul(t)], [`${x}^{3}`, (t) => t.mul(t).mul(t)], [`${k}${x}`, (t) => t.mul(k)], [`-${x}`, (t) => t.neg()],
+    [`${x} + ${k}`, (t) => t.add(k)], [`${x} - ${k}`, (t) => t.sub(k)], [tf(1, x), (t) => t.inv()], [`${k} - ${x}`, (t) => frac(k).sub(t)], [tf(x, 2), (t) => t.div(2)],
+    ...(exactRoot ? [[`\\sqrt{${x}}`, () => frac(rootN, rootD)]] : []),
+  ];
   for (let tries = 0; tries < 50; tries += 1) {
     const chosen = sample(rng, pool, 4);
-    const vals = chosen.map(([, f]) => f(vv));
+    const exact = chosen.map(([, f]) => f(V));
+    const vals = exact.map((t) => t.value());
     const target = want === 'greatest' ? Math.max(...vals) : Math.min(...vals);
     if (vals.filter((y) => Math.abs(y - target) < 1e-9).length !== 1) continue;
     const ansIdx = vals.findIndex((y) => Math.abs(y - target) < 1e-9);
-    const fmt = (y) => (Number.isInteger(y) ? tnum(y) : frac(Math.round(y * 64), 64).tex());
+    const fmt = (y) => exact[vals.indexOf(y)].tex();
+    const hasPow = chosen.some(([s]) => /\^/.test(s));
     return {
       prompt: `Here are four expressions: &nbsp; ${shuffle(rng, chosen).map(([s]) => `$${s}$`).join(' &nbsp;&nbsp; ')}<br>When $${x} = ${typeof v === 'number' ? tnum(v) : v.tex()}$, which expression has the <b>${want}</b> value?`,
       answer: $(chosen[ansIdx][0]),
@@ -487,7 +496,9 @@ export const substitutionCompare = G('alg-sub-compare', 'alg-substitution', (rng
       solution: [
         `Substitute $${x} = ${typeof v === 'number' ? tnum(v) : v.tex()}$ into each expression.`,
         chosen.map(([s], i) => `$${s} = ${fmt(vals[i])}$`).join(', &nbsp; '),
-        typeof v === 'number' && v < 0 ? 'Careful with negatives: squaring makes them positive, cubing keeps them negative.' : half ? 'For a number between 0 and 1, squaring and cubing make it <b>smaller</b>.' : `The ${want} value is $${fmt(target)}$.`,
+        ...(hasPow && typeof v === 'number' && v < 0 ? ['Careful with negatives: squaring makes them positive, cubing keeps them negative.'] : []),
+        ...(hasPow && half ? ['For a number between 0 and 1, squaring and cubing make it <b>smaller</b>.'] : []),
+        `The ${want} value is $${fmt(target)}$.`,
         `Answer: $${chosen[ansIdx][0]}$`,
       ],
     };
@@ -606,7 +617,7 @@ export const expandSimplify = G('alg-expand-simplify', 'alg-expand-single', (rng
 
 export const expandMissing = G('alg-expand-missing', 'alg-expand-single', (rng, d) => {
   const x = pick(rng, ['x', 'y', 'a', 'n']);
-  const k = int(rng, 2, 9); const a = int(rng, 1, 6); const b = size(d, int(rng, 1, 9), intExcept(rng, -9, 9, [0]), intExcept(rng, -9, 9, [0]));
+  const k = size(d, int(rng, 2, 6), int(rng, 2, 9), int(rng, 6, 12)); const a = size(d, int(rng, 1, 5), int(rng, 1, 6), int(rng, 2, 9)); const b = size(d, int(rng, 1, 9), intExcept(rng, -9, 9, [0]), intExcept(rng, -15, 15, [0, 1, -1]));
   const which = pick(rng, size(d, ['const', 'outside'], ['const', 'coef', 'outside'], ['const', 'coef', 'neg']));
   let lhs; let rhs; let val; let sol;
   const box = '\\square';
@@ -654,7 +665,7 @@ export const factoriseNumbers = G('alg-factorise-numeric', 'alg-factorise-single
     `${g}(${terms([[p, u], [-sgnQ * q, t2[1]]])})`,
     `${g}(${terms([[p, u], [sgnQ * g * q, t2[1]]])})`,
     `${g}(${terms([[g * p, u], [sgnQ * q, t2[1]]])})`,
-    `${g}${u}(${terms([[p, ''], [sgnQ * q, t2[1]]])})`,
+    ...(withLetter ? [`${g}${u}(${terms([[p, ''], [sgnQ * q, t2[1]]])})`] : []),
     `${g + 1}(${terms([[p, u], [sgnQ * q, t2[1]]])})`,
   ];
   return {
@@ -853,7 +864,7 @@ export const indexFindPower = G('alg-index-find-power', 'alg-index-laws', (rng, 
 
 export const indexNegFrac = G('alg-index-frac-neg', 'alg-index-laws', (rng, d) => {
   const x = pick(rng, ['x', 'a', 'y', 'p']);
-  const form = pick(rng, size(d, ['zero', 'one', 'bracketDiv'], ['negative', 'bracketDiv', 'zero'], ['half', 'third', 'negHalf', 'twoThirds']));
+  const form = pick(rng, size(d, ['zero', 'one', 'bracketDiv'], ['negative', 'half', 'third'], ['negHalf', 'twoThirds', 'negHalf', 'third']));
   let tex; let ans; let dis; let sol;
   const m = int(rng, 2, 6); const n = int(rng, 2, 6);
   switch (form) {

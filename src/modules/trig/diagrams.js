@@ -204,8 +204,29 @@ function makeHelpers(P, k, centre, T) {
         let dist = rr + (double ? 4.5 : 0) + ext + 3;
         if (th < Math.PI) dist = Math.max(dist, (rho + 2) / Math.sin(th / 2));
         dist = labelDist ?? Math.min(dist, maxDist);
-        box(V[0] + dist * cx, V[1] + dist * cy, lab, size);
-        out += label(V[0] + dist * cx, V[1] + dist * cy, lab, { size, color });
+        // Nudge the label (further out / slightly round the bisector) if it would sit on another line or label.
+        let best = { c: [V[0] + dist * cx, V[1] + dist * cy], score: -Infinity };
+        if (labelDist === null) {
+          const others = obs.segs.filter(([S1, S2]) => Math.hypot(S1[0] - V[0], S1[1] - V[1]) > 1.5 && Math.hypot(S2[0] - V[0], S2[1] - V[1]) > 1.5);
+          const spread = th < Math.PI ? th : 2 * Math.PI - th;
+          const clear = (c) => {
+            let sc = Infinity;
+            for (const [S1, S2] of others) sc = Math.min(sc, boxSegDist(c, w, h, S1, S2));
+            for (const b2 of obs.boxes) sc = Math.min(sc, Math.max(Math.abs(c[0] - b2.x) - (w + b2.w) / 2, Math.abs(c[1] - b2.y) - (h + b2.h) / 2));
+            return sc;
+          };
+          for (const dd of [0, 7, 14, 22, 32]) {
+            for (const off of [0, 0.15, -0.15, 0.28, -0.28]) {
+              const ang = m + off * spread;
+              const c = [V[0] + (dist + dd) * Math.cos(ang), V[1] + (dist + dd) * Math.sin(ang)];
+              const sc = Math.min(clear(c), 4) - dd * 0.02 - Math.abs(off) * 0.5;
+              if (sc > best.score + 1e-9) best = { c, score: sc };
+            }
+            if (best.score >= 3.9) break;
+          }
+        }
+        box(best.c[0], best.c[1], lab, size);
+        out += label(best.c[0], best.c[1], lab, { size, color });
       }
       return out;
     },
@@ -361,7 +382,7 @@ export function rightTriangleFig({ angleA = 40, sides = {}, angles = {}, names =
   const th = Math.max(24, Math.min(66, angleA));
   const pts = { C: [0, 0], A: [1, 0], B: [0, Math.tan(rad(th))] };
   return fig({
-    pts, rotate, flip, width, height, nda, pad: 40,
+    pts, rotate, flip, width, height, nda, pad: 40, padX: 56,
     draw: (g) => {
       let out = g.poly('ABC');
       out += g.right('C', 'A', 'B', 12);

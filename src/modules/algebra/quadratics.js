@@ -209,7 +209,7 @@ export const solveQuadContext = G('alg-solve-quad-context', 'alg-solve-quad-fact
         `Form an equation: $${eqTex}$`,
         `Expand and make one side zero: $${coefsTex} = 0$${halve ? ` (you can divide by 2 first)` : ''}`,
         `Factorise and solve: ${rootTxt}.`,
-        `A length (or a positive number) can't be $${tnum(rejectRoot)}$, so $${v} = ${tnum(root)}$.${ansVal !== root ? ` The answer is ${tnum(ansVal)}.` : ''}`,
+        `${ctx.startsWith('consec') ? 'The numbers are positive' : 'A length cannot be negative'}, so reject $${tnum(rejectRoot)}$: $${v} = ${tnum(root)}$.${ansVal !== root ? ` The answer is ${tnum(ansVal)}.` : ''}`,
         `Answer: ${fmt(ansVal)}`,
       ],
     };
@@ -323,14 +323,15 @@ export const quadFormulaRearrange = G('alg-quad-formula-rearrange', 'alg-quadrat
 
 export const quadFormulaSurd = G('alg-quad-formula-surd', 'alg-quadratic-formula', (rng, d) => {
   const x = 'x';
-  // x² + b x + c = 0 with b even (easy) → x = −b/2 ± √(b²/4 − c); general → (−b ± √D)/(2a)
+  // Easy: a = 1, b odd, no surd to simplify (straight substitution). Medium: b even, so the surd simplifies and divides by 2. Hard: a = 2 or 3.
   const a = d === 'hard' ? pick(rng, [2, 3]) : 1;
-  const b = d === 'easy' ? 2 * intExcept(rng, -5, 5, [0]) : intExcept(rng, -9, 9, [0]);
+  const b = d === 'medium' ? 2 * intExcept(rng, -5, 5, [0]) : d === 'easy' ? 2 * int(rng, -4, 4) + 1 : intExcept(rng, -9, 9, [0]);
   const c = intExcept(rng, -9, 9, [0]);
   const D = b * b - 4 * a * c;
   if (D <= 0) throw new Error('');
   const [k, m] = surd(D);
   if (m === 1) throw new Error('factorises');
+  if (d === 'easy' && k !== 1) throw new Error('keep easy free of surd simplification');
   // x = (−b ± k√m) / (2a), simplify by g = gcd(b, k, 2a)
   const g = gcd(gcd(Math.abs(b), k), 2 * a);
   const B = -b / g; const K = k / g; const A2 = (2 * a) / g;
@@ -374,8 +375,10 @@ function ctsTex(p, q, x = 'x', a = 1) {
 
 export const ctsForm = G('alg-cts-form', 'alg-completing-square', (rng, d) => {
   const x = 'x';
-  const b = d === 'hard' ? 2 * intExcept(rng, -6, 6, [0]) + pick(rng, [1, -1]) : 2 * intExcept(rng, -7, 7, [0]);
-  const c = intExcept(rng, -15, 20, [0]);
+  // Easy: small positive even b and positive c. Medium: negatives. Hard: odd b (fractions).
+  const b = d === 'hard' ? 2 * intExcept(rng, -6, 6, [0]) + pick(rng, [1, -1]) : d === 'easy' ? 2 * int(rng, 1, 4) : 2 * intExcept(rng, -7, 7, [0]);
+  const c = d === 'easy' ? int(rng, 1, 12) : intExcept(rng, -15, 20, [0]);
+  if (d === 'medium' && b > 0 && c > 0) throw new Error('medium has a negative');
   const p = rat(b, 2); const pp = rat(b * b, 4);
   const q = pp instanceof Frac ? frac(c).sub(pp) : c - pp;
   const qn = q instanceof Frac && q.isInt ? q.n : q;

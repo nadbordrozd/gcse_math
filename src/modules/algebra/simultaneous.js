@@ -41,7 +41,7 @@ export const simElimSimple = G('alg-sim-elim-simple', 'alg-simultaneous-linear',
     solution: [
       opposite ? `The $y$ terms are $+${b === 1 ? '' : b}y$ and $-${b === 1 ? '' : b}y$, so <b>add</b> the equations to eliminate $y$:` : `The $y$ terms are the same, so <b>subtract</b> the second equation from the first to eliminate $y$:`,
       A === 1 ? `$x = ${tnum(C)}$` : `$${terms([[A, 'x']])} = ${tnum(C)}$, so $x = ${tnum(x)}$`,
-      `Substitute into the first equation: $${a1 === 1 ? '' : a1}${a1 === 1 ? '' : ' \\times '}${paren(x)} + ${b1 === 1 ? '' : b1}y = ${tnum(c1)}$, so $${b1 === 1 ? '' : b1}y = ${tnum(c1 - a1 * x)}$ and $y = ${tnum(y)}$`,
+      `Substitute into the first equation: $${a1 === 1 ? '' : a1}${a1 === 1 ? '' : ' \\times '}${paren(x)} + ${b1 === 1 ? '' : b1}y = ${tnum(c1)}$, ${b1 === 1 ? `so $y = ${tnum(y)}$` : `so $${b1}y = ${tnum(c1 - a1 * x)}$ and $y = ${tnum(y)}$`}`,
       `Check in the second equation: $${tnum(a2 * x)} ${b2 * y < 0 ? '-' : '+'} ${Math.abs(b2 * y)} = ${tnum(c2)}$ ✓`,
       `Answer: ${pairTex(x, y)}`,
     ],
@@ -55,10 +55,13 @@ export const simElimScale = G('alg-sim-elim-scale', 'alg-simultaneous-linear', (
     // Multiply one equation: b2 = k b1 (opposite or same sign)
     a1 = int(rng, 1, 5); b1 = int(rng, 1, 3); const k = int(rng, 2, 4); a2 = intExcept(rng, 1, 6, [a1 * k]); b2 = k * b1 * (chance(rng) ? -1 : 1);
   } else {
-    // Multiply both: coprime coefficients
-    do { a1 = int(rng, 2, 6); b1 = intExcept(rng, -5, 5, [0, 1, -1]); a2 = int(rng, 2, 6); b2 = intExcept(rng, -5, 5, [0, 1, -1]); } while (a1 * b2 - a2 * b1 === 0 || gcd(Math.abs(b1), Math.abs(b2)) !== 1 || Math.abs(b1) === Math.abs(b2) || a1 === a2);
+    // Multiply both: coprime y coefficients, and neither x coefficient a multiple of the other
+    // (otherwise multiplying just one equation would be the sensible method).
+    do { a1 = int(rng, 2, 6); b1 = intExcept(rng, -5, 5, [0, 1, -1]); a2 = int(rng, 2, 6); b2 = intExcept(rng, -5, 5, [0, 1, -1]); } while (a1 * b2 - a2 * b1 === 0 || gcd(Math.abs(b1), Math.abs(b2)) !== 1 || Math.abs(b1) === Math.abs(b2) || a1 % a2 === 0 || a2 % a1 === 0);
   }
   if (a1 * b2 - a2 * b1 === 0) throw new Error('');
+  // No equation with a common factor (e.g. 2x + 2y = 12): it would be divided out first.
+  if (gcd(a1, Math.abs(b1)) !== 1 || gcd(a2, Math.abs(b2)) !== 1) throw new Error('common factor');
   const c1 = a1 * x + b1 * y; const c2 = a2 * x + b2 * y;
   // Eliminate y: multiply eq1 by |b2|/g and eq2 by |b1|/g
   const g = gcd(Math.abs(b1), Math.abs(b2));
@@ -89,27 +92,34 @@ export const simElimScale = G('alg-sim-elim-scale', 'alg-simultaneous-linear', (
 }, { title: 'Simultaneous equations: multiply then eliminate' });
 
 export const simSubstitution = G('alg-sim-substitution', 'alg-simultaneous-linear', (rng, d) => {
-  const x = intExcept(rng, -5, 8, [0]);
-  const m = intExcept(rng, -4, 4, [0]); const c = intExcept(rng, -9, 9, []);
+  // Easy: small positive numbers. Medium: negatives. Hard: larger numbers and sometimes x = my + c (substitute for x).
+  const x = size(d, int(rng, 1, 6), intExcept(rng, -5, 8, [0]), intExcept(rng, -9, 12, [0]));
+  const m = size(d, int(rng, 1, 3), intExcept(rng, -4, 4, [0]), intExcept(rng, -5, 6, [0, 1]));
+  const c = size(d, int(rng, 1, 9), intExcept(rng, -9, 9, []), intExcept(rng, -15, 15, [0]));
   const y = m * x + c;
-  const a = int(rng, 1, 5); const b = intExcept(rng, -4, 5, [0]);
+  const a = int(rng, 1, size(d, 3, 5, 7)); const b = size(d, int(rng, 1, 4), intExcept(rng, -4, 5, [0]), intExcept(rng, -6, 6, [0, 1]));
   if (a + b * m === 0) throw new Error('');
   const k = a * x + b * y;
-  const form = d === 'easy' ? 'y=' : pick(rng, ['y=', 'y=', 'x+']);
+  const swap = d === 'hard' && chance(rng, 0.6);
+  // U is solved first, W = mU + c. When swapped, U is shown as y and W as x.
+  const [U, W] = swap ? ['y', 'x'] : ['x', 'y'];
   const A = a + b * m; const K = k - b * c;
-  const wrongX = (k + b * c) / A;
-  const extra = [[wrongX, m * wrongX + c], [x, m * x - c], [x, k - a * x]];
+  const wrongU = (k + b * c) / A;
+  const toXY = ([u, w]) => (swap ? [w, u] : [u, w]);
+  const [X, Y] = toXY([x, y]);
+  const extra = [[wrongU, m * wrongU + c], [x, m * x - c], [x, k - a * x]].map(toXY);
+  const second = swap ? `${lin2(b, a)}` : lin2(a, b);
   return {
-    prompt: `Solve the simultaneous equations<br>$${sys([['y', P([m, c])], [lin2(a, b), tnum(k)]])}$`,
-    answer: pairTex(x, y),
-    distractors: pairDistractors(x, y, extra),
-    typed: { kind: 'coord', x, y },
-    hint: 'Replace y in the second equation with the expression for y from the first.',
+    prompt: `Solve the simultaneous equations<br>$${sys([[W, P([m, c], U)], [second, tnum(k)]])}$`,
+    answer: pairTex(X, Y),
+    distractors: pairDistractors(X, Y, extra),
+    typed: { kind: 'coord', x: X, y: Y },
+    hint: `Replace $${W}$ in the second equation with the expression for $${W}$ from the first.`,
     solution: [
-      `Substitute $y = ${P([m, c])}$ into the second equation: $${a === 1 ? '' : a}x ${b < 0 ? '-' : '+'} ${Math.abs(b) === 1 ? '' : Math.abs(b)}(${P([m, c])}) = ${tnum(k)}$`,
-      `Expand and simplify: $${P([A, b * c])} = ${tnum(k)}$, so $${terms([[A, 'x']])} = ${tnum(K)}$ and $x = ${tnum(x)}$`,
-      `Then $y = ${P([m, c]).replace('x', Math.abs(m) === 1 ? paren(x) : ` \\times ${paren(x)}`)} = ${tnum(y)}$`,
-      `Answer: ${pairTex(x, y)}`,
+      `Substitute $${W} = ${P([m, c], U)}$ into the second equation: $${a === 1 ? '' : a}${U} ${b < 0 ? '-' : '+'} ${Math.abs(b) === 1 ? '' : Math.abs(b)}(${P([m, c], U)}) = ${tnum(k)}$`,
+      `Expand and simplify: $${P([A, b * c], U)} = ${tnum(k)}$, so ${A === 1 ? `$${U} = ${tnum(x)}$` : `$${terms([[A, U]])} = ${tnum(K)}$ and $${U} = ${tnum(x)}$`}`,
+      `Then $${W} = ${P([m, c], U).replace(U, Math.abs(m) === 1 ? paren(x) : ` \\times ${paren(x)}`)} = ${tnum(y)}$`,
+      `Answer: ${pairTex(X, Y)}`,
     ],
   };
 }, { title: 'Simultaneous equations by substitution' });
@@ -136,7 +146,7 @@ function simContext(rng, d) {
     () => { const [a1, b1, a2, b2] = pairQ(); return { u: 5 * int(rng, 10, 40), v: 5 * int(rng, 6, 30), items: ['pen', 'ruler'], text: (c1, c2) => `${n1} buys ${a1} pens and ${b1} rulers for ${money(c1 / 100, { forcePence: true })}. ${n2} buys ${a2} pens and ${b2} rulers for ${money(c2 / 100, { forcePence: true })}.`, coef: [a1, b1, a2, b2], money: true, letters: ['p', 'r'] }; },
     () => { const [a1, b1, a2, b2] = pairQ(); return { u: price(1, 3), v: price(1, 2), items: ['burger', 'drink'], text: (c1, c2) => `${a1} burgers and ${b1} drinks cost ${money(c1 / 100)}. ${a2} burgers and ${b2} drinks cost ${money(c2 / 100)}.`, coef: [a1, b1, a2, b2], money: true, letters: ['b', 'd'] }; },
     () => { const s = int(rng, 20, 90); const dd = int(rng, 2, s - 2); if ((s + dd) % 2) return null; return { u: (s + dd) / 2, v: (s - dd) / 2, items: ['larger number', 'smaller number'], text: () => `Two numbers add up to ${s}. Their difference is ${dd}.`, coef: [1, 1, 1, -1], money: false, letters: ['x', 'y'], eqs: [`x + y = ${s}`, `x - y = ${dd}`] }; },
-    () => { const p = int(rng, 25, 50); const c = int(rng, 3, 15); return { u: p, v: c, items: [`parent's age`, `child's age`], text: () => `The sum of a parent's age and their child's age is ${p + c} years. The parent is ${p - c} years older than the child.`, coef: [1, 1, 1, -1], money: false, letters: ['p', 'c'], unitWord: 'years', eqs: [`p + c = ${p + c}`, `p - c = ${p - c}`] }; },
+    () => { const c = int(rng, 3, 15); const p = c + int(rng, 20, 35); return { u: p, v: c, items: [`parent's age`, `child's age`], text: () => `The sum of a parent's age and their child's age is ${p + c} years. The parent is ${p - c} years older than the child.`, coef: [1, 1, 1, -1], money: false, letters: ['p', 'c'], unitWord: 'years', eqs: [`p + c = ${p + c}`, `p - c = ${p - c}`] }; },
     () => { const u = int(rng, 4, 20); const v = int(rng, 4, 20); return { u, v, items: ['20p coins', '50p coins'], text: () => `A money box contains only 20p and 50p coins. There are ${u + v} coins altogether, with a total value of ${money((20 * u + 50 * v) / 100, { forcePence: true })}.`, coef: [1, 1, 20, 50], money: false, letters: ['t', 'f'], countWord: 'coins', eqs: [`t + f = ${u + v}`, `20t + 50f = ${20 * u + 50 * v}`] }; },
     () => { const u = int(rng, 5, 30); const v = int(rng, 3, 20); return { u, v, items: ['chickens', 'sheep'], text: () => `A farm has only chickens and sheep. Altogether the animals have ${u + v} heads and ${2 * u + 4 * v} legs.`, coef: [1, 1, 2, 4], money: false, letters: ['c', 's'], eqs: [`c + s = ${u + v}`, `2c + 4s = ${2 * u + 4 * v}`] }; },
     () => { const u = price(30, 90); const v = price(15, 40); const h1 = int(rng, 1, 3); const h2 = h1 + int(rng, 1, 3); return { u, v, items: ['call-out charge', 'hourly rate'], text: () => `A plumber charges a fixed call-out fee plus an hourly rate. A ${h1}-hour job costs ${money((u + h1 * v) / 100)}. A ${h2}-hour job costs ${money((u + h2 * v) / 100)}.`, coef: [1, h1, 1, h2], money: true, letters: ['c', 'h'] }; },
@@ -164,23 +174,38 @@ function simSteps(c) {
   const show = (v) => (c.money ? tnum(v / 100, v % 100 ? 2 : null) : tnum(v));
   const eqs = c.eqs || [`${lin2(a1, b1, L1, L2)} = ${show(c.c1)}`, `${lin2(a2, b2, L1, L2)} = ${show(c.c2)}`];
   void scale;
-  // Eliminate L2: multiply the equations so the L2 coefficients match, then subtract (or add if signs differ).
-  const g = gcd(Math.abs(b1), Math.abs(b2));
-  const m1 = Math.abs(b2) / g; const m2 = Math.abs(b1) / g;
-  const same = Math.sign(b1) === Math.sign(b2);
-  const A = same ? m1 * a1 - m2 * a2 : m1 * a1 + m2 * a2;
-  const C = same ? m1 * c.c1 - m2 * c.c2 : m1 * c.c1 + m2 * c.c2;
-  const scaled = m1 === 1 && m2 === 1 ? '' : `Multiply ${m1 > 1 ? `the first equation by ${m1}` : ''}${m1 > 1 && m2 > 1 ? ' and ' : ''}${m2 > 1 ? `the second by ${m2}` : ''} so the $${L2}$ terms match. `;
-  const AL = terms([[A, L1]]);
-  const elim = `${scaled}${same ? 'Subtract' : 'Add'} the equations to eliminate $${L2}$: $${A < 0 ? terms([[-A, L1]]) : AL} = ${show(Math.abs(C))}$, so $${L1} = ${show(c.u)}$`;
+  // If one letter already has matching coefficients, eliminate it directly; otherwise scale to match the second letter.
+  const directFirst = Math.abs(a1) === Math.abs(a2) && Math.abs(b1) !== Math.abs(b2);
+  const [found, other] = directFirst ? [[L2, c.v], [L1, c.u]] : [[L1, c.u], [L2, c.v]];
+  const elim = directFirst
+    ? elimLine(b1, a1, c.c1, b2, a2, c.c2, L2, L1, c.v, show)
+    : elimLine(a1, b1, c.c1, a2, b2, c.c2, L1, L2, c.u, show);
   return [
     `Let $${L1}$ = ${c.items[0]}${c.money ? ' (in £)' : ''} and $${L2}$ = ${c.items[1]}${c.money ? ' (in £)' : ''}.`,
     `Form two equations: $${eqs[0]}$ and $${eqs[1]}$`,
     elim,
-    `Substitute into the first equation to find $${L2} = ${show(c.v)}$.`,
+    `Substitute $${found[0]} = ${show(found[1])}$ into the first equation to find $${other[0]} = ${show(other[1])}$.`,
   ];
 }
-const fmtVal = (c, v) => (c.money ? money(v / 100, { forcePence: v % 100 !== 0 }) : `${tnum(v)}${c.unitWord ? ` ${c.unitWord}` : ''}`);
+
+/**
+ * One elimination step: t = coefficients of the letter we solve for, e = coefficients of the letter removed.
+ * Multiplies only when needed, and skips "so …" when the result is already the letter on its own.
+ */
+function elimLine(t1, e1, k1, t2, e2, k2, LT, LE, val, show) {
+  const g = gcd(Math.abs(e1), Math.abs(e2));
+  const m1 = Math.abs(e2) / g; const m2 = Math.abs(e1) / g;
+  const same = Math.sign(e1) === Math.sign(e2);
+  let A = same ? m1 * t1 - m2 * t2 : m1 * t1 + m2 * t2;
+  let C = same ? m1 * k1 - m2 * k2 : m1 * k1 + m2 * k2;
+  if (A < 0) { A = -A; C = -C; }
+  const scaled = m1 === 1 && m2 === 1 ? '' : `Multiply ${m1 > 1 ? `the first equation by ${m1}` : ''}${m1 > 1 && m2 > 1 ? ' and ' : ''}${m2 > 1 ? `the second equation by ${m2}` : ''} so the $${LE}$ terms match. `;
+  const res = A === 1 ? `$${LT} = ${show(C)}$` : `$${terms([[A, LT]])} = ${show(C)}$, so $${LT} = ${show(val)}$`;
+  return `${scaled}${same ? 'Subtract' : 'Add'} the equations to eliminate $${LE}$: ${res}`;
+}
+const fmtVal = (c, v, forcePence = false) => (c.money ? money(v / 100, { forcePence: forcePence || v % 100 !== 0 }) : `${tnum(v)}${c.unitWord ? ` ${c.unitWord}` : ''}`);
+/** Format a whole option list: if any money value has pence, every option shows pence. */
+const fmtAll = (c, vals) => { const pence = vals.some((v) => v % 100 !== 0); return vals.map((v) => fmtVal(c, v, pence)); };
 
 export const simProblem = G('alg-sim-problem', 'alg-simultaneous-problems', (rng, d) => {
   const c = simContext(rng, d);
@@ -190,11 +215,12 @@ export const simProblem = G('alg-sim-problem', 'alg-simultaneous-problems', (rng
   const question = /number|age|rate|charge|per mile/.test(item) ? `Work out the ${item}.` : c.money ? `Work out the cost of one ${item.replace(/s$/, '')}.` : `How many ${item}${/s$|sheep$/.test(item) ? '' : 's'}${c.countWord === 'eggs' ? ' does one hold' : ''}?`;
   const q2 = c.countWord === 'eggs' ? `How many eggs does one ${item} hold?` : question;
   const other = askFirst ? c.v : c.u;
-  const wrong = [other, ansV + (c.money ? 50 : 1), ansV - (c.money ? 50 : 1), Math.round((c.c1 / (c.coef[0] + c.coef[1])) / (c.money ? 10 : 1)) * (c.money ? 10 : 1), ansV * 2, c.c1 - c.c2 > 0 ? c.c1 - c.c2 : c.c2 - c.c1].filter((w) => w > 0 && w !== ansV);
+  const wrong = [other, ansV + (c.money ? 50 : 1), ansV - (c.money ? 50 : 1), Math.round((c.c1 / (c.coef[0] + c.coef[1])) / (c.money ? 10 : 1)) * (c.money ? 10 : 1), ansV * 2, ...(c.eqs ? [] : [Math.abs(c.c1 - c.c2)])].filter((w) => w > 0 && w !== ansV);
+  const [ansT, ...wrongT] = fmtAll(c, [ansV, ...wrong]);
   return {
     prompt: `${c.text(c.c1, c.c2)}<br>${q2}`,
-    answer: fmtVal(c, ansV),
-    distractors: wrong.map((w) => fmtVal(c, w)),
+    answer: ansT,
+    distractors: wrongT,
     typed: { kind: 'number', value: c.money ? ansV / 100 : ansV },
     solution: [...simSteps(c), `Answer: ${fmtVal(c, ansV)}`],
   };
@@ -214,10 +240,10 @@ export const simProblemDerived = G('alg-sim-problem-combo', 'alg-simultaneous-pr
   const pl = (n, s) => `${n} ${s}${n === 1 ? '' : (s.endsWith('h') ? 'es' : 's')}`;
   return {
     prompt: `${c.text(c.c1, c.c2)}<br>Work out the cost of ${pl(p, c.items[0])} and ${pl(q, c.items[1])}.`,
-    answer: fmtVal(c, total),
-    distractors: wrong.map((w) => fmtVal(c, w)),
+    answer: fmtAll(c, [total, ...wrong])[0],
+    distractors: fmtAll(c, [total, ...wrong]).slice(1),
     typed: { kind: 'number', value: total / 100 },
-    solution: [...simSteps(c), `${pl(p, c.items[0])} and ${pl(q, c.items[1])}: $${p} \\times ${tnum(c.u / 100, c.u % 100 ? 2 : null)} + ${q} \\times ${tnum(c.v / 100, c.v % 100 ? 2 : null)} = ${tnum(total / 100, total % 100 ? 2 : null)}$`, `Answer: ${fmtVal(c, total)}`],
+    solution: [...simSteps(c), `${pl(p, c.items[0])} and ${pl(q, c.items[1])}: $${p} \\times ${tnum(c.u / 100, c.u % 100 ? 2 : null)} + ${q} \\times ${tnum(c.v / 100, c.v % 100 ? 2 : null)} = ${tnum(total / 100, total % 100 ? 2 : null)}$`, `Answer: ${fmtAll(c, [total, ...wrong])[0]}`],
   };
 }, { title: 'Simultaneous equations: cost of a new combination', word: true });
 
@@ -225,6 +251,8 @@ export const simProblemDerived = G('alg-sim-problem-combo', 'alg-simultaneous-pr
 /* alg-simultaneous-nonlinear                                          */
 /* ================================================================== */
 
+/** Linear expression mx + c, written c − kx when the x term is negative (exam style). */
+const LY = (m, c) => (m < 0 && c > 0 ? `${c} - ${m === -1 ? "" : -m}x` : P([m, c]));
 const twoPairs = (q1, q2) => {
   const [p1, p2] = [q1, q2].sort((u, v) => v[0] - u[0] || v[1] - u[1]);
   return `$x = ${tnum(p1[0])}, \\ y = ${tnum(p1[1])}$ &nbsp;or&nbsp; $x = ${tnum(p2[0])}, \\ y = ${tnum(p2[1])}$`;
@@ -238,7 +266,7 @@ export const simNonLinQuad = G('alg-sim-nl-quadratic', 'alg-simultaneous-nonline
   const pts = [[r1, m * r1 + c], [r2, m * r2 + c]].sort((u, v) => v[0] - u[0]);
   const ans = twoPairs(pts[0], pts[1]);
   const quadY = (t) => t * t + p * t + q;
-  const lineForm = d === 'hard' && m !== 0 ? `${lin2(-m, 1)} = ${tnum(c)}` : `y = ${P([m, c])}`;
+  const lineForm = d === 'hard' && m !== 0 ? `${lin2(-m, 1)} = ${tnum(c)}` : `y = ${LY(m, c)}`;
   const dis = [
     twoPairs([-pts[0][0], m * -pts[0][0] + c], [-pts[1][0], m * -pts[1][0] + c]),
     twoPairs([pts[0][0], pts[1][1]], [pts[1][0], pts[0][1]]),
@@ -253,10 +281,10 @@ export const simNonLinQuad = G('alg-sim-nl-quadratic', 'alg-simultaneous-nonline
     distractors: dis.filter((t) => t !== ans),
     count: 5,
     solution: [
-      ...(d === 'hard' && m !== 0 ? [`Rearrange the linear equation: $y = ${P([m, c])}$`] : []),
-      `Set the two expressions for $y$ equal: $${P([1, p, q])} = ${P([m, c])}$`,
+      ...(d === 'hard' && m !== 0 ? [`Rearrange the linear equation: $y = ${LY(m, c)}$`] : []),
+      `Set the two expressions for $y$ equal: $${P([1, p, q])} = ${LY(m, c)}$`,
       `Make one side zero: $${P(diff)} = 0$, which factorises to $(x ${r1 > 0 ? '-' : '+'} ${Math.abs(r1)})(x ${r2 > 0 ? '-' : '+'} ${Math.abs(r2)}) = 0$`.replace(/\(x \+ 0\)|\(x - 0\)/g, 'x'),
-      `So $x = ${tnum(r1)}$ or $x = ${tnum(r2)}$. Substitute into $y = ${P([m, c])}$ to find each $y$.`,
+      `So $x = ${tnum(r1)}$ or $x = ${tnum(r2)}$. Substitute into $y = ${LY(m, c)}$ to find each $y$.`,
       `Answer: ${ans}`,
     ],
   };
@@ -291,14 +319,14 @@ export const simNonLinCircle = G('alg-sim-nl-circle', 'alg-simultaneous-nonlinea
       `$x = ${tnum(ptsS[0][0])}, \\ y = ${tnum(ptsS[0][1])}$ only`,
     ];
     return {
-      prompt: `Solve the simultaneous equations<br>$${sys([['x^{2} + y^{2}', tnum(r2)], ['y', P([m, c])]])}$`,
+      prompt: `Solve the simultaneous equations<br>$${sys([['x^{2} + y^{2}', tnum(r2)], ['y', LY(m, c)]])}$`,
       answer: ans,
       distractors: dis.filter((t) => t !== ans),
       solution: [
-        `Substitute $y = ${P([m, c])}$ into the circle: $x^{2} + (${P([m, c])})^{2} = ${r2}$`,
+        `Substitute $y = ${LY(m, c)}$ into the circle: $x^{2} + (${LY(m, c)})^{2} = ${r2}$`,
         `Expand: $${P([a, b, c * c])} = ${r2}$, so $${P([a, b, cc])} = 0$${g > 1 ? `, and dividing by ${g}: $${P([a / g, b / g, cc / g])} = 0$` : ''}`,
         `Solve: $x = ${tnum(ptsS[0][0])}$ or $x = ${tnum(ptsS[1][0])}$`,
-        `Find $y$ from $y = ${P([m, c])}$ (not from the circle, which gives two $y$ values for each $x$).`,
+        `Find $y$ from $y = ${LY(m, c)}$ (not from the circle, which gives two $y$ values for each $x$).`,
         `Answer: ${ans}`,
       ],
     };

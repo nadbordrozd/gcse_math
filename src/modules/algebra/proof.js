@@ -16,7 +16,7 @@ const STATEMENTS = [
   { level: 2, text: 'If $n$ is a whole number, then $3n - 1$ is always even.', pool: [1, 3, 5, 7, 9, 2, 4, 6, 8, 10], test: (n) => (3 * n - 1) % 2 !== 0, why: (n) => `When $n = ${n}$, $3n - 1 = ${3 * n - 1}$, which is odd.` },
   { level: 2, text: 'The square of a number is always greater than the number.', pool: [frac(1, 2), 1, 0, 2, 3, 4, -2, -3, 5, frac(1, 4)], test: (n) => { const v = typeof n === 'number' ? n : n.value(); return v * v <= v; }, why: (n) => { const v = typeof n === 'number' ? n : n.value(); const t = typeof n === 'number' ? tnum(n) : n.tex(); const sq = typeof n === 'number' ? tnum(n * n) : n.mul(n).tex(); return `$${t}^{2} = ${sq}$, which is not greater than $${t}$.${v > 0 && v < 1 ? ' Squaring a number between 0 and 1 makes it smaller.' : ''}`; } },
   { level: 3, text: 'For every whole number $n$, $n^{2} + n + 11$ is a prime number.', pool: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], test: (n) => !isPrime(n * n + n + 11), why: (n) => `When $n = ${n}$: $${n}^{2} + ${n} + 11 = ${n * n + n + 11}$, which is not prime${(n * n + n + 11) % 11 === 0 ? ' (it is a multiple of 11)' : ''}.` },
-  { level: 3, text: 'If $a > b$, then $a^{2} > b^{2}$.', pairs: true, pool: [[5, 2], [7, 3], [4, 1], [3, -1], [2, -5], [1, -4], [6, 0], [0, -3], [-1, -2], [-2, -6]], test: ([a, b]) => a * a <= b * b, why: ([a, b]) => `$${tnum(a)} > ${tnum(b)}$ but $${tnum(a)}^{2} = ${a * a}$ is not greater than $(${tnum(b)})^{2} = ${b * b}$.` },
+  { level: 3, text: 'If $a \\gt b$, then $a^{2} \\gt b^{2}$.', pairs: true, pool: [[5, 2], [7, 3], [4, 1], [3, -1], [2, -5], [1, -4], [6, 0], [0, -3], [-1, -2], [-2, -6]], test: ([a, b]) => a * a <= b * b, why: ([a, b]) => `$${tnum(a)} \\gt ${tnum(b)}$ but $${tnum(a)}^{2} = ${a * a}$ is not greater than $(${tnum(b)})^{2} = ${b * b}$.` },
   { level: 3, text: 'The sum of two prime numbers is always even.', pairs: true, pool: [[3, 5], [5, 7], [3, 11], [7, 13], [2, 3], [2, 5], [2, 11], [5, 13], [11, 17], [2, 7]], test: ([a, b]) => (a + b) % 2 === 1, why: ([a, b]) => `${a} and ${b} are both prime and $${a} + ${b} = ${a + b}$, which is odd. (2 is the only even prime.)` },
   { level: 3, text: 'The product of two numbers is always bigger than their sum.', pairs: true, pool: [[3, 4], [5, 6], [3, 7], [4, 4], [1, 5], [1, 8], [2, 2], [0, 6], [1, 3], [5, 3]], test: ([a, b]) => a * b <= a + b, why: ([a, b]) => `$${a} \\times ${b} = ${a * b}$ but $${a} + ${b} = ${a + b}$, so the product is not bigger.` },
   { level: 2, text: 'If a number ends in 6, it is a multiple of 6.', pool: [6, 36, 66, 96, 126, 16, 26, 46, 56, 76], test: (n) => n % 6 !== 0, why: (n) => `${n} ends in 6 but $${n} \\div 6$ is not a whole number.` },
@@ -96,25 +96,62 @@ export const counterAlways = G('alg-counter-always', 'alg-counterexample', (rng,
 
 export const counterAlgebra = G('alg-counter-algebra', 'alg-counterexample', (rng, d) => {
   const name = names(rng, 1)[0];
-  const claims = [
-    { text: '$(a + b)^{2} = a^{2} + b^{2}$ for all values of $a$ and $b$.', fails: ([a, b]) => (a + b) ** 2 !== a * a + b * b, why: ([a, b]) => `$(${tnum(a)} + ${b < 0 ? `(${tnum(b)})` : tnum(b)})^{2} = ${(a + b) ** 2}$ but $${a < 0 ? `(${tnum(a)})` : tnum(a)}^{2} + ${b < 0 ? `(${tnum(b)})` : tnum(b)}^{2} = ${a * a + b * b}$.` },
-    { text: '$\\sqrt{a + b} = \\sqrt{a} + \\sqrt{b}$ for all positive $a$ and $b$.', squares: true, fails: ([a, b]) => Math.abs(Math.sqrt(a + b) - Math.sqrt(a) - Math.sqrt(b)) > 1e-9, why: ([a, b]) => `$\\sqrt{${a} + ${b}} = \\sqrt{${a + b}}$ but $\\sqrt{${a}} + \\sqrt{${b}} = ${Math.sqrt(a) + Math.sqrt(b)}$.` },
-  ];
-  const c = pick(rng, d === 'easy' ? claims.slice(0, 1) : claims.slice(0, 2));
-  const pool = c.squares ? [[9, 16], [4, 9], [16, 9], [25, 144], [0, 4], [0, 9], [0, 25], [36, 64]] : [[3, 4], [2, 5], [1, 1], [0, 5], [4, 0], [0, -3], [-2, 0], [2, -3]];
-  const bad = shuffle(rng, pool.filter((p) => c.fails(p)));
-  const good = shuffle(rng, pool.filter((p) => !c.fails(p)));
-  if (!bad.length || good.length < 3) throw new Error('');
+  const pr = (n) => (n < 0 ? `(${tnum(n)})` : tnum(n));
+  const useRoot = d !== 'easy' && chance(rng, 0.5);
+  const mode = pick(rng, d === 'easy' ? ['value', 'value', 'not'] : ['value', 'not']);
+  const claim = useRoot
+    ? '$\\sqrt{a + b} = \\sqrt{a} + \\sqrt{b}$ for all values of $a$ and $b$ that are 0 or more.'
+    : '$(a + b)^{2} = a^{2} + b^{2}$ for all values of $a$ and $b$.';
+  if (mode === 'value') {
+    if (!useRoot) {
+      const a = intExcept(rng, d === 'easy' ? 1 : -5, 7, [0]); const b = intExcept(rng, 1, 8, [a, -a]);
+      const lhs = (a + b) ** 2; const rhs = a * a + b * b; const v = lhs - rhs;
+      return {
+        prompt: `${name} says ${claim}<br>${name} tests it with $a = ${tnum(a)}$ and $b = ${tnum(b)}$.<br>Work out $(a + b)^{2} - (a^{2} + b^{2})$.`,
+        answer: $(tnum(v)),
+        distractors: [0, lhs, rhs, a * b, 2 * (a + b), -v, v + 2].filter((w) => w !== v).map((w) => $(tnum(w))),
+        typed: { kind: 'number', value: v },
+        solution: [
+          `$(a + b)^{2} = (${tnum(a)} + ${pr(b)})^{2} = ${pr(a + b)}^{2} = ${lhs}$`,
+          `$a^{2} + b^{2} = ${pr(a)}^{2} + ${pr(b)}^{2} = ${a * a} + ${b * b} = ${rhs}$`,
+          `$${lhs} - ${rhs} = ${tnum(v)}$. The answer is not 0, so the two sides are different and ${name} is wrong. (In fact $(a + b)^{2} = a^{2} + 2ab + b^{2}$.)`,
+          `Answer: $${tnum(v)}$`,
+        ],
+      };
+    }
+    const [a, b, c] = pick(rng, [[9, 16, 5], [36, 64, 10], [25, 144, 13], [64, 225, 17], [81, 144, 15]]);
+    const v = Math.sqrt(a) + Math.sqrt(b) - c;
+    return {
+      prompt: `${name} says ${claim}<br>${name} tests it with $a = ${a}$ and $b = ${b}$.<br>Work out $\\sqrt{a} + \\sqrt{b} - \\sqrt{a + b}$.`,
+      answer: $(tnum(v)),
+      distractors: [0, c, Math.sqrt(a) + Math.sqrt(b), a + b - c, -v, v + 1].filter((w) => w !== v).map((w) => $(tnum(w))),
+      typed: { kind: 'number', value: v },
+      solution: [
+        `$\\sqrt{${a}} + \\sqrt{${b}} = ${Math.sqrt(a)} + ${Math.sqrt(b)} = ${Math.sqrt(a) + Math.sqrt(b)}$`,
+        `$\\sqrt{${a} + ${b}} = \\sqrt{${a + b}} = ${c}$`,
+        `The difference is $${tnum(v)}$, not 0, so ${name} is wrong: a square root cannot be split over a sum.`,
+        `Answer: $${tnum(v)}$`,
+      ],
+    };
+  }
+  // "Which pair does NOT disprove it?": only pairs containing 0 make both sides equal.
   const fmt = ([a, b]) => `$a = ${tnum(a)}$ and $b = ${tnum(b)}$`;
+  const goodPool = useRoot ? [[9, 16], [4, 9], [16, 9], [25, 144], [36, 64], [1, 4], [4, 4]] : [[3, 4], [2, 5], [1, 1], [-2, 3], [4, -1], [2, 2], [5, 6]];
+  const zero = useRoot ? pick(rng, [[0, 9], [16, 0], [0, 25], [0, 4]]) : pick(rng, [[0, 5], [4, 0], [0, -3], [-2, 0], [0, 7]]);
+  const others = shuffle(rng, goodPool).slice(0, 3);
   return {
-    prompt: `${name} says ${c.text}<br>Which pair of values shows that ${name} is wrong?`,
-    answer: fmt(bad[0]),
-    distractors: good.slice(0, 3).map(fmt),
+    prompt: `${name} says ${claim}<br>Sam tests the claim with these pairs of values. Which pair does <b>not</b> show that ${name} is wrong?`,
+    answer: fmt(zero),
+    distractors: others.map(fmt),
     count: 4,
-    solution: [`Try each pair. A counterexample must make the two sides <b>different</b>.`, c.why(bad[0]), `In the other options one of the values is 0, so both sides happen to be equal.`, `Answer: ${fmt(bad[0])}`],
+    solution: [
+      `A pair disproves the claim if the two sides come out <b>different</b>.`,
+      useRoot ? `With ${fmt(zero)}: $\\sqrt{${zero[0] + zero[1]}} = ${Math.sqrt(zero[0] + zero[1])}$ and $\\sqrt{${zero[0]}} + \\sqrt{${zero[1]}} = ${Math.sqrt(zero[0]) + Math.sqrt(zero[1])}$ — the same, so this pair does not disprove it.` : `With ${fmt(zero)}: $(a + b)^{2} = ${(zero[0] + zero[1]) ** 2}$ and $a^{2} + b^{2} = ${zero[0] ** 2 + zero[1] ** 2}$ — the same, so this pair does not disprove it.`,
+      `Each of the other pairs gives two different answers, so each is a counterexample. (One counterexample is enough to show a claim is false.)`,
+      `Answer: ${fmt(zero)}`,
+    ],
   };
 }, { title: 'Counterexamples to algebraic claims' });
-
 /* ================================================================== */
 /* alg-proof                                                           */
 /* ================================================================== */
@@ -204,7 +241,11 @@ export const proofRepresent = G('alg-proof-represent', 'alg-proof', (rng, d) => 
     distractors: it.wrong.map($),
     count: 5,
     solution: [
-      `Even numbers are $2 \\times$ (an integer); odd numbers are one more or one less than an even number; $k \\times$ (an integer) is a multiple of $k$.`,
+      /square number/.test(it.q) ? `A square number is an integer squared. $${it.ans}$ factorises as $${swapMath('(n + 1)^{2}', L)}$, so it is always a square.`
+        : /multiple of (\d)/.test(it.q) ? `A multiple of ${it.q.match(/multiple of (\d)/)[1]} can be written as ${it.q.match(/multiple of (\d)/)[1]} × (an integer). Look for an expression where that number factorises out of every term${/1 more/.test(it.q) ? ', then add 1' : ''}.`
+        : /represents/.test(it.q) ? `Write each number in terms of the letter first (consecutive numbers go up by 1; consecutive even numbers go up by 2; even numbers are $2${L}$, odd numbers $2${L} + 1$), then combine them.`
+        : /odd/.test(it.q) ? `An odd number is one more (or one less) than an even number, i.e. $2 \\times$ (an integer) $\\pm 1$.`
+        : `An even number is $2 \\times$ (an integer).${/\(/.test(it.ans) ? ' Of two consecutive integers one is always even, so their product is even.' : ''}`,
       `Test the options with a couple of values of the letter${it.ans.includes('a') ? 's' : ''}: a single failure rules an option out. Then check that $${it.ans}$ must work for every value.`,
       `Answer: $${it.ans}$`,
     ],

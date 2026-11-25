@@ -1,5 +1,5 @@
 // Formulae and identities: substituting, writing, vocabulary, identities, rearranging, iteration.
-import { pick, int, intExcept, size, chance, tnum, terms, names, money, roundTo, shuffle, frac, Frac, gcd } from '../../core.js';
+import { pick, int, intExcept, size, chance, tnum, terms, names, money, roundTo, shuffle, frac, Frac, gcd, tidy, num } from '../../core.js';
 import { svg, polygon, text, equalTicks, notDrawnAccurately } from '../../svg.js';
 import { G, P, br, tf, $, rat, tv, pmul } from './lib.js';
 
@@ -69,51 +69,54 @@ export const formulaSub = G('alg-formula-sub', 'alg-substitute-formulae', (rng, 
   };
 }, { title: 'Substitute into a formula' });
 
-// Word formulae (cost/time rules) – 12+ contexts. Forwards (find the total) or backwards (find the input).
+// Each context has its own realistic numbers: k per unit, c0 fixed amount, n = input range, scale = input step.
 const WORD_FORMULAE = [
-  (r) => ({ rule: `Cost (£) = ${r.fix} + ${r.rate} × number of hours`, inp: 'hours', ctx: `A plumber works out her charge using this rule.`, fwd: (n) => `How much does she charge for a ${n}-hour job?`, back: (c) => `A job cost £${c}. How many hours did it take?`, money: true }),
-  (r) => ({ rule: `Cooking time (minutes) = ${r.rate} × weight in kg + ${r.fix}`, inp: 'kg', ctx: 'This rule gives the time to roast a chicken.', fwd: (n) => `How long does a ${n} kg chicken take?`, back: (c) => `A chicken takes ${c} minutes. What is its weight?`, unit: 'minutes', backUnit: 'kg' }),
-  (r) => ({ rule: `Fare (£) = ${r.fix} + ${r.rate} × number of miles`, inp: 'miles', ctx: 'A taxi firm uses this rule.', fwd: (n) => `What is the fare for a ${n}-mile journey?`, back: (c) => `A journey cost £${c}. How many miles was it?`, money: true, backUnit: 'miles' }),
-  (r) => ({ rule: `Total cost (£) = ${r.fix} + ${r.rate} × number of days`, inp: 'days', ctx: 'A company hires out vans using this rule.', fwd: (n) => `How much does it cost to hire a van for ${n} days?`, back: (c) => `${r.name} paid £${c}. For how many days did ${r.name} hire the van?`, money: true, backUnit: 'days' }),
-  (r) => ({ rule: `Bill (£) = ${r.fix} + ${r.rate} × number of units used`.replace(`${r.rate} ×`, `${r.rate / 10} ×`), inp: 'units', ctx: 'An energy company works out bills with this rule.', fwd: (n) => `What is the bill when ${n * 10} units are used?`, back: (c) => `A bill is £${c}. How many units were used?`, money: true, scale: 10, backUnit: 'units' }),
-  (r) => ({ rule: `Charge (£) = ${r.fix} + ${r.rate} × number of windows`, inp: 'windows', ctx: 'A window cleaner charges using this rule.', fwd: (n) => `How much is the charge for ${n} windows?`, back: (c) => `The charge was £${c}. How many windows were cleaned?`, money: true, backUnit: 'windows' }),
-  (r) => ({ rule: `Rice needed (g) = ${r.rate} × number of people + ${r.fix}`, inp: 'people', ctx: `${r.name} uses this rule when cooking rice.`, fwd: (n) => `How much rice is needed for ${n} people?`, back: (c) => `${r.name} cooked ${c} g of rice. How many people was it for?`, unit: 'g', backUnit: 'people' }),
-  (r) => ({ rule: `Hall hire (£) = ${r.fix * 5} + ${r.rate * 2} × number of hours`, inp: 'hours', ctx: 'A village hall is hired out using this rule.', fwd: (n) => `What does it cost to hire the hall for ${n} hours?`, back: (c) => `The hire cost was £${c}. For how many hours was the hall hired?`, money: true, k: [r.rate * 2, r.fix * 5], backUnit: 'hours' }),
-  (r) => ({ rule: `Number of chairs = ${r.rate} × number of tables + ${r.fix % 6 + 2}`, inp: 'tables', ctx: 'A café sets out chairs using this rule.', fwd: (n) => `How many chairs are needed for ${n} tables?`, back: (c) => `There are ${c} chairs. How many tables are there?`, k: [r.rate, r.fix % 6 + 2], backUnit: 'tables' }),
-  (r) => ({ rule: `Wage (£) = ${r.rate + 5} × hours worked + ${r.fix} bonus`, inp: 'hours', ctx: `${r.name} is paid using this rule.`, fwd: (n) => `How much does ${r.name} earn for ${n} hours?`, back: (c) => `${r.name} earned £${c}. How many hours did ${r.name} work?`, money: true, k: [r.rate + 5, r.fix], backUnit: 'hours' }),
-  (r) => ({ rule: `Monthly cost (£) = ${r.fix} + ${r.rate} × number of classes`, inp: 'classes', ctx: 'A gym charges members using this rule.', fwd: (n) => `How much does a month with ${n} classes cost?`, back: (c) => `${r.name}'s monthly cost was £${c}. How many classes did ${r.name} go to?`, money: true, backUnit: 'classes' }),
-  (r) => ({ rule: `Height (cm) = ${r.fix * 3} + ${r.rate} × age in weeks`, inp: 'weeks', ctx: 'A gardener uses this rule to estimate the height of a sunflower.', fwd: (n) => `What height does the rule give at ${n} weeks?`, back: (c) => `The rule gives a height of ${c} cm. How many weeks old is the sunflower?`, unit: 'cm', k: [r.rate, r.fix * 3], backUnit: 'weeks' }),
-  (r) => ({ rule: `Prints cost (£) = ${r.fix} + ${r.rate / 10} × number of photos`.replace(/\+ (\d)\.0 ×/, '+ $1 ×'), inp: 'photos', ctx: 'A shop prints photos using this rule.', fwd: (n) => `How much do ${n * 10} photos cost?`, back: (c) => `An order costs £${c}. How many photos were printed?`, money: true, scale: 10, backUnit: 'photos' }),
+  (rng) => { const c0 = 5 * int(rng, 8, 18); const k = 5 * int(rng, 5, 12); return { k, c0, n: [1, 8], rule: `Cost (£) = ${c0} + ${k} × number of hours`, ctx: 'A plumber works out her charge using this rule.', fwd: (n) => `How much does she charge for a ${n}-hour job?`, back: (c) => `A job cost £${c}. How many hours did it take?`, money: true, inUnit: 'hours' }; },
+  (rng) => { const k = pick(rng, [40, 45, 50]); const c0 = pick(rng, [15, 20, 25, 30]); return { k, c0, n: [2, 5], rule: `Cooking time (minutes) = ${k} × weight in kg + ${c0}`, ctx: 'This rule gives the time to roast a chicken.', fwd: (n) => `How long does a ${n} kg chicken take?`, back: (c) => `A chicken takes ${c} minutes. What is its weight?`, unit: 'minutes', inUnit: 'kg' }; },
+  (rng) => { const c0 = int(rng, 2, 5); const k = pick(rng, [2, 3]); return { k, c0, n: [2, 15], rule: `Fare (£) = ${c0} + ${k} × number of miles`, ctx: 'A taxi firm uses this rule.', fwd: (n) => `What is the fare for a ${n}-mile journey?`, back: (c) => `A journey cost £${c}. How many miles was it?`, money: true, inUnit: 'miles' }; },
+  (rng, name) => { const c0 = 5 * int(rng, 4, 10); const k = 5 * int(rng, 6, 14); return { k, c0, n: [1, 7], rule: `Total cost (£) = ${c0} + ${k} × number of days`, ctx: 'A company hires out vans using this rule.', fwd: (n) => `How much does it cost to hire a van for ${n} days?`, back: (c) => `${name} paid £${c}. For how many days did ${name} hire the van?`, money: true, inUnit: 'days' }; },
+  (rng) => { const c0 = int(rng, 10, 25); const k10 = int(rng, 2, 4); return { k: k10 / 10, c0, n: [20, 60], scale: 10, rule: `Bill (£) = ${c0} + ${tnum(k10 / 10)} × number of units used`, ctx: 'An energy company works out bills with this rule.', fwd: (n) => `What is the bill when ${n} units are used?`, back: (c) => `A bill is £${c}. How many units were used?`, money: true, inUnit: '' }; },
+  (rng) => { const c0 = int(rng, 5, 10); const k = int(rng, 2, 4); return { k, c0, n: [6, 20], rule: `Charge (£) = ${c0} + ${k} × number of windows`, ctx: 'A window cleaner charges using this rule.', fwd: (n) => `How much is the charge for ${n} windows?`, back: (c) => `The charge was £${c}. How many windows were cleaned?`, money: true, inUnit: '' }; },
+  (rng, name) => { const k = 5 * int(rng, 12, 18); const c0 = 5 * int(rng, 2, 6); return { k, c0, n: [2, 8], rule: `Rice needed (g) = ${k} × number of people + ${c0}`, ctx: `${name} uses this rule when cooking rice.`, fwd: (n) => `How much rice is needed for ${n} people?`, back: (c) => `${name} cooked ${c} g of rice. How many people was it for?`, unit: 'g', inUnit: '' }; },
+  (rng) => { const c0 = 10 * int(rng, 5, 10); const k = 5 * int(rng, 4, 8); return { k, c0, n: [2, 6], rule: `Hall hire (£) = ${c0} + ${k} × number of hours`, ctx: 'A village hall is hired out using this rule.', fwd: (n) => `What does it cost to hire the hall for ${n} hours?`, back: (c) => `The hire cost was £${c}. For how many hours was the hall hired?`, money: true, inUnit: 'hours' }; },
+  (rng) => { const k = int(rng, 4, 8); const c0 = int(rng, 2, 10); return { k, c0, n: [3, 15], rule: `Number of chairs = ${k} × number of tables + ${c0}`, ctx: 'A café sets out chairs using this rule.', fwd: (n) => `How many chairs are needed for ${n} tables?`, back: (c) => `There are ${c} chairs. How many tables are there?`, inUnit: '' }; },
+  (rng, name) => { const k = int(rng, 10, 14); const c0 = 5 * int(rng, 2, 6); return { k, c0, n: [4, 30], rule: `Pay (£) = ${k} × number of hours worked + ${c0}`, ctx: `${name} is paid using this rule.`, fwd: (n) => `How much does ${name} earn for ${n} hours?`, back: (c) => `${name} earned £${c}. How many hours did ${name} work?`, money: true, inUnit: 'hours' }; },
+  (rng, name) => { const c0 = 5 * int(rng, 2, 6); const k = int(rng, 4, 8); return { k, c0, n: [2, 12], rule: `Monthly cost (£) = ${c0} + ${k} × number of classes`, ctx: 'A gym charges members using this rule.', fwd: (n) => `How much does a month with ${n} classes cost?`, back: (c) => `${name}'s monthly cost was £${c}. How many classes did ${name} go to?`, money: true, inUnit: '' }; },
+  (rng) => { const c0 = 5 * int(rng, 2, 6); const k = int(rng, 8, 15); return { k, c0, n: [2, 10], rule: `Height (cm) = ${c0} + ${k} × age in weeks`, ctx: 'A gardener uses this rule to estimate the height of a sunflower.', fwd: (n) => `What height does the rule give at ${n} weeks?`, back: (c) => `The rule gives a height of ${c} cm. How many weeks old is the sunflower?`, unit: 'cm', inUnit: 'weeks' }; },
+  (rng) => { const c0 = int(rng, 2, 5); const k10 = int(rng, 1, 3); return { k: k10 / 10, c0, n: [2, 10], scale: 10, rule: `Cost (£) = ${c0} + ${tnum(k10 / 10)} × number of photos`, ctx: 'A shop prints photos using this rule.', fwd: (n) => `How much do ${n} photos cost?`, back: (c) => `An order costs £${c}. How many photos were printed?`, money: true, inUnit: '' }; },
 ];
 
 export const formulaWords = G('alg-formula-sub-word', 'alg-substitute-formulae', (rng, d) => {
-  const r = { fix: pick(rng, [5, 10, 12, 15, 20, 25, 30, 35, 40]), rate: pick(rng, [2, 3, 4, 5, 6, 8, 12, 15, 20]), name: names(rng, 1)[0] };
-  const t = pick(rng, WORD_FORMULAE)(r);
-  const [k, c0] = t.k || [t.rate ?? r.rate, r.fix];
+  const t = pick(rng, WORD_FORMULAE)(rng, names(rng, 1)[0]);
+  const { k, c0 } = t;
   const scale = t.scale || 1;
-  const n = int(rng, 2, 12);
-  const out = (k / scale) * (n * scale) + c0;
+  const n = int(rng, t.n[0], t.n[1]);
+  const out = tidy(k * (n * scale) + c0);
   const backwards = d === 'hard' || (d === 'medium' && chance(rng, 0.5));
-  const fmtOut = (v) => (t.money ? money(v) : `${tnum(v)} ${t.unit || ''}`.trim());
-  const fmtIn = (v) => `${tnum(v)}${t.backUnit && !['people', 'tables', 'windows', 'classes', 'photos', 'units'].includes(t.backUnit) ? ` ${t.backUnit}` : ''}`;
+  const fmtIn = (v) => `${num(v)}${t.inUnit ? ` ${t.inUnit}` : ''}`;
   if (!backwards) {
-    const wrong = [(k / scale) * (n * scale + c0), k / scale + n * scale + c0, (k / scale) * n * scale - c0, c0 * n * scale + k / scale, out + k / scale];
+    const inp = n * scale;
+    const wrong = [k * (inp + c0), k + inp + c0, k * inp - c0, c0 * inp + k, out + k, out - c0].map(tidy).filter((w) => w > 0 && w !== out && w < 4 * out);
+    // One money format for the whole option list.
+    const pence = [out, ...wrong].some((v) => !Number.isInteger(v));
+    const fmtOut = (v) => (t.money ? money(v, { forcePence: pence }) : `${num(v)} ${t.unit || ''}`.trim());
     return {
-      prompt: `${t.ctx}<br><b>${t.rule}</b><br>${t.fwd(n)}`,
+      prompt: `${t.ctx}<br><b>${t.rule}</b><br>${t.fwd(inp)}`,
       answer: fmtOut(out),
-      distractors: wrong.filter((w) => w > 0 && w !== out).map(fmtOut),
+      distractors: wrong.map(fmtOut),
       typed: { kind: 'number', value: out },
-      solution: [`Put the number into the rule. Multiply first, then add.`, `$${tnum(k / scale)} \\times ${n * scale} + ${c0} = ${tnum((k / scale) * n * scale)} + ${c0} = ${tnum(out)}$`, `Answer: ${fmtOut(out)}`],
+      solution: [`Put the number into the rule. Multiply first, then add.`, `$${tnum(k)} \\times ${inp} + ${c0} = ${tnum(tidy(k * inp))} + ${c0} = ${tnum(out)}$`, `Answer: ${fmtOut(out)}`],
     };
   }
   const inp = n * scale;
-  const wrong = [(out + c0) / (k / scale), out / (k / scale) - c0, out / (k / scale), (out - c0) * (k / scale), inp + scale].filter((w) => Number.isInteger(w) && w > 0 && w !== inp);
+  const outTxt = t.money && !Number.isInteger(out) ? tnum(out, 2) : tnum(out);
+  const wrong = [(out + c0) / k, out / k - c0, out / k, (out - c0) * k, inp + scale].map(tidy).filter((w) => Number.isInteger(w) && w > 0 && w !== inp);
   return {
-    prompt: `${t.ctx}<br><b>${t.rule}</b><br>${t.back(tnum(out).replace(/\{,\}/g, ','))}`,
+    prompt: `${t.ctx}<br><b>${t.rule}</b><br>${t.back(outTxt.replace(/\{,\}/g, ','))}`,
     answer: fmtIn(inp),
     distractors: wrong.map(fmtIn),
     typed: { kind: 'number', value: inp },
-    solution: [`Work backwards: first take away the fixed amount, then divide.`, `$${tnum(out)} - ${c0} = ${tnum(out - c0)}$`, `$${tnum(out - c0)} \\div ${tnum(k / scale)} = ${tnum(inp)}$`, `Answer: ${fmtIn(inp)}`],
+    solution: [`Work backwards: first take away the fixed amount, then divide.`, `$${outTxt} - ${c0} = ${tnum(tidy(out - c0))}$`, `$${tnum(tidy(out - c0))} \\div ${tnum(k)} = ${tnum(inp)}$`, `Answer: ${fmtIn(inp)}`],
   };
 }, { title: 'Use a formula written in words', word: true });
 
@@ -155,11 +158,11 @@ function writeContexts(rng) {
     () => ({ text: `${n1} has $n$ sweets. ${n1} gives ${k} sweets to each of $f$ friends. Write a formula for the number of sweets left, $S$.`, why: `${k} sweets to each of $f$ friends is $${k}f$ sweets given away, taken from the $n$ ${n1} started with.`, ans: `S = n - ${k}f`, wrong: [`S = ${k}f - n`, `S = n - ${k} - f`, `S = n + ${k}f`, `S = ${k}(n - f)`] }),
     () => ({ text: `A rectangle has length $l$ cm and width $w$ cm. Write a formula for its perimeter, $P$ cm.`, why: 'A rectangle has two lengths and two widths: $l + w + l + w = 2l + 2w$.', ans: `P = 2l + 2w`, wrong: [`P = lw`, `P = l + w`, `P = 2lw`, `P = 4lw`] }),
     () => ({ text: `A taxi charges £${k} plus ${a}p for every mile. Write a formula for the cost, $C$ pence, of a journey of $m$ miles.`, why: `The cost is in pence, so £${k} must be written as ${k * 100}p. $m$ miles at ${a}p cost $${a}m$.`, ans: `C = ${a}m + ${k * 100}`, wrong: [`C = ${a}m + ${k}`, `C = ${k}m + ${a}`, `C = ${a + k}m`, `C = ${k * 100}m + ${a}`] }),
-    () => ({ text: `Cakes cost £${k} each. ${n1} buys $c$ cakes and pays with a £${f * 5} note. Write a formula for the change, $C$ pounds.`, why: `$c$ cakes cost $${k}c$ pounds; the change is what is left from £${f * 5}.`, ans: `C = ${f * 5} - ${k}c`, wrong: [`C = ${k}c - ${f * 5}`, `C = ${f * 5} - c`, `C = ${f * 5 - k}c`, `C = ${k}(${f * 5} - c)`] }),
+    () => { const note = pick(rng, [10, 20, 50]); return { text: `Cakes cost £${k} each. ${n1} buys $c$ cakes and pays with a £${note} note. Write a formula for the change, $R$ pounds.`, why: `$c$ cakes cost $${k}c$ pounds; the change is what is left from £${note}.`, ans: `R = ${note} - ${k}c`, wrong: [`R = ${k}c - ${note}`, `R = ${note} - c`, `R = ${note - k}c`, `R = ${k}(${note} - c)`] }; },
     () => ({ text: `Chairs are put out in $r$ rows with ${f} chairs in each row, plus ${k} extra chairs at the front. Write a formula for the total number of chairs, $N$.`, why: `$r$ rows of ${f} chairs is $${f}r$ chairs; then add the ${k} extra chairs once.`, ans: `N = ${f}r + ${k}`, wrong: [`N = ${f}(r + ${k})`, `N = r + ${f + k}`, `N = ${k}r + ${f}`, `N = ${f * k}r`] }),
     () => ({ text: `A school trip costs £${a} per student. The coach costs £${f * 50} in total, shared equally by the $s$ students. Write a formula for the cost per student, $C$ pounds.`, why: `Each student pays £${a}, plus an equal share of the £${f * 50} coach, which is $\\frac{${f * 50}}{s}$.`, ans: `C = ${a} + \\frac{${f * 50}}{s}`, wrong: [`C = \\frac{${a} + ${f * 50}}{s}`, `C = ${a}s + ${f * 50}`, `C = ${a} + ${f * 50}s`, `C = \\frac{${a}s}{${f * 50}}`] }),
-    () => ({ text: `${n1} is $x$ years old. Her brother is ${k} years older. Their mother is three times as old as ${n1}. Write a formula for their total age, $T$ years.`, why: `The ages are $x$, $x + ${k}$ and $3x$. Adding: $x + x + ${k} + 3x = 5x + ${k}$.`, ans: `T = 5x + ${k}`, wrong: [`T = 3x + ${k}`, `T = 4x + ${k}`, `T = 5x + ${3 * k}`, `T = x + ${k + 3}`] }),
-    () => ({ text: `Boxes of ${f} eggs cost £$b$ each and single eggs cost £$e$ each. Write a formula for the cost, $C$ pounds, of $n$ boxes and ${k} single eggs.`, why: `$n$ boxes cost $n \\times b = nb$ and ${k} single eggs cost $${k}e$. (The ${f} eggs per box is not needed.)`, ans: `C = nb + ${k}e`, wrong: [`C = ${f}nb + ${k}e`, `C = n + b + ${k}e`, `C = ${f}n + ${k}`, `C = nb${k}e`] }),
+    () => ({ text: `${n1} is $x$ years old. ${n1}'s brother is ${k} years older. Their mother is three times as old as ${n1}. Write a formula for their total age, $T$ years.`, why: `The ages are $x$, $x + ${k}$ and $3x$. Adding: $x + x + ${k} + 3x = 5x + ${k}$.`, ans: `T = 5x + ${k}`, wrong: [`T = 3x + ${k}`, `T = 4x + ${k}`, `T = 5x + ${3 * k}`, `T = x + ${k + 3}`] }),
+    () => ({ text: `Boxes of ${f} eggs cost £$b$ each and single eggs cost £$e$ each. Write a formula for the cost, $C$ pounds, of $n$ boxes and ${k} single eggs.`, why: `$n$ boxes cost $n \\times b = nb$ and ${k} single eggs cost $${k}e$. (The ${f} eggs per box is not needed.)`, ans: `C = nb + ${k}e`, wrong: [`C = ${f}nb + ${k}e`, `C = n + b + ${k}e`, `C = ${f}n + ${k}`, `C = n(b + ${k}e)`] }),
     () => ({ text: `A phone contract costs £$m$ per month plus £${f * 10} for the handset. Write a formula for the total cost, $T$ pounds, over $y$ years.`, why: `$y$ years is $12y$ months, costing $12y \\times m = 12my$; then add the handset once.`, ans: `T = 12my + ${f * 10}`, wrong: [`T = my + ${f * 10}`, `T = 12m + ${f * 10}y`, `T = 12(m + ${f * 10})y`, `T = m + 12y + ${f * 10}`] }),
     () => ({ text: `A garden centre sells trays of ${f} plants for £$t$. Write a formula for the cost, $C$ pounds, of buying $p$ plants (where $p$ is a multiple of ${f}).`, why: `$p$ plants is $\\frac{p}{${f}}$ trays, and each tray costs £$t$, so $C = \\frac{p}{${f}} \\times t$.`, ans: `C = \\frac{pt}{${f}}`, wrong: [`C = ${f}pt`, `C = \\frac{${f}t}{p}`, `C = pt`, `C = \\frac{p}{${f}t}`] }),
     () => ({ text: `Rope is cut into $n$ pieces of length ${f} cm, with ${k} cm left over. Write a formula for the original length of the rope, $L$ cm.`, why: `$n$ pieces of ${f} cm is $${f}n$ cm, plus the ${k} cm left over.`, ans: `L = ${f}n + ${k}`, wrong: [`L = ${f}(n + ${k})`, `L = ${k}n + ${f}`, `L = ${f}n - ${k}`, `L = n + ${f + k}`] }),
@@ -230,10 +233,12 @@ export const writeFormulaShape = G('alg-write-formula-shape', 'alg-writing-formu
     ans = `P = 2${a} + ${b}`; wrong = [`P = ${a} + ${b}`, `P = 2${b} + ${a}`, `P = 2${a}${b}`, `P = ${a}^{2}${b}`];
     count = `The two marked sides are equal, so there are two lots of $${a}$: $${a} + ${a} + ${b} = 2${a} + ${b}$.`;
   } else if (s === 'house') {
-    const pts = [[90, 190], [270, 190], [270, 100], [180, 30], [90, 100]];
-    body = polygon(pts) + equalTicks(pts[2], pts[3]) + equalTicks(pts[3], pts[4]) + it(180, 210, a) + it(288, 145, b) + it(242, 56, a);
+    // Base and both roof edges are equal (single ticks, an equilateral roof); both walls are equal (double ticks).
+    const pts = [[110, 195], [250, 195], [250, 140], [180, 19], [110, 140]];
+    body = polygon(pts) + equalTicks(pts[0], pts[1]) + equalTicks(pts[2], pts[3]) + equalTicks(pts[3], pts[4])
+      + equalTicks(pts[1], pts[2], 2) + equalTicks(pts[4], pts[0], 2) + it(180, 214, a) + it(268, 168, b);
     ans = `P = 3${a} + 2${b}`; wrong = [`P = 2${a} + 2${b}`, `P = 4${a} + 2${b}`, `P = 3${a} + ${b}`, `P = 2${a} + 3${b}`];
-    count = `The roof has two sides of length $${a}$, the base is $${a}$, and there are two walls of height $${b}$: $3${a} + 2${b}$.`;
+    count = `The single marks show the base and both roof edges are $${a}$; the double marks show both walls are $${b}$: $3${a} + 2${b}$.`;
   } else if (s === 'hexagon' || s === 'pentagonNum') {
     const n = s === 'hexagon' ? 6 : 5;
     const pts = Array.from({ length: n }, (_, i) => [180 + 80 * Math.cos((2 * Math.PI / n) * i + (n === 5 ? Math.PI / 2 : 0)), 110 - 80 * Math.sin((2 * Math.PI / n) * i + (n === 5 ? Math.PI / 2 : 0))]);
@@ -279,7 +284,7 @@ function vocabItems(rng) {
     Equation: [`${a}${u} + ${b} = ${a * 3 + b}`, `${u}^{2} = ${a * a}`, `${a}(${u} - ${b}) = ${c}`, `\\frac{${u}}{${a}} = ${b}`],
     Formula: ['v = u + at', 'A = \\pi r^{2}', 'P = 2l + 2w', 'F = ma', 'C = 2\\pi r', 's = \\frac{d}{t}', 'V = lwh'],
     Identity: [`${a}(${u} + ${b}) \\equiv ${a}${u} + ${a * b}`, `${u} + ${u} + ${u} \\equiv 3${u}`, `${u}^{2} - ${v}^{2} \\equiv (${u} + ${v})(${u} - ${v})`, `${u}(${u} + ${b}) \\equiv ${u}^{2} + ${b}${u}`, `${a}${u} - ${u} \\equiv ${a - 1}${u}`.replace(/ 1(\w)$/, ' $1')],
-    Inequality: [`${a}${u} + ${b} > ${c}`, `${u} \\leq ${b}`, `${a}${u} < ${c}`],
+    Inequality: [`${a}${u} + ${b} \\gt ${c}`, `${u} \\leq ${b}`, `${a}${u} \\lt ${c}`],
   };
 }
 
@@ -293,11 +298,11 @@ export const vocabClassify = G('alg-vocab-classify', 'alg-vocabulary', (rng, d) 
     Equation: 'It has an equals sign and is only true for particular value(s) of the letter, which you can solve for: an <b>equation</b>.',
     Formula: 'It links two or more quantities, with a subject, so you can substitute values in: a <b>formula</b>.',
     Identity: 'It is true for <b>every</b> value of the letters (the two sides are the same expression), shown by $\\equiv$: an <b>identity</b>.',
-    Inequality: 'It uses $<$, $>$, $\\leq$ or $\\geq$ instead of $=$: an <b>inequality</b>.',
+    Inequality: 'It uses $\\lt$, $\\gt$, $\\leq$ or $\\geq$ instead of $=$: an <b>inequality</b>.',
   }[kind];
   const say = (k) => `$${item}$ is ${/^[AEIOU]/.test(k) ? 'an' : 'a'} ${k.toLowerCase()}`;
   return {
-    prompt: `Is &nbsp;$${item}$&nbsp; an expression, an equation, a formula${d !== 'easy' ? ', an identity' : ''}${d === 'hard' ? ' or an inequality' : ''}?`,
+    prompt: `Is &nbsp;$${item}$&nbsp; ${{ easy: 'an expression, an equation or a formula', medium: 'an expression, an equation, a formula or an identity', hard: 'an expression, an equation, a formula, an identity or an inequality' }[d]}?`,
     answer: say(kind),
     distractors: ['Expression', 'Equation', 'Formula', 'Identity', 'Inequality'].filter((k) => k !== kind && (d !== 'easy' || ['Expression', 'Equation', 'Formula'].includes(k))).map(say),
     count: d === 'easy' ? 3 : d === 'medium' ? 4 : 5,
@@ -404,7 +409,7 @@ const SIMPLE_FORMULAE = [
   { f: 'A = \\frac{1}{2}bh', s: 'h', ans: 'h = \\frac{2A}{b}', wrong: ['h = \\frac{A}{2b}', 'h = \\frac{A}{b}', 'h = 2Ab', 'h = \\frac{b}{2A}'], steps: ['Multiply by 2: $2A = bh$', 'Divide by $b$.'] },
   { f: 'C = \\pi d', s: 'd', ans: 'd = \\frac{C}{\\pi}', wrong: ['d = C\\pi', 'd = \\frac{\\pi}{C}', 'd = C - \\pi', 'd = \\frac{C}{2\\pi}'], steps: ['Divide both sides by $\\pi$.'] },
   { f: 'V = lwh', s: 'h', ans: 'h = \\frac{V}{lw}', wrong: ['h = Vlw', 'h = \\frac{lw}{V}', 'h = V - lw', 'h = \\frac{V}{l} - w'], steps: ['Divide both sides by $lw$.'] },
-  { f: 'F = ma', s: 'a', ans: 'a = \\frac{F}{m}', wrong: ['a = Fm', 'a = \\frac{m}{F}', 'a = F - m', 'a = \\frac{F}{a}'], steps: ['Divide both sides by $m$.'] },
+  { f: 'F = ma', s: 'a', ans: 'a = \\frac{F}{m}', wrong: ['a = Fm', 'a = \\frac{m}{F}', 'a = F - m', 'a = F + m'], steps: ['Divide both sides by $m$.'] },
   { f: 'y = mx + c', s: 'm', ans: 'm = \\frac{y - c}{x}', wrong: ['m = \\frac{y + c}{x}', 'm = \\frac{y}{x} - c', 'm = x(y - c)', 'm = y - c - x'], steps: ['Subtract $c$: $y - c = mx$', 'Divide by $x$.'] },
   { f: 's = \\frac{d}{t}', s: 'd', ans: 'd = st', wrong: ['d = \\frac{s}{t}', 'd = \\frac{t}{s}', 'd = s + t', 'd = s - t'], steps: ['Multiply both sides by $t$.'] },
   { f: 's = \\frac{d}{t}', s: 't', ans: 't = \\frac{d}{s}', wrong: ['t = ds', 't = \\frac{s}{d}', 't = d - s', 't = s + d'], steps: ['Multiply by $t$: $st = d$', 'Divide by $s$.'] },
@@ -594,7 +599,7 @@ export const iterationRoot = G('alg-iteration-root', 'alg-iteration', (rng, d) =
   const ans = roundTo(root, dp);
   if (Math.abs(Math.abs(root * 10 ** dp) % 1 - 0.5) < 0.05) throw new Error('too close to a rounding boundary');
   const steps = seq.findIndex((t) => roundTo(t, dp) === ans && roundTo(seq[seq.indexOf(t) + 1], dp) === ans);
-  const shown = seq.slice(1, Math.min(steps + 3, 7));
+  const shown = seq.slice(1, Math.max(steps + 2, 3));
   const wrong = [roundTo(seq[1], dp), roundTo(seq[2], dp), roundTo(root + 10 ** -dp, dp), roundTo(root - 10 ** -dp, dp), roundTo(Math.sqrt(a * root + b), dp)].filter((t) => t !== ans);
   return {
     prompt: `The equation $x^{3} - ${a}x - ${b} = 0$ has one positive solution.<br>Use the iterative formula $x_{n+1} = \\sqrt[3]{${a}x_{n} + ${b}}$ with $x_{1} = ${x1}$ to find this solution to ${dp} decimal places.`,
@@ -605,7 +610,7 @@ export const iterationRoot = G('alg-iteration-root', 'alg-iteration', (rng, d) =
     solution: [
       `Keep putting each answer back into the formula (type the formula once and press = repeatedly, using ANS).`,
       shown.map((t, i) => `$x_{${i + 2}} = ${tnum(roundTo(t, 4 > dp ? dp + 2 : 4), dp + 2).replace(/(\.\d{3})\d$/, '$1')}…$`).join(', '),
-      `The values settle down: they all round to ${tnum(ans, dp)}.`,
+      `$x_{${steps + 1}}$ and $x_{${steps + 2}}$ both round to ${tnum(ans, dp)}, so the solution is ${tnum(ans, dp)} to ${dp} decimal places.`,
       `Answer: $x = ${tnum(ans, dp)}$`,
     ],
     longDecimalsOk: true,
@@ -652,7 +657,7 @@ export const iterationRearrange = G('alg-iteration-rearrange', 'alg-iteration', 
   ];
   const invalid = [
     `x = \\sqrt[3]{${b} ${s1 > 0 ? '+' : '-'} ${a}x}`,
-    `x = \\sqrt[3]{${a}x ${s1 > 0 ? '+' : '-'} ${b}}`.replace(`{${a}x - ${b}}`, `{${a}x + ${b}}`),
+    `x = \\sqrt[3]{${a}x - ${b}}`, // sign slip: the whole right-hand side negated
     s1 > 0 ? `x = \\frac{${b} + x^{3}}{${a}}` : `x = \\frac{x^{3} + ${b}}{${a}}`,
     `x = \\frac{${b}}{x^{2} ${s1 > 0 ? '-' : '+'} ${a}}`,
     `x = \\sqrt{${b} ${s1 > 0 ? '-' : '+'} ${a}x}`,
