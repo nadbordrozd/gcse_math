@@ -26,6 +26,13 @@ function partition(rng, total, k, { lo = 30, hi = 150, step = 1 } = {}) {
   }
   throw new Error('partition failed');
 }
+/** "ax + b = total" collected and rearranged to "ax = total − b" (skipping steps that do nothing). TeX, no $. */
+function collectT(a, b, total) {
+  const ax = a === 1 ? 'x' : `${tnum(a)}x`;
+  return b === 0 ? `${ax} = ${tnum(total)}` : `${terms([[a, 'x'], [b, '']])} = ${tnum(total)}$, so $${ax} = ${tnum(total - b)}`;
+}
+/** Final division step: "x = rhs ÷ a = x" (or just "x = rhs" when a = 1). TeX, no $. */
+const divT = (a, rhs) => (a === 1 ? `x = ${tnum(rhs)}` : `x = ${tnum(rhs)} \\div ${tnum(a)} = ${tnum(rhs / a)}`);
 const ex = (a, b) => terms([[a, 'x'], [b, '']]);          // TeX expression ax + b
 const exS = (a, b) => ex(a, b).replace(/ - /g, ' − ');  // SVG label
 const sumT = (vals) => vals.map((v) => tnum(v)).join(' + ');
@@ -81,8 +88,8 @@ export const angleStraightLine = ggen('geo-angle-straight-line', 'geo-angle-basi
         solution: [
           'Angles on a straight line add up to $180^\\circ$.',
           `$${ex(a1, b1)} + ${ex(a2, 0)} + ${c} = 180$`,
-          `$${ex(S, b1 + c)} = 180$, so $${tnum(S)}x = ${180 - b1 - c}$`,
-          `$x = ${180 - b1 - c} \\div ${S} = ${x}$`,
+          `$${collectT(S, b1 + c, 180)}$`,
+          `$${divT(S, 180 - b1 - c)}$`,
           `Answer: $x = ${x}$`,
         ],
       };
@@ -144,8 +151,8 @@ export const angleAroundPoint = ggen('geo-angle-around-point', 'geo-angle-basics
         solution: [
           'Angles around a point add up to $360^\\circ$.',
           `$${coefs.map((a, i) => ex(a, consts[i])).join(' + ')} + ${last} = 360$`,
-          `Collect terms: $${ex(S, C + last)} = 360$, so $${tnum(S)}x = ${360 - C - last}$`,
-          `$x = ${360 - C - last} \\div ${S} = ${x}$`,
+          `Collect terms: $${collectT(S, C + last, 360)}$`,
+          `$${divT(S, 360 - C - last)}$`,
           `Answer: $x = ${x}$`,
         ],
       };
@@ -259,8 +266,8 @@ export const angleVertOpp = ggen('geo-angle-vert-opp', 'geo-angle-basics', (rng,
       solution: sameType ? [
         'The two marked angles are <b>vertically opposite</b>, so they are equal.',
         `$${ex(a1, b1)} = ${ex(a2, b2)}$`,
-        `$${tnum(a1 - a2)}x = ${b2 - b1}$`,
-        `$x = ${b2 - b1} \\div ${a1 - a2} = ${x}$`,
+        `$${a1 - a2 === 1 ? 'x' : `${a1 - a2}x`} = ${b2 - b1}$`,
+        ...(a1 - a2 === 1 ? [] : [`$${divT(a1 - a2, b2 - b1)}$`]),
         `Answer: $x = ${x}$`,
       ] : [
         'The two marked angles are next to each other on a straight line, so they add up to $180^\\circ$.',
@@ -436,8 +443,8 @@ export const triThirdAngle = ggen('geo-tri-third-angle', 'geo-angles-triangles',
         solution: [
           'Angles in a triangle add up to $180^\\circ$.',
           `$${forms.map(([a, b]) => ex(a, b)).join(' + ')} = 180$`,
-          `$${ex(sumA, sumB)} = 180$, so $${tnum(sumA)}x = ${180 - sumB}$`,
-          `$x = ${180 - sumB} \\div ${sumA} = ${x}$`,
+          `$${collectT(sumA, sumB, 180)}$`,
+          `$${divT(sumA, 180 - sumB)}$`,
           `Answer: $x = ${x}$`,
         ],
       };
@@ -544,7 +551,7 @@ export const triExterior = ggen('geo-tri-exterior', 'geo-angles-triangles', (rng
 }, { title: 'Exterior angle of a triangle' });
 
 export const quadAngles = ggen('geo-quad-angles', 'geo-angles-triangles', (rng, d) => {
-  const kind = d === 'easy' ? 'general' : d === 'medium' ? pick(rng, ['general', 'parallelogram', 'kite', 'trapezium']) : pick(rng, ['algebra', 'parallelogram', 'kite', 'algebra']);
+  const kind = d === 'easy' ? 'general' : d === 'medium' ? pick(rng, ['general', 'parallelogram', 'kite', 'trapezium']) : pick(rng, ['algebra', 'kite', 'algebra']);
   const W = 400; let H = 250;
   let angs; let labels; let x; let sol; let ds; let pts; let ticks = []; let arrows = []; let prompt = 'Work out the size of angle $x$.';
   let algebraAnswer = false;
@@ -578,7 +585,8 @@ export const quadAngles = ggen('geo-quad-angles', 'geo-angles-triangles', (rng, 
     const w = 1; const h1 = w / Math.tan(((top / 2) * Math.PI) / 180); const h2 = w / Math.tan(((bottom / 2) * Math.PI) / 180);
     pts = [[0, h1], [-w, 0], [0, -h2], [w, 0]];
     angs = [top, side, bottom, side];
-    const mode = pick(rng, ['side', 'top']);
+    const mode = d === 'hard' ? pick(rng, ['side', 'apex']) : pick(rng, ['side', 'top']);
+    if (mode === 'apex') { labels = ['x', degS(side), degS(bottom), null]; x = top; sol = ['A kite has one pair of equal angles (between the unequal sides), so the unmarked side angle is also ' + degS(side) + '.', `Angles in a quadrilateral add up to $360^\\circ$: $x = 360 - ${side} - ${side} - ${bottom}$`, `$x = ${top}^\\circ$`]; ds = [360 - side - bottom, 180 - bottom, 2 * side, 180 - side, 360 - 2 * side]; } else
     if (mode === 'side') { labels = [degS(top), 'x', degS(bottom), null]; x = side; sol = ['A kite has one pair of equal angles (between the unequal sides).', `Angles in a quadrilateral add up to $360^\\circ$: the two equal angles add up to $360 - ${top} - ${bottom} = ${2 * side}^\\circ$.`, `$x = ${2 * side} \\div 2 = ${side}^\\circ$`]; ds = [2 * side, 360 - top - bottom - 90, 180 - top, 180 - bottom, (180 - top - bottom + 180) / 2 + 10]; } else { labels = [null, degS(side), degS(bottom), 'x']; x = side; sol = ['A kite has one pair of equal angles (between the unequal sides).', `So $x$ equals the other marked angle: $x = ${side}^\\circ$.`]; ds = [top, 360 - side - bottom - side, 180 - side, 360 - side - bottom, 180 - bottom]; }
     ticks = [[0, 1, 1], [0, 3, 1], [1, 2, 2], [3, 2, 2]];
     prompt = 'The diagram shows a kite.<br>Work out the size of angle $x$.';
@@ -606,7 +614,7 @@ export const quadAngles = ggen('geo-quad-angles', 'geo-angles-triangles', (rng, 
       pts = polyFromAngles(angs, rng);
       const SA = forms.reduce((s, f) => s + f[0], 0); const SB = forms.reduce((s, f) => s + f[1], 0);
       x = xv;
-      sol = ['Angles in a quadrilateral add up to $360^\\circ$.', `$${forms.map((f) => ex(...f)).join(' + ')} = 360$`, `$${ex(SA, SB)} = 360$, so $${tnum(SA)}x = ${360 - SB}$`, `$x = ${x}$`];
+      sol = ['Angles in a quadrilateral add up to $360^\\circ$.', `$${forms.map((f) => ex(...f)).join(' + ')} = 360$`, `$${collectT(SA, SB, 360)}$`, `$${divT(SA, 360 - SB)}$`];
       ds = [(180 - SB) / SA, 360 / SA, (360 + SB) / SA, vals[1], x + 5, x - 5, x + 10];
       prompt = 'Work out the value of $x$.';
       break;
@@ -900,9 +908,9 @@ export const parallelFind = ggen('geo-par-find', 'geo-parallel-lines', (rng, d) 
 }, { title: 'Find an angle in parallel lines' });
 
 export const parallelReason = ggen('geo-par-reason', 'geo-parallel-lines', (rng, d) => {
-  const t = 5 * int(rng, 10, 26);
-  if (t === 90) throw new Error('right');
-  const { g, x, rel } = parallelPick(rng, { direct: true, allow: d === 'easy' ? ['alt', 'corr'] : ['alt', 'corr', 'coint', 'vert'] });
+  const t = d === 'hard' ? int(rng, 48, 132) : 5 * int(rng, 10, 26);
+  if (Math.abs(t - 90) < 4) throw new Error('right');
+  const { g, x, rel } = parallelPick(rng, { direct: true, allow: d === 'easy' ? ['alt', 'corr'] : d === 'medium' ? ['alt', 'corr', 'coint', 'vert'] : ['alt', 'coint', 'coint', 'corr'] });
   const gv = regionSize(g.r, t); const xv = regionSize(x.r, t);
   const visual = parallelFigure(t, { [`${g.X}${g.r}`]: degS(gv), [`${x.X}${x.r}`]: 'x' });
   const opt = (v, r) => `$x = ${v}^\\circ$ because ${REASON[r]}`;
@@ -912,11 +920,13 @@ export const parallelReason = ggen('geo-par-reason', 'geo-parallel-lines', (rng,
     ds.push(opt(r === 'coint' ? 180 - gv : gv, r));
   }
   ds.push(opt(180 - xv, rel === 'coint' ? 'alt' : rel), opt(180 - gv === xv ? gv : 180 - gv, 'straight'));
+  // classic misconception: thinking co-interior angles are equal (or alternate angles add to 180)
+  if (d === 'hard') ds.unshift(rel === 'coint' ? `$x = ${gv}^\\circ$ because co-interior angles are equal` : `$x = ${180 - gv}^\\circ$ because ${rel === 'alt' ? 'alternate' : 'corresponding'} angles add up to $180^\\circ$`);
   return {
     prompt: 'The diagram shows two parallel lines.<br>Which statement gives the correct size of angle $x$ <b>and</b> the correct reason?',
     visual,
     answer: opt(xv, rel),
-    distractors: shuffle(rng, ds),
+    distractors: d === 'hard' ? [ds[0], ...shuffle(rng, ds.slice(1))] : shuffle(rng, ds),
     count: 4,
     solution: [
       `$x$ and the ${degS(gv)} angle are ${REL_NAME[rel]} angles${rel === 'alt' ? ' (Z shape)' : rel === 'corr' ? ' (F shape)' : rel === 'coint' ? ' (C shape)' : ''}.`,
@@ -991,7 +1001,7 @@ export const parallelAlgebra = ggen('geo-par-algebra', 'geo-parallel-lines', (rn
     const wrongX = rel === 'coint' ? (b2 - b1) / (a1 - a2) : (180 - b1 - b2) / (a1 + a2);
     const solve = rel === 'coint'
       ? [`$${ex(a1 + a2, b1 + b2)} = 180$`, `$${tnum(a1 + a2)}x = ${180 - b1 - b2}$, so $x = ${x}$`]
-      : [`$${tnum(a1 - a2)}x = ${b2 - b1}$`, `$x = ${b2 - b1} \\div ${a1 - a2} = ${x}$`];
+      : (a1 - a2 === 1 ? [`$x = ${b2 - b1}$`] : [`$${a1 - a2}x = ${b2 - b1}$`, `$${divT(a1 - a2, b2 - b1)}$`]);
     const sol = [
       `The two marked angles are ${REL_NAME[rel]} angles, so ${rel === 'coint' ? 'they add up to $180^\\circ$' : 'they are equal'}.`,
       `$${eqT}$`, ...solve,
@@ -1055,7 +1065,7 @@ export const polyRegularAngles = ggen('geo-poly-regular-angles', 'geo-polygon-an
   const showDiagram = n <= 12;
   const val = ask === 'ext' ? ext : ask === 'int' ? intA : sum;
   const prompt = ask === 'sum' ? `Work out the <b>sum</b> of the interior angles of a ${name.replace('regular ', '')}.`
-    : `${showDiagram ? `The diagram shows a ${name}.` : `A polygon is a ${name}.`}<br>Work out the size of ${ask === 'ext' ? 'one <b>exterior</b>' : 'one <b>interior</b>'} angle${showDiagram ? ' $x$' : ''}.`;
+    : `${showDiagram ? `The diagram shows a ${name}.` : `A regular polygon has ${n} sides.`}<br>Work out the size of ${ask === 'ext' ? 'one <b>exterior</b>' : 'one <b>interior</b>'} angle${showDiagram ? ' $x$' : ''}.`;
   const sol = ask === 'ext' ? ['The exterior angles of any polygon add up to $360^\\circ$.', `A regular polygon has ${n} equal exterior angles: $360 \\div ${n} = ${ext}^\\circ$`]
     : ask === 'int' ? [`Each exterior angle is $360 \\div ${n} = ${ext}^\\circ$.`, `Interior and exterior angles make a straight line: $180 - ${ext} = ${intA}^\\circ$`]
       : ['A polygon with $n$ sides can be split into $n - 2$ triangles.', `Sum $= (${n} - 2) \\times 180 = ${n - 2} \\times 180 = ${tnum(sum)}^\\circ$`];
@@ -1071,7 +1081,7 @@ export const polyRegularAngles = ggen('geo-poly-regular-angles', 'geo-polygon-an
 }, { title: 'Interior and exterior angles of regular polygons' });
 
 export const polySidesFromAngle = ggen('geo-poly-sides', 'geo-polygon-angles', (rng, d) => {
-  const n = pick(rng, size(d, [5, 6, 8, 9, 10, 12, 15], [9, 10, 12, 15, 18, 20, 24], [15, 18, 20, 24, 30, 36, 40, 45, 60, 72]));
+  const n = pick(rng, size(d, [5, 6, 8, 9, 10, 12, 15, 18, 20], [8, 9, 10, 12, 15, 18, 20, 24, 30, 36], [15, 18, 20, 24, 30, 36, 40, 45, 60, 72, 90]));
   const ext = 360 / n; const intA = 180 - ext;
   if (d === 'hard' && chance(rng, 0.35)) {
     // interior angle is k times the exterior angle
@@ -1090,20 +1100,21 @@ export const polySidesFromAngle = ggen('geo-poly-sides', 'geo-polygon-angles', (
       ],
     };
   }
-  const fromInt = d === 'easy' ? false : d === 'medium' ? chance(rng, 0.5) : chance(rng, 0.7);
+  const fromInt = ext < 12 ? true : d === 'easy' ? false : d === 'medium' ? chance(rng, 0.5) : chance(rng, 0.85);
   const given = fromInt ? intA : ext;
   const W = 380; const H = 210;
   // Part of the polygon: a horizontal bottom edge with sides rising on both ends (like the papers).
-  const L = (n > 20 ? 92 : n > 10 ? 78 : 66) + pick(rng, [-8, -4, 0, 4, 8]);
+  const per = n <= 6 ? 1 : 2;
+  const L = Math.min((n > 20 ? 92 : n > 10 ? 78 : 66) + pick(rng, [-8, -4, 0, 4, 8]), (W - 30) / (1 + 2 * per * Math.max(0.5, Math.cos((ext * Math.PI) / 180))));
   const yb = H - 30;
   const A = [W / 2 - L / 2, yb]; const B = [W / 2 + L / 2, yb];
   const left = [A]; const right = [B];
-  for (let i = 1; i <= 2; i += 1) {
+  for (let i = 1; i <= per; i += 1) {
     left.push(polar(left[i - 1], L, 180 - i * ext));
     right.push(polar(right[i - 1], L, i * ext));
   }
   let body = line(...A, ...B, { width: 2.2 });
-  for (let i = 0; i < 2; i += 1) body += line(...left[i], ...left[i + 1], { width: 2.2 }) + line(...right[i], ...right[i + 1], { width: 2.2 });
+  for (let i = 0; i < per; i += 1) body += line(...left[i], ...left[i + 1], { width: 2.2 }) + line(...right[i], ...right[i + 1], { width: 2.2 });
   if (fromInt) body += arcLabel(A, B, left[1], degS(intA));
   else {
     const E = [A[0] - 70, yb];
@@ -1150,7 +1161,7 @@ export const polyMissingAngle = ggen('geo-poly-missing', 'geo-polygon-angles', (
       const SA = forms.slice(0, 3).reduce((s, f) => s + f[0], 0); const SB = forms.slice(0, 3).reduce((s, f) => s + f[1], 0);
       const K = knownVals.reduce((s, v) => s + v, 0);
       x = xv; typedV = xv; answerT = `$x = ${xv}$`;
-      sol = [`A ${n === 5 ? 'pentagon' : 'hexagon'} has interior angles adding up to $(${n} - 2) \\times 180 = ${sum}^\\circ$.`, `$${forms.slice(0, 3).map((f) => ex(...f)).join(' + ')} + ${sumT(knownVals)} = ${sum}$`, `$${ex(SA, SB + K)} = ${sum}$, so $${tnum(SA)}x = ${sum - SB - K}$`, `$x = ${xv}$`];
+      sol = [`A ${n === 5 ? 'pentagon' : 'hexagon'} has interior angles adding up to $(${n} - 2) \\times 180 = ${sum}^\\circ$.`, `$${forms.slice(0, 3).map((f) => ex(...f)).join(' + ')} + ${sumT(knownVals)} = ${sum}$`, `$${collectT(SA, SB + K, sum)}$`, `$${divT(SA, sum - SB - K)}$`];
       ds = [(360 - SB - K) / SA, ((n - 1) * 180 - SB - K) / SA, (n * 180 - SB - K) / SA, vals[0], xv + 5, xv - 5, xv + 10];
     }
     if (!angs) throw new Error('no hard polygon');
@@ -1196,7 +1207,7 @@ export const polyComposite = ggen('geo-poly-composite', 'geo-polygon-angles', (r
   const W = 420; const H = 270;
   if (mode === 'twoPolys') {
     const pairs = [[4, 6], [4, 8], [5, 6], [6, 8], [5, 8], [5, 5], [4, 5], [6, 6], [8, 8], [5, 10], [6, 12], [3, 12], [8, 10]];
-    const [n1, n2] = pick(rng, d === 'easy' ? [[4, 6], [4, 8], [6, 6], [6, 8], [8, 8]] : pairs);
+    const [n1, n2] = pick(rng, d === 'easy' ? [[4, 6], [4, 8], [6, 6], [6, 8], [8, 8], [4, 5], [5, 6], [5, 5], [4, 10], [6, 12], [3, 12]] : pairs);
     const i1 = 180 - 360 / n1; const i2 = 180 - 360 / n2;
     const x = 360 - i1 - i2;
     // shared edge S=(0,0) -> T=(0,1). Poly 1 to the left of S->T... regularOnEdge puts polygon left of direction.
@@ -1224,8 +1235,9 @@ export const polyComposite = ggen('geo-poly-composite', 'geo-polygon-angles', (r
       distractors: angleWrongs(x, [180 - x, 360 - (360 / n1) - (360 / n2), 360 / n1 + 360 / n2, i1 + i2 - 180, 360 - i1 - i2 - 30, 180 - i1 + 180 - i2]),
       typed: { kind: 'number', value: x },
       solution: [
-        `Interior angle of the ${polyName(n1)}: $180 - 360 \\div ${n1} = ${i1}^\\circ$.`,
-        `Interior angle of the ${polyName(n2)}: $180 - 360 \\div ${n2} = ${i2}^\\circ$.`,
+        ...(n1 === n2 ? [`Each interior angle of a ${polyName(n1)} is $180 - 360 \\div ${n1} = ${i1}^\\circ$, and there is one from each polygon at the point.`] : [
+          `Interior angle of the ${polyName(n1)}: $180 - 360 \\div ${n1} = ${i1}^\\circ$.`,
+          `Interior angle of the ${polyName(n2)}: $180 - 360 \\div ${n2} = ${i2}^\\circ$.`]),
         `Angles around a point add up to $360^\\circ$: $x = 360 - ${i1} - ${i2} = ${x}^\\circ$`,
         `Answer: ${degT(x)}`,
       ],
@@ -1234,7 +1246,7 @@ export const polyComposite = ggen('geo-poly-composite', 'geo-polygon-angles', (r
   // diagonal in a regular polygon: triangle of three consecutive vertices
   const n = pick(rng, [5, 6, 9, 10, 12, 15]);
   const intA = 180 - 360 / n; const base = (180 - intA) / 2;
-  const c = [W / 2, H / 2 + 5]; const R = 115;
+  const c = [W / 2, H / 2]; const R = 100;
   const V = regularPoly(n, c, R, -90 - 180 / n + pick(rng, [0, 0, 12, -12, 24, -24, 36]));
   const A = V[0]; const B = V[1]; const C = V[2]; const Dv = V[3];
   const ask = pick(rng, ['base', 'rest']);
@@ -1359,7 +1371,7 @@ export const bearingRead = ggen('geo-bear-read', 'geo-bearings', (rng, d) => {
 }, { title: 'Read a bearing from a diagram' });
 
 export const bearingBack = ggen('geo-bear-back', 'geo-bearings', (rng, d) => {
-  const b = d === 'easy' ? 5 * int(rng, 6, 30) : d === 'medium' ? int(rng, 28, 152) : int(rng, 208, 332);
+  const b = d === 'easy' ? 5 * int(rng, 6, 30) : d === 'medium' ? pick(rng, [int(rng, 28, 152), int(rng, 208, 332)]) : int(rng, 208, 332);
   if (b === 180 || Math.abs((b % 180) - 90) < 4) throw new Error('axis');
   const ans = back(b);
   const W = 400; const H = 310;
@@ -1369,24 +1381,21 @@ export const bearingBack = ggen('geo-bear-back', 'geo-bearings', (rng, d) => {
   const A = [W / 2 - (dirv[0] * span) / 2, dirv[1] > 0 ? top : top + span * Math.abs(dirv[1])];
   const B = add(A, scale(dirv, span));
   let body = northLine(A, 72) + northLine(B, 72) + line(...A, ...B, { width: 2 });
-  const showAt = d === 'hard' ? 'B' : 'A';
-  const given = d === 'hard' ? ans : b;
-  if (showAt === 'A') body += arcLabel(A, [A[0], A[1] - 40], B, degS(b > 180 ? 360 - b : b), { reflex: false, r: 24 });
-  else body += arcLabel(B, [B[0], B[1] - 40], A, degS(ans > 180 ? 360 - ans : ans), { r: 24 });
+  const hard = d === 'hard';
+  // easy/medium: the bearing is given in words and marked; hard: only the anticlockwise angle at A is marked
+  body += arcLabel(A, [A[0], A[1] - 40], B, degS(b > 180 ? 360 - b : b), { r: 24 });
   body += dot(...A) + dot(...B) + labelAt(A, 'A', dirv[0] > 0 ? 180 : 0, 14, { italic: true }) + labelAt(B, 'B', dirv[0] > 0 ? 0 : 180, 14, { italic: true });
-  const q = showAt === 'A' ? ['B', 'A'] : ['A', 'B'];
-  const target = showAt === 'A' ? ans : b;
   return {
-    prompt: `The bearing of $${q[0]}$ from $${q[1]}$ is ${bearingT(given)}.<br>Work out the bearing of $${q[1]}$ from $${q[0]}$.`,
+    prompt: hard ? 'The diagram shows the positions of $A$ and $B$.<br>Work out the bearing of $A$ from $B$.' : `The bearing of $B$ from $A$ is ${bearingT(b)}.<br>Work out the bearing of $A$ from $B$.`,
     visual: figure(W, H, body, { nda: true }),
-    answer: bearingT(target),
-    distractors: bWrongs(target, [360 - given, given, 180 - given, given + 90, 360 - target, target + 90]),
-    typed: { kind: 'number', value: target },
+    answer: bearingT(ans),
+    distractors: bWrongs(ans, hard ? [360 - b, 180 - (360 - b), 360 - b + 180, b, (360 - b) + 90] : [360 - b, b, 180 - b, b + 90, 360 - ans, ans + 90]),
+    typed: { kind: 'number', value: ans },
     solution: [
-      'The two North lines are parallel, so the angles at each end are related by co-interior / alternate angles.',
-      'The return bearing differs by $180^\\circ$.',
-      `$${given} ${given < 180 ? '+' : '-'} 180 = ${target}$`,
-      `Answer: ${bearingT(target)}`,
+      ...(hard ? [`The marked angle at $A$ is measured anticlockwise from North, so the bearing of $B$ from $A$ is $360 - ${360 - b} = ${b}^\circ$.`] : []),
+      'The two North lines are parallel, so the bearing back the other way differs by exactly $180^\circ$.',
+      `$${b} ${b < 180 ? '+' : '-'} 180 = ${ans}$`,
+      `Answer: ${bearingT(ans)}`,
     ],
   };
 }, { title: 'Back bearings' });
@@ -1450,9 +1459,10 @@ export const bearingProblem = ggen('geo-bear-problem', 'geo-bearings', (rng, d) 
       typed: { kind: 'number', value: ans },
       solution: [
         'Each angle in an equilateral triangle is $60^\\circ$.',
-        `The bearing of $C$ from $A$ is $${p} - 60 = ${bearingOf(A, C)}^\\circ$ (turn $60^\\circ$ anticlockwise from $AB$).`,
-        `The bearing of $A$ from $B$ is $${p} + 180 = ${back(p)}^\\circ$, so the bearing of $C$ from $B$ is $${back(p)} + 60 = ${bearingOf(B, C)}^\\circ$ (mod 360).`,
-        from === 'C' ? `Reverse a bearing by adding or subtracting $180^\\circ$: the bearing of $${to}$ from $C$ is ${bearingT(ans)}.` : `So the bearing of $C$ from $${from}$ is ${bearingT(ans)}.`,
+        ...(from === 'A' || (to === 'A' && from === 'C') ? [`At $A$, $C$ is $60^\\circ$ anticlockwise from $B$, so the bearing of $C$ from $A$ is $${p} - 60 = ${p - 60}^\\circ$.`] : []),
+        ...(to === 'A' && from === 'C' ? [`Going back the other way adds $180^\\circ$: $${p - 60} + 180 = ${p + 120}^\\circ$.`] : []),
+        ...(from === 'B' || (to === 'B' && from === 'C') ? [`The bearing of $A$ from $B$ is $${p} + 180 = ${p + 180}^\\circ$. At $B$, $C$ is $60^\\circ$ clockwise from $A$: $${p + 180} + 60 = ${p + 240}^\\circ$${p + 240 >= 360 ? `, and subtract 360 because a bearing must be less than $360^\\circ$: $${p + 240 - 360}^\\circ$` : ''}.`] : []),
+        ...(to === 'B' && from === 'C' ? [`That is the bearing of $C$ from $B$; going back the other way subtracts $180^\\circ$: $${p + 60}^\\circ$.`] : []),
         `Answer: ${bearingT(ans)}`,
       ],
     };

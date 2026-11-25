@@ -22,6 +22,7 @@ const SMALL = [[[0, 0], [1, 0], [0, 2]], [[0, 0], [2, 0], [0, 1]], [[0, 0], [2, 
 const C = (p) => `$(${tnum(p[0])}, ${tnum(p[1])})$`;
 const vecT = (v) => `\\begin{pmatrix} ${tnum(v[0])} \\\\ ${tnum(v[1])} \\end{pmatrix}`;
 const VEC = (v) => `$${vecT(v)}$`;
+const plusT = (a, b) => `${tnum(a)} ${b < 0 ? '-' : '+'} ${tnum(Math.abs(b))}`;
 const key = (pts) => pts.map((p) => `${p[0]},${p[1]}`).sort().join(';');
 
 const T = {
@@ -187,8 +188,8 @@ export const transPoint = ggen('geo-trans-point', 'geo-translation', (rng, d) =>
       answer: C(ans),
       distractors: [[given[0] - (back ? -v[0] : v[0]), given[1] - (back ? -v[1] : v[1])], [given[0] + v[1] * (back ? -1 : 1), given[1] + v[0] * (back ? -1 : 1)], [ans[0], given[1] - (ans[1] - given[1])], [given[0] - (ans[0] - given[0]), ans[1]], [ans[1], ans[0]]].map(C),
       typed: { kind: 'coord', x: ans[0], y: ans[1] },
-      solution: back ? [`Undo the translation: subtract the vector.`, `$(${tnum(q[0])} - ${tnum(v[0])}, ${tnum(q[1])} - ${tnum(v[1])}) = (${tnum(p[0])}, ${tnum(p[1])})$`, `Answer: ${C(ans)}`]
-        : [`Add the top number to the $x$-coordinate and the bottom number to the $y$-coordinate.`, `$(${tnum(p[0])} + ${tnum(v[0])}, ${tnum(p[1])} + ${tnum(v[1])}) = (${tnum(q[0])}, ${tnum(q[1])})$`, `Answer: ${C(ans)}`],
+      solution: back ? [`Undo the translation: subtract the vector.`, `$(${plusT(q[0], -v[0])}, ${plusT(q[1], -v[1])}) = (${tnum(p[0])}, ${tnum(p[1])})$`, `Answer: ${C(ans)}`]
+        : [`Add the top number to the $x$-coordinate and the bottom number to the $y$-coordinate.`, `$(${plusT(p[0], v[0])}, ${plusT(p[1], v[1])}) = (${tnum(q[0])}, ${tnum(q[1])})$`, `Answer: ${C(ans)}`],
     };
   }
   const { A, B } = withImage(rng, W6, () => ({ v, f: T.translate(v) }), { allowOverlap: true });
@@ -199,7 +200,7 @@ export const transPoint = ggen('geo-trans-point', 'geo-translation', (rng, d) =>
     answer: C(Q),
     distractors: [[P[0] - v[0], P[1] - v[1]], [P[0] + v[1], P[1] + v[0]], [Q[1], Q[0]], [P[0] + v[0], P[1] - v[1]], [P[0] - v[0], P[1] + v[1]]].map(C),
     typed: { kind: 'coord', x: Q[0], y: Q[1] },
-    solution: [`$P$ is at ${C(P)}.`, `Move ${Math.abs(v[0])} ${v[0] > 0 ? 'right' : 'left'} and ${Math.abs(v[1])} ${v[1] > 0 ? 'up' : 'down'}: $(${tnum(P[0])} + ${tnum(v[0])}, ${tnum(P[1])} + ${tnum(v[1])})$`, `Answer: ${C(Q)}`],
+    solution: [`$P$ is at ${C(P)}.`, `Move ${Math.abs(v[0])} ${v[0] > 0 ? 'right' : 'left'} and ${Math.abs(v[1])} ${v[1] > 0 ? 'up' : 'down'}: $(${plusT(P[0], v[0])}, ${plusT(P[1], v[1])}) = (${tnum(Q[0])}, ${tnum(Q[1])})$`, `Answer: ${C(Q)}`],
   };
 }, { title: 'Image of a point under a translation' });
 
@@ -219,6 +220,7 @@ export const transWhich = ggen('geo-trans-which', 'geo-translation', (rng, d) =>
     visual: gridFig(W6, q.shapes, { unitPx: 25 }),
     answer: `Shape ${q.answer}`,
     distractors: q.others.map((l) => `Shape ${l}`),
+    keepOrder: true, order: [q.answer, ...q.others].sort().map((l) => `Shape ${l}`),
     count: 4,
     solution: [`$${vecT(v)}$ means ${Math.abs(v[0])} ${v[0] > 0 ? 'right' : 'left'} and ${Math.abs(v[1])} ${v[1] > 0 ? 'up' : 'down'}.`, 'A translation slides the shape: it stays the same way round and the same size.', `Move one vertex of A by this amount — it lands on shape ${q.answer}.`, `Answer: Shape ${q.answer}`],
   };
@@ -250,7 +252,7 @@ export const transCombine = ggen('geo-trans-combine', 'geo-translation', (rng, d
 /* ================================================================== */
 
 function randLine(rng, d, w = W6) {
-  const kinds = d === 'easy' ? ['x', 'y', 'xaxis', 'yaxis'] : d === 'medium' ? ['x', 'y', 'yx', 'x', 'y'] : ['x', 'y', 'yx', 'ymx'];
+  const kinds = d === 'easy' ? ['x', 'y', 'xaxis', 'yaxis'] : d === 'medium' ? ['x', 'y', 'yx', 'x', 'y'] : ['yx', 'ymx', 'yx', 'ymx', 'x', 'y'];
   const k = pick(rng, kinds);
   if (k === 'xaxis') return { t: 'y', v: 0 };
   if (k === 'yaxis') return { t: 'x', v: 0 };
@@ -280,7 +282,7 @@ export const reflPoint = ggen('geo-refl-point', 'geo-reflection', (rng, d) => {
     distractors: [...wrongPts, [-P[0], -P[1]], [Q[1], Q[0]]].map(C),
     typed: { kind: 'coord', x: Q[0], y: Q[1] },
     solution: ln.t === 'x' || ln.t === 'y' ? [
-      `$P$ is at ${C(P)}. The mirror line ${lineWords(ln)} is ${ln.t === 'x' ? 'vertical' : 'horizontal'}.`,
+      `$P$ is at ${C(P)}. The mirror line $${lineName(ln)}$${ln.v === 0 ? (ln.t === 'y' ? ' (the $x$-axis)' : ' (the $y$-axis)') : ''} is ${ln.t === 'x' ? 'vertical' : 'horizontal'}.`,
       `$P$ is ${Math.abs((ln.t === 'x' ? P[0] : P[1]) - ln.v)} square${Math.abs((ln.t === 'x' ? P[0] : P[1]) - ln.v) === 1 ? '' : 's'} from the line, so its image is the same distance on the other side.`,
       `Only the ${ln.t === 'x' ? '$x$' : '$y$'}-coordinate changes: image at ${C(Q)}.`,
       `Answer: ${C(Q)}`,
@@ -307,6 +309,7 @@ export const reflWhich = ggen('geo-refl-which', 'geo-reflection', (rng, d) => {
     visual: gridFig(W6, q.shapes, { unitPx: 25 }),
     answer: `Shape ${q.answer}`,
     distractors: q.others.map((l) => `Shape ${l}`),
+    keepOrder: true, order: [q.answer, ...q.others].sort().map((l) => `Shape ${l}`),
     count: 4,
     solution: [`Sketch ${lineWords(ln)}${ln.t === 'yx' || ln.t === 'ymx' ? ' (a diagonal line through the origin)' : ''}.`, 'Each vertex of the image is the same distance from the mirror line as the original, but on the opposite side. The image is flipped over.', `That gives shape ${q.answer}.`, `Answer: Shape ${q.answer}`],
   };
@@ -374,6 +377,7 @@ export const rotWhich = ggen('geo-rot-which', 'geo-rotation', (rng, d) => {
     visual: gridFig(W6, q.shapes, { unitPx: 25, points: cIsO ? [] : [{ p: c, cross: true }] }),
     answer: `Shape ${q.answer}`,
     distractors: q.others.map((l) => `Shape ${l}`),
+    keepOrder: true, order: [q.answer, ...q.others].sort().map((l) => `Shape ${l}`),
     count: 4,
     solution: [`Use tracing paper: trace shape A, put your pencil on the centre ${C(c)} and turn the paper ${ang === 180 ? 'half a turn' : `a quarter turn ${ang === 90 ? 'clockwise' : 'anticlockwise'}`}.`, 'Check the direction carefully — clockwise is the way clock hands move.', `The traced shape lands on shape ${q.answer}.`, `Answer: Shape ${q.answer}`],
   };
@@ -426,7 +430,7 @@ function enlargeSetup(rng, k, w = WE, { centre = null } = {}) {
 }
 
 export const enlScaleFactor = ggen('geo-enl-sf', 'geo-enlargement', (rng, d) => {
-  const k = d === 'easy' ? pick(rng, [2, 3, 4]) : d === 'medium' ? pick(rng, [2, 3, 4, frac(1, 2)]) : pick(rng, [frac(1, 2), frac(1, 3), 3, frac(3, 2), frac(2, 3), frac(5, 2)]);
+  const k = d === 'easy' ? pick(rng, [2, 3, 4, 5]) : d === 'medium' ? pick(rng, [2, 3, 4, frac(1, 2), frac(1, 3), frac(3, 2)]) : pick(rng, [frac(1, 2), frac(1, 3), frac(1, 4), frac(3, 2), frac(2, 3), frac(5, 2), frac(3, 4)]);
   const { A, B } = enlargeSetup(rng, k);
   const kk = Frac.of(k);
   const ans = `$${sfT(kk)}$`;
@@ -457,9 +461,9 @@ export const enlPoint = ggen('geo-enl-point', 'geo-enlargement', (rng, d) => {
     distractors: wrong.map(C),
     typed: { kind: 'coord', x: Q[0], y: Q[1] },
     solution: [
-      `From the centre ${C(c)} to $P$ ${C(P)} is ${P[0] - c[0]} across and ${P[1] - c[1]} up.`,
-      `Multiply this by the scale factor $${sfT(kk)}$: $${tnum(Q[0] - c[0])}$ across and $${tnum(Q[1] - c[1])}$ up.`,
-      `Add to the centre: ${C(Q)}. (Multiplying the coordinates of $P$ only works when the centre is the origin.)`,
+      `The movement from the centre ${C(c)} to $P$ ${C(P)} is $${vecT([P[0] - c[0], P[1] - c[1]])}$.`,
+      `Multiply it by the scale factor: $${sfT(kk)} \\times ${vecT([P[0] - c[0], P[1] - c[1]])} = ${vecT([Q[0] - c[0], Q[1] - c[1]])}$.`,
+      `Add this to the centre: $(${plusT(c[0], Q[0] - c[0])}, ${plusT(c[1], Q[1] - c[1])}) = (${tnum(Q[0])}, ${tnum(Q[1])})$. (Multiplying the coordinates of $P$ only works when the centre is the origin.)`,
       `Answer: ${C(Q)}`,
     ],
   };
@@ -643,7 +647,7 @@ export const descCombined = ggen('geo-desc-combined', 'geo-describe-transformati
 export const descInvariant = ggen('geo-desc-invariant', 'geo-describe-transformations', (rng, d) => {
   const A = shapeAt(rng, W5, { small: false });
   const vi = int(rng, 0, A.length - 1); const V = A[vi];
-  const kind = pick(rng, d === 'easy' ? ['rotate', 'reflect'] : ['rotate', 'reflect', 'enlarge', 'reflectDiag']);
+  const kind = pick(rng, d === 'easy' ? ['rotate', 'enlarge'] : d === 'medium' ? ['rotate', 'reflect', 'enlarge'] : ['reflect', 'reflectDiag', 'reflectDiag']);
   let text1; let f;
   if (kind === 'rotate') { const ang = randRot(rng, d); text1 = `a rotation ${rotNameT(ang)} about ${C(V)}`; f = T.rotate(ang, V); } else if (kind === 'reflect') { const ln = chance(rng, 0.5) ? { t: 'x', v: V[0] } : { t: 'y', v: V[1] }; text1 = `a reflection in the line $${lineName(ln)}$`; f = T.reflect(ln); } else if (kind === 'enlarge') { const k = pick(rng, [2, 3, frac(1, 2)]); text1 = `an enlargement, scale factor $${sfT(Frac.of(k))}$, centre ${C(V)}`; f = T.enlarge(k, V); } else {
     if (V[0] !== V[1] && V[0] !== -V[1]) throw new Error('not on diagonal');
@@ -694,9 +698,9 @@ export const negPoint = ggen('geo-neg-point', 'geo-enlargement-negative', (rng, 
     distractors: wrong.map(C),
     typed: { kind: 'coord', x: Q[0], y: Q[1] },
     solution: [
-      `From the centre ${C(c)}, $P$ is ${P[0] - c[0]} across and ${P[1] - c[1]} up.`,
-      `A negative scale factor sends the image to the <b>other side</b> of the centre: multiply by $${sfT(kk)}$ to get $${tnum(Q[0] - c[0])}$ across and $${tnum(Q[1] - c[1])}$ up.`,
-      `Add to the centre: ${C(Q)}. The image is upside down.`,
+      `The movement from the centre ${C(c)} to $P$ is $${vecT([P[0] - c[0], P[1] - c[1]])}$.`,
+      `Multiply it by $${sfT(kk)}$ — the negative sign sends the image to the <b>other side</b> of the centre: $${vecT([Q[0] - c[0], Q[1] - c[1]])}$.`,
+      `Add this to the centre: $(${plusT(c[0], Q[0] - c[0])}, ${plusT(c[1], Q[1] - c[1])}) = (${tnum(Q[0])}, ${tnum(Q[1])})$. The image is upside down.`,
       `Answer: ${C(Q)}`,
     ],
   };
@@ -725,13 +729,15 @@ export const negDescribe = ggen('geo-neg-describe', 'geo-enlargement-negative', 
 }, { title: 'Describe an enlargement with a negative scale factor' });
 
 export const negWhich = ggen('geo-neg-which', 'geo-enlargement-negative', (rng, d) => {
-  const k = d === 'hard' ? pick(rng, [frac(-1, 2), -2]) : pick(rng, [-2, -1, -2]);
+  const k = d === 'easy' ? pick(rng, [-1, -2]) : d === 'medium' ? pick(rng, [-2, -3]) : pick(rng, [frac(-1, 2), frac(-1, 2), -3]);
   const kk = Frac.of(k);
   for (let t = 0; t < 100; t += 1) {
     let st;
     try { st = enlargeSetup(rng, k, WN); } catch { continue; }
     const { A, B, c } = st;
-    const cands = [T.enlarge(kk.neg(), c), T.enlarge(k, [c[0] + 1, c[1] + 1]), T.enlarge(kk.inv(), c), T.rotate(90, c), T.enlarge(k, [c[0] - 1, c[1]])].map((f) => A.map(f)).filter((im) => im.every((p) => Number.isInteger(p[0]) && Number.isInteger(p[1])));
+    const cands = [T.enlarge(kk.neg(), c), T.enlarge(k, [c[0] + 1, c[1] + 1]), T.enlarge(kk.inv(), c), T.rotate(90, c), T.enlarge(k, [c[0] - 1, c[1]]), ...(kk.eq(-1) ? [] : [T.enlarge(-1, c)])].map((f) => A.map(f))
+      .concat([[2, 0], [-2, 0], [0, 2], [0, -2]].map((v) => B.map(T.translate(v)))) // right size and way up, wrong place
+      .filter((im) => im.every((p) => Number.isInteger(p[0]) && Number.isInteger(p[1])));
     const labels = pick(rng, LETTERS4);
     let q;
     try { q = whichQuestion(rng, WN, A, B, cands, labels); } catch { continue; }
@@ -740,8 +746,9 @@ export const negWhich = ggen('geo-neg-which', 'geo-enlargement-negative', (rng, 
       visual: gridFig(WN, q.shapes, { unitPx: 24, points: [{ p: c, cross: true }] }),
       answer: `Shape ${q.answer}`,
       distractors: q.others.map((l) => `Shape ${l}`),
+    keepOrder: true, order: [q.answer, ...q.others].sort().map((l) => `Shape ${l}`),
       count: 4,
-      solution: ['With a negative scale factor the image is on the opposite side of the centre and upside down.', `Each vertex of the image is $${sfT(kk.neg())}$ times as far from ${C(c)} as the original, in the opposite direction.`, `That is shape ${q.answer}.`, `Answer: Shape ${q.answer}`],
+      solution: ['With a negative scale factor the image is on the opposite side of the centre and upside down.', kk.eq(-1) ? `Each vertex of the image is the same distance from ${C(c)} as the original, but in the opposite direction (the same as a half turn about ${C(c)}).` : `Each vertex of the image is $${sfT(kk.neg())}$ times as far from ${C(c)} as the original, in the opposite direction.`, `That is shape ${q.answer}.`, `Answer: Shape ${q.answer}`],
     };
   }
   throw new Error('no negative enlargement');

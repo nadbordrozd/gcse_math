@@ -116,58 +116,69 @@ export const shapeName = ggen('geo-2d-name-shape', 'geo-2d-properties', (rng, d)
   };
 }, { title: 'Name triangles and quadrilaterals' });
 
+// "yes" lists use inclusive definitions (a square is also a rectangle, rhombus, parallelogram and kite), so a
+// statement is listed for a shape only if it is true for EVERY shape of that kind.
 const STATEMENTS = [
   { s: 'All four sides are equal', yes: ['Square', 'Rhombus'] },
   { s: 'All four angles are right angles', yes: ['Square', 'Rectangle'] },
   { s: 'The diagonals cross at right angles', yes: ['Square', 'Rhombus', 'Kite'] },
   { s: 'The diagonals are equal in length', yes: ['Square', 'Rectangle', 'Isosceles trapezium'] },
-  { s: 'Opposite sides are parallel', yes: ['Square', 'Rectangle', 'Rhombus', 'Parallelogram'] },
+  { s: 'Both pairs of opposite sides are parallel', yes: ['Square', 'Rectangle', 'Rhombus', 'Parallelogram'] },
   { s: 'Opposite angles are equal', yes: ['Square', 'Rectangle', 'Rhombus', 'Parallelogram'] },
-  { s: 'It has exactly one line of symmetry', yes: ['Kite', 'Isosceles trapezium'] },
-  { s: 'It has rotational symmetry of order 2', yes: ['Rectangle', 'Rhombus', 'Parallelogram'] },
-  { s: 'It has no lines of symmetry', yes: ['Parallelogram', 'Trapezium'] },
   { s: 'The diagonals bisect each other', yes: ['Square', 'Rectangle', 'Rhombus', 'Parallelogram'] },
   { s: 'It has exactly one pair of parallel sides', yes: ['Trapezium', 'Isosceles trapezium'] },
   { s: 'It has four lines of symmetry', yes: ['Square'] },
+  { s: 'It has at least one line of symmetry', yes: ['Square', 'Rectangle', 'Rhombus', 'Kite', 'Isosceles trapezium'] },
+  { s: 'It has rotational symmetry', yes: ['Square', 'Rectangle', 'Rhombus', 'Parallelogram'] },
+  { s: 'It has two pairs of equal sides next to each other', yes: ['Square', 'Rhombus', 'Kite'] },
 ];
+const an = (w) => (/^[aeiou]/i.test(w) ? 'an' : 'a');
 
 export const shapeProperty = ggen('geo-2d-property', 'geo-2d-properties', (rng, d) => {
-  const shapes = d === 'easy' ? ['Square', 'Rectangle', 'Kite', 'Parallelogram'] : ['Square', 'Rectangle', 'Rhombus', 'Parallelogram', 'Kite', 'Trapezium', 'Isosceles trapezium'];
+  const shapes = d === 'easy' ? ['Square', 'Rectangle', 'Kite', 'Parallelogram'] : d === 'medium' ? ['Rectangle', 'Rhombus', 'Parallelogram', 'Kite', 'Trapezium'] : ['Rhombus', 'Parallelogram', 'Kite', 'Isosceles trapezium', 'Trapezium'];
   const shape = pick(rng, shapes);
   const trueS = STATEMENTS.filter((x) => x.yes.includes(shape));
   const falseS = STATEMENTS.filter((x) => !x.yes.includes(shape));
-  const mode = chance(rng, 0.5) ? 'true' : 'false';
+  // diagram: the shape itself, only rotated (stretching would break its properties)
   const rot = (int(rng, -40, 40) * Math.PI) / 180;
-  const base = QUAD_DRAW[shape].pts.map(([x, y]) => [x * (0.8 + rng() * 0.4), y]);
-  const pts = base.map(([x, y]) => [x * Math.cos(rot) - y * Math.sin(rot), x * Math.sin(rot) + y * Math.cos(rot)]);
+  const pts = QUAD_DRAW[shape].pts.map(([x, y]) => [x * Math.cos(rot) - y * Math.sin(rot), x * Math.sin(rot) + y * Math.cos(rot)]);
   const visual = figure(260, 180, polygon(place(pts, { width: 260, height: 180, pad: 22 }).P, { fill: FILL }));
-  if (mode === 'true' || trueS.length < 3) {
-    const ans = pick(rng, trueS);
-    return {
-      visual,
-      prompt: `Which statement is true for <b>every</b> ${shape.toLowerCase()}?`,
-      answer: ans.s,
-      distractors: shuffle(rng, falseS).map((x) => x.s),
-      count: 4,
-      solution: [`Think about the properties of a ${shape.toLowerCase()} — sketch one with the marks for equal and parallel sides.`, `"${ans.s}" is always true for a ${shape.toLowerCase()}.`, `The other statements are true for: ${shuffle(rng, falseS).slice(0, 2).map((x) => `"${x.s}" — ${x.yes.join(', ').toLowerCase()}`).join('; ')}.`, `Answer: ${ans.s}`],
-    };
-  }
-  const ans = pick(rng, falseS);
+  const ans = pick(rng, trueS);
+  // harder levels use distractors that are true for some (but not all) of these shapes, or for similar shapes
+  const ds = shuffle(rng, falseS).slice(0, 3);
+  const nm = shape.toLowerCase();
   return {
     visual,
-    prompt: `Which statement is <b>not</b> true for a ${shape.toLowerCase()}?`,
+    prompt: `Which statement is true for <b>every</b> ${nm}?`,
     answer: ans.s,
-    distractors: shuffle(rng, trueS).map((x) => x.s),
+    distractors: ds.map((x) => x.s),
     count: 4,
-    solution: [`Go through the properties of a ${shape.toLowerCase()}.`, `"${ans.s}" is only true for: ${ans.yes.join(', ').toLowerCase()}.`, `Answer: ${ans.s}`],
+    solution: [
+      `Think about the properties of ${an(nm)} ${nm} — sketch one with the marks for equal and parallel sides.`,
+      `"${ans.s}" is always true for ${an(nm)} ${nm}.`,
+      ...ds.map((x) => `"${x.s}" is ${x.yes.length ? `only always true for: ${x.yes.join(', ').toLowerCase()}` : 'not always true for any of these quadrilaterals'}.`),
+      `Answer: ${ans.s}`,
+    ],
   };
 }, { title: 'Properties of quadrilaterals' });
 
 const POLY_N = { 3: 'Triangle', 4: 'Quadrilateral', 5: 'Pentagon', 6: 'Hexagon', 7: 'Heptagon', 8: 'Octagon', 9: 'Nonagon', 10: 'Decagon' };
 
 export const polygonNames = ggen('geo-2d-polygon-names', 'geo-2d-properties', (rng, d) => {
-  const n = d === 'easy' ? int(rng, 5, 8) : int(rng, 5, 10);
-  const mode = d === 'hard' ? pick(rng, ['sides', 'diagram']) : pick(rng, ['diagram', 'diagram', 'sides']);
+  const n = d === 'easy' ? int(rng, 5, 8) : d === 'medium' ? int(rng, 5, 10) : int(rng, 7, 10);
+  const mode = d === 'hard' ? pick(rng, ['compare', 'diagram', 'total']) : pick(rng, ['diagram', 'diagram', 'sides']);
+  if (mode === 'compare' || mode === 'total') {
+    const m = pick(rng, [5, 6, 7, 8, 9, 10].filter((v) => v !== n));
+    const ans = mode === 'compare' ? Math.abs(n - m) : n + m;
+    const [big, small] = n > m ? [n, m] : [m, n];
+    return {
+      prompt: mode === 'compare' ? `How many more sides does a <b>${POLY_N[big].toLowerCase()}</b> have than a <b>${POLY_N[small].toLowerCase()}</b>?` : `A <b>${POLY_N[n].toLowerCase()}</b> and a <b>${POLY_N[m].toLowerCase()}</b> are drawn. How many vertices (corners) are there altogether?`,
+      answer: `$${ans}$`,
+      distractors: wrongs(ans, [ans + 1, ans - 1, ans + 2, ans - 2, n * m, big]).map((v) => `$${v}$`),
+      typed: { kind: 'number', value: ans },
+      solution: ['Pent = 5, hex = 6, hept = 7, oct = 8, non = 9, dec = 10. A polygon has as many vertices as sides.', `A ${POLY_N[n].toLowerCase()} has ${n} sides and a ${POLY_N[m].toLowerCase()} has ${m}.`, mode === 'compare' ? `$${big} - ${small} = ${ans}$` : `$${n} + ${m} = ${ans}$`, `Answer: $${ans}$`],
+    };
+  }
   if (mode === 'sides') {
     const name = POLY_N[n];
     return {
@@ -290,11 +301,11 @@ const symPool = (d) => SYM_SHAPES.filter((s) => s.lvl <= (d === 'easy' ? 0 : d =
 const rotPolys = (polys, deg) => { const a = (deg * Math.PI) / 180; return polys.map((p) => p.map(([x, y]) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)])); };
 
 export const symLines = ggen('geo-sym-lines', 'geo-symmetry', (rng, d) => {
-  const s = pick(rng, symPool(d));
+  const s = pick(rng, d === 'hard' ? SYM_SHAPES.filter((x) => x.lvl >= 1) : symPool(d));
   const rot = pick(rng, [0, 0, 90, 30, -20, 45]);
   const W = 300; const H = 230;
   const body = drawPolys(rotPolys(s.polys, rot), 0, 0, W, H, { pad: 30 });
-  const askRot = chance(rng, 0.35) && d !== 'easy';
+  const askRot = d !== 'easy' && chance(rng, d === 'hard' ? 0.5 : 0.35);
   const ans = askRot ? s.rot : s.lines;
   return {
     prompt: askRot ? 'What is the order of rotational symmetry of this shape?' : 'How many lines of symmetry does this shape have?',
@@ -392,7 +403,7 @@ const SOLIDS = [
 ];
 
 export const solidFEV = ggen('geo-3d-fev', 'geo-3d-properties', (rng, d) => {
-  const s = pick(rng, SOLIDS.filter((x) => x.lvl <= (d === 'easy' ? 0 : d === 'medium' ? 1 : 2)));
+  const s = pick(rng, SOLIDS.filter((x) => (d === 'easy' ? x.lvl <= 1 : d === 'medium' ? true : x.lvl >= 1)));
   const what = pick(rng, ['faces', 'edges', 'vertices']);
   const ans = what === 'faces' ? s.f : what === 'edges' ? s.e : s.v;
   const { verts, faces } = s.make(rng);
@@ -429,14 +440,14 @@ export const solidName = ggen('geo-3d-name', 'geo-3d-properties', (rng, d) => {
   if (mode === 'one') {
     const what = pick(rng, ['faces', 'edges', 'vertices']);
     const val = s[what[0]];
-    const others = pool.filter((x) => x[what[0]] !== val);
+    const others = shuffle(rng, pool.filter((x) => x[what[0]] !== val)).slice(0, 3);
     if (others.length < 3) throw new Error('pool');
     return {
       prompt: `Which solid has exactly <b>${val} ${what}</b>?`,
       answer: s.name,
-      distractors: shuffle(rng, others).map((x) => x.name),
+      distractors: others.map((x) => x.name),
       count: 4,
-      solution: [...shuffle(rng, [s, ...others.slice(0, 3)]).map((x) => `${x.name}: ${x.f} faces, ${x.e} edges, ${x.v} vertices.`).slice(0, 4), `Answer: ${s.name}`],
+      solution: [...[s, ...others].sort((p, q) => p.name.localeCompare(q.name)).map((x) => `${x.name}: ${x.f} faces, ${x.e} edges, ${x.v} vertices.`), `Only the ${s.name.toLowerCase()} has exactly ${val} ${what}.`, `Answer: ${s.name}`],
     };
   }
   return {
@@ -782,17 +793,17 @@ export const planNameSolid = ggen('geo-plan-name-solid', 'geo-plans-elevations',
   const consistent = VIEW_SOLIDS.filter((x) => show.every((v) => x[v] === s[v]));
   if (consistent.length > 1) throw new Error('ambiguous');
   const names = { plan: 'Plan', front: 'Front elevation', side: 'Side elevation' };
+  const objName = pick(rng, ['a solid', 'a wooden block', 'a paperweight', 'a candle', 'a toy', 'an ornament', 'a container', 'a building block']);
   const W = 120 * show.length + 20 * (show.length - 1);
   let body = '';
-  const W0 = int(rng, 3, 12); const D0 = ['Cuboid', 'Triangular prism'].includes(s.name) ? W0 + int(rng, 2, 6) : W0;
+
   show.forEach((v, i) => {
     const x0 = i * 140;
     body += text(x0 + 60, 12, names[v], { size: 13, bold: true }) + viewShape(s[v], x0, 24, 120, 110);
-    body += text(x0 + 60, 150, `${v === 'side' ? D0 : W0} cm`, { size: 13 });
   });
   return {
-    prompt: `The ${show.map((v) => names[v].toLowerCase()).join(' and ').replace(/ and (?=.* and )/, ', ')} of a solid are shown.<br>What is the solid?`,
-    visual: svg(W, 160, body, { maxWidth: W }),
+    prompt: `The ${show.map((v) => names[v].toLowerCase()).join(' and ').replace(/ and (?=.* and )/, ', ')} of ${objName} are shown.<br>What shape is the ${objName.replace(/^an? /, '')}?`,
+    visual: svg(W, 140, body, { maxWidth: W }),
     answer: s.name,
     distractors: shuffle(rng, VIEW_SOLIDS.filter((x) => x.name !== s.name && show.some((v) => x[v] === s[v]))).concat(shuffle(rng, VIEW_SOLIDS.filter((x) => x.name !== s.name))).map((x) => x.name),
     count: 4,
@@ -842,7 +853,7 @@ function lociPanel(key, x0, y0, w, h) {
 const LOCI_WRONG = { circle: ['disc', 'circleB', 'stadium', 'perp'], disc: ['circle', 'circleB', 'stadium', 'bisector'], perp: ['perpWrong', 'circleB', 'bisector', 'circle'], bisector: ['bisectorWrong', 'perp', 'parallel', 'circle'], stadium: ['stadiumWrong', 'circleB', 'parallel', 'disc'], parallel: ['single', 'stadium', 'perp', 'circle'] };
 
 export const lociWhich = ggen('geo-loci-which', 'geo-constructions-loci', (rng, d) => {
-  const pool = d === 'easy' ? LOCI.filter((x) => ['circle', 'disc', 'perp'].includes(x.key)) : d === 'medium' ? LOCI.filter((x) => x.key !== 'stadium') : LOCI;
+  const pool = d === 'easy' ? LOCI.filter((x) => ['circle', 'disc', 'perp'].includes(x.key)) : d === 'medium' ? LOCI.filter((x) => x.key !== 'stadium') : LOCI.filter((x) => ['stadium', 'bisector', 'parallel'].includes(x.key));
   const L0 = pick(rng, pool);
   const r = int(rng, 2, 5);
   const keys = [L0.key, ...shuffle(rng, LOCI_WRONG[L0.key]).slice(0, 3)];
@@ -927,6 +938,7 @@ export const lociRegion = ggen('geo-loci-region', 'geo-constructions-loci', (rng
     visual: svg(g.width, g.height, body, { maxWidth: 380 }),
     answer: `Region ${ans}`,
     distractors: lab.filter((l) => l !== ans).map((l) => `Region ${l}`),
+    keepOrder: true, order: [...lab].sort().map((l) => `Region ${l}`),
     count: 4,
     solution: [
       mode === 'twoCircles' ? `Points less than ${'r'} cm from a point are inside the circle around it; more than that are outside.`.replace(`${'r'} cm`, 'the radius') : mode === 'bisCircle' ? 'Points closer to $A$ than $B$ are on $A$’s side of the perpendicular bisector. Points less than the radius from $C$ are inside the circle.' : 'Points closer to one edge than the other lie on that edge’s side of the angle bisector. Points less than the radius from $C$ are inside the circle.',
@@ -986,7 +998,7 @@ function constructionPanel(kind, letters, rng) {
 }
 
 export const constructRecognise = ggen('geo-construct-recognise', 'geo-constructions-loci', (rng, d) => {
-  const kinds = d === 'easy' ? ['perp', 'angle'] : ['perp', 'angle', 'perpPoint', 'sss', 'sixty'];
+  const kinds = d === 'easy' ? ['perp', 'angle'] : d === 'medium' ? ['perp', 'angle', 'perpPoint', 'sixty'] : ['perpPoint', 'sss', 'sixty', 'angle'];
   const kind = pick(rng, kinds);
   const letters = pick(rng, [['A', 'B', 'C'], ['P', 'Q', 'R'], ['X', 'Y', 'Z'], ['D', 'E', 'F'], ['L', 'M', 'N']]);
   const [a, b, c] = letters;
@@ -1016,12 +1028,12 @@ export const constructRecognise = ggen('geo-construct-recognise', 'geo-construct
 }, { title: 'Recognise ruler-and-compass constructions' });
 
 const SCALE_CTX = [
-  { t: (L) => `A goat is tied to a post with a rope ${L} m long.`, what: 'the boundary of the region the goat can reach' },
-  { t: (L) => `A garden sprinkler waters the ground up to ${L} m from the sprinkler.`, what: 'the edge of the watered region' },
-  { t: (L) => `A mobile phone mast has a range of ${L} km.`, what: 'the edge of the area the mast covers' },
-  { t: (L) => `A dog is on a lead ${L} m long, fixed to a hook in a wall.`, what: 'the boundary of where the dog can reach' },
-  { t: (L) => `A lighthouse can be seen up to ${L} km away.`, what: 'the boundary of the region where the lighthouse can be seen' },
-  { t: (L) => `A wifi router reaches up to ${L} m.`, what: 'the edge of the area with wifi' },
+  { t: (L) => `A goat is tied to a post with a rope ${L} m long.`, what: 'the boundary of the region the goat can reach', s: 'A goat is tied to a post in a field.', q: 'How long is the rope?' },
+  { t: (L) => `A garden sprinkler waters the ground up to ${L} m from the sprinkler.`, what: 'the edge of the watered region', s: 'A garden sprinkler waters the ground around it.', q: 'How far does the sprinkler reach?' },
+  { t: (L) => `A mobile phone mast has a range of ${L} km.`, what: 'the edge of the area the mast covers', s: 'A map shows the area covered by a mobile phone mast.', q: 'What is the range of the mast?' },
+  { t: (L) => `A dog is on a lead ${L} m long, fixed to a hook in a wall.`, what: 'the boundary of where the dog can reach', s: 'A dog is on a lead fixed to a hook.', q: 'How long is the lead?' },
+  { t: (L) => `A lighthouse can be seen up to ${L} km away.`, what: 'the boundary of the region where the lighthouse can be seen', s: 'A chart shows where a lighthouse can be seen from.', q: 'How far away can the lighthouse be seen?' },
+  { t: (L) => `A wifi router reaches up to ${L} m.`, what: 'the edge of the area with wifi', s: 'A plan shows the area reached by a wifi router.', q: 'How far does the wifi reach?' },
 ];
 
 export const lociScale = ggen('geo-loci-scale', 'geo-constructions-loci', (rng, d) => {
@@ -1034,7 +1046,7 @@ export const lociScale = ggen('geo-loci-scale', 'geo-constructions-loci', (rng, 
   const reverse = d === 'hard' && chance(rng, 0.5);
   if (reverse) {
     return {
-      prompt: `On a scale drawing, 1 cm represents ${k} ${u}.<br>A circle on the drawing shows ${ctx.what}. Its radius on the drawing is ${num(rcm)} cm.<br>What is this distance in real life?`,
+      prompt: `${ctx.s} On a scale drawing, 1 cm represents ${k} ${u}.<br>The circle showing ${ctx.what} has radius ${num(rcm)} cm on the drawing.<br>${ctx.q}`,
       answer: `$${tnum(L)}$ ${u}`,
       distractors: wrongs(L, [rcm / k, rcm + k, 2 * L, L / 2, rcm * k * 10]).map((v) => `$${tnum(v)}$ ${u}`),
       typed: { kind: 'number', value: L },
@@ -1051,7 +1063,7 @@ export const lociScale = ggen('geo-loci-scale', 'geo-constructions-loci', (rng, 
 }, { title: 'Loci with scale drawings' });
 
 export const triangleConstruct = ggen('geo-construct-triangle', 'geo-constructions-loci', (rng, d) => {
-  if (chance(rng, 0.5)) {
+  if (d === 'easy' || (d === 'medium' && chance(rng, 0.4))) {
     // two sides given: which could be the third?
     const a = int(rng, 3, 12); const b = int(rng, 3, 12);
     const lo = Math.abs(a - b); const hi = a + b;
@@ -1075,7 +1087,7 @@ export const triangleConstruct = ggen('geo-construct-triangle', 'geo-constructio
   const mk = (ok) => {
     for (;;) {
       const a = int(rng, 2, 12); const b = int(rng, 2, 12);
-      const c = ok ? int(rng, Math.abs(a - b) + 1, a + b - 1) : (d === 'hard' ? a + b : a + b + int(rng, 1, 5));
+      const c = ok ? (d === 'hard' ? int(rng, Math.max(Math.abs(a - b) + 1, a + b - 2), a + b - 1) : int(rng, Math.abs(a - b) + 1, a + b - 1)) : (d === 'hard' ? pick(rng, [a + b, a + b + 1]) : a + b + int(rng, 2, 6));
       if (c >= 2 && c <= 20) return [a, b, c];
     }
   };

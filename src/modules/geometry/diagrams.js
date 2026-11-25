@@ -209,7 +209,7 @@ export function regularPoly(n, c, R, start = 90) {
 /* Option panels: several small diagrams labelled A–D in one SVG        */
 /* ------------------------------------------------------------------ */
 
-export const LABEL_SETS = [['A', 'B', 'C', 'D'], ['P', 'Q', 'R', 'S'], ['E', 'F', 'G', 'H'], ['W', 'X', 'Y', 'Z'], ['J', 'K', 'L', 'M']];
+export const LABEL_SETS = [['P', 'Q', 'R', 'S'], ['E', 'F', 'G', 'H'], ['W', 'X', 'Y', 'Z'], ['J', 'K', 'L', 'M']];
 
 /**
  * panels: array of functions (x0, y0, w, h) => markup, drawn in a grid with a bold label above each.
@@ -294,4 +294,28 @@ export function ggen(id, skill, build, meta = {}) {
 /** Text with a halo in the background colour, for labels that sit on top of lines or fills. */
 export function htext(x, y, str, opts = {}) {
   return text(x, y, str, opts).replace('<text ', '<text stroke="var(--surface, #fff)" stroke-width="4" stroke-linejoin="round" paint-order="stroke" ');
+}
+
+/**
+ * Label for a perpendicular height drawn as a dashed line from `top` down to `foot` inside polygon `poly`
+ * (screen coords). The label goes on whichever side of the dashed line has room; if neither has, a vertical
+ * dimension line with the label is drawn just outside the shape instead.
+ */
+export function heightLabel(top, foot, label, poly, { size = 14, italic = null } = {}) {
+  const y = (top[1] + foot[1]) / 2; const x0 = top[0];
+  const xs = [];
+  poly.forEach((p, i) => {
+    const q = poly[(i + 1) % poly.length];
+    if ((p[1] - y) * (q[1] - y) <= 0 && p[1] !== q[1]) xs.push(p[0] + ((y - p[1]) / (q[1] - p[1])) * (q[0] - p[0]));
+  });
+  const right = Math.min(...xs.filter((x) => x > x0 + 1), Infinity);
+  const left = Math.max(...xs.filter((x) => x < x0 - 1), -Infinity);
+  const w = textWidth(label, size);
+  const it = italic ?? /^[a-z]$/.test(String(label));
+  if (right - x0 >= w + 16) return htext(x0 + 7 + w / 2, y, label, { size, italic: it });
+  if (x0 - left >= w + 16) return htext(x0 - 7 - w / 2, y, label, { size, italic: it });
+  const maxX = Math.max(...poly.map((p) => p[0]));
+  const dx = maxX + 16;
+  return line(dx, top[1], dx, foot[1], { width: 1.2 }) + line(dx - 5, top[1], dx + 5, top[1], { width: 1.2 }) + line(dx - 5, foot[1], dx + 5, foot[1], { width: 1.2 })
+    + line(top[0], top[1], dx, top[1], { width: 0.8, dash: '2 3', color: MUTED }) + text(dx + 6 + w / 2, y, label, { size, italic: it });
 }

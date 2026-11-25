@@ -26,6 +26,8 @@ export function prismFig(cs, D, { labels = [], W = 420, H = 270, depthScale = 1,
   const all2 = [...F3, ...B3].map((p) => proj(p));
   const pl = place(all2, { width: W, height: H, pad: 58 });
   const P = (p3) => pl.map(proj(p3));
+  // label/extra points are given with the TRUE depth; scale them like the drawing
+  const PL = (p3) => pl.map(proj([p3[0], p3[1], p3[2] * depthScale]));
   const Fs = F3.map(P); const Bs = B3.map(P);
   // visibility of side faces
   const vis = cs.map((p, i) => {
@@ -55,11 +57,11 @@ export function prismFig(cs, D, { labels = [], W = 420, H = 270, depthScale = 1,
   for (const [vi, a, b] of rightAngles) body += rightMark(Fs[vi], Fs[a], Fs[b], 10);
   const C2 = centroid([...Fs, ...Bs]);
   for (const L of labels) {
-    const A = P(L.a); const B = P(L.b);
-    const away = L.away ? P(L.away) : C2;
+    const A = PL(L.a); const B = PL(L.b);
+    const away = L.away ? PL(L.away) : C2;
     body += dimLabel(A, B, L.text, away, { offset: L.offset ?? 12, size: 14, italic: L.italic ?? null, halo: true });
   }
-  if (extra) body += extra(P);
+  if (extra) body += extra(PL);
   return figure(W, H, body, { nda });
 }
 
@@ -68,13 +70,26 @@ export function cuboidFig(l, w, h, { labels = [null, null, null], W = 400, H = 2
   const ds = depthScale ?? Math.min(1.6, Math.max(0.6, (0.9 * l) / Math.max(w, 1)));
   const L3 = [];
   if (labels[0]) L3.push({ a: [0, 0, 0], b: [l, 0, 0], text: labels[0] });
-  if (labels[1]) L3.push({ a: [l, 0, 0], b: [l, 0, w * ds], text: labels[1], away: [0, h, 0] });
+  if (labels[1]) L3.push({ a: [l, 0, 0], b: [l, 0, w], text: labels[1], away: [0, h, 0] });
   if (labels[2]) L3.push({ a: [0, 0, 0], b: [0, h, 0], text: labels[2] });
   // cuboid drawn with depth scaled by ds (label still shows true value)
   const cs = [[0, 0], [l, 0], [l, h], [0, h]];
   return prismFig(cs, w, { labels: L3.map((x) => ({ ...x, b: x.b.length === 3 && x.b[2] ? [x.b[0], x.b[1], x.b[2]] : x.b })), W, H, depthScale: ds, nda });
 }
 
+
+/**
+ * Vertical dimension line at x from (xFrom, y1) to y2 with end ticks, dotted leaders from the measured points,
+ * and the label beside it (side = 1 right, -1 left). Used for perpendicular heights so the label can't be read
+ * as a slant length.
+ */
+function vDim(x, y1, y2, label, side = 1, { from1 = null, from2 = null } = {}) {
+  const w = textWidth(label, 14);
+  let out = line(x, y1, x, y2, { width: 1.2 }) + line(x - 5, y1, x + 5, y1, { width: 1.2 }) + line(x - 5, y2, x + 5, y2, { width: 1.2 });
+  if (from1 !== null) out += line(from1, y1, x, y1, { width: 0.8, dash: '2 3', color: MUTED });
+  if (from2 !== null) out += line(from2, y2, x, y2, { width: 0.8, dash: '2 3', color: MUTED });
+  return out + text(x + side * (7 + w / 2), (y1 + y2) / 2, label, { size: 14, italic: /^[a-z]$/.test(String(label)) });
+}
 /* ------------------------------------------------------------------ */
 /* Round solids (screen coordinates)                                   */
 /* ------------------------------------------------------------------ */
@@ -117,7 +132,7 @@ export function coneFig({ rLabel = null, hLabel = null, lLabel = null, ratio = 1
   }
   if (hLabel) {
     body += line(...apex, cx, bot, { width: 1.4, dash: '5 4' }) + rightMark([cx, bot], apex, [cx + rx, bot], 9);
-    body += htext(cx - 10 - textWidth(hLabel, 14) / 2, bot - hh / 2, hLabel, { size: 14 });
+    body += vDim(cx - rx - 18, apex[1], bot, hLabel, -1, { from1: apex[0], from2: cx - rx });
   }
   if (rLabel) {
     body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 });
@@ -166,7 +181,7 @@ export function pyramidFig({ aLabel = null, bLabel = null, hLabel = null, ratio 
   const [A, B, C, D] = base3.map(P); const T = P(apex3); const O = P(centre3);
   let body = polygon([A, B, C, T], { fill: SIDE, fillOpacity: 0.55, width: 2 }) + polygon([A, B, T], { fill: FILL, width: 2 });
   body += line(...A, ...D, { width: 1.3, dash: '5 4', color: MUTED }) + line(...D, ...C, { width: 1.3, dash: '5 4', color: MUTED }) + line(...D, ...T, { width: 1.3, dash: '5 4', color: MUTED });
-  if (hLabel) body += line(...T, ...O, { width: 1.4, dash: '5 4' }) + dot(...O, 2.5) + htext(O[0] + 8 + textWidth(hLabel, 14) / 2, (T[1] + O[1]) / 2 + 10, hLabel, { size: 14 });
+  if (hLabel) body += line(...T, ...O, { width: 1.4, dash: '5 4' }) + dot(...O, 2.5) + vDim(Math.max(A[0], B[0], C[0], D[0]) + 18, T[1], O[1], hLabel, 1, { from1: T[0], from2: O[0] });
   if (aLabel) body += dimLabel(A, B, aLabel, T, { offset: 12 });
   if (bLabel) body += dimLabel(B, C, bLabel, A, { offset: 12 });
   return figure(W, H, body, { nda });
@@ -235,7 +250,7 @@ export function compositeFig(mode, { rLabel = null, hLabel = null, h2Label = nul
     body += path(`M ${cx - rx} ${join} A ${rx} ${rx} 0 0 1 ${cx + rx} ${join} L ${cx} ${apexY} Z`, { fill: FILL, width: 2 });
     body += ell(cx, join, rx, ry, 'back', { dash: '5 4', width: 1.3, color: MUTED }) + ell(cx, join, rx, ry, 'front', { width: 1.5 });
     if (rLabel) body += dot(cx, join, 2.5) + line(cx, join, cx + rx, join, { width: 1.6 }) + htext(cx + rx / 2, join - 12, rLabel, { size: 14 });
-    if (hLabel) body += line(cx, join, cx, apexY, { width: 1.3, dash: '5 4' }) + htext(cx - 12 - textWidth(hLabel, 14) / 2, (join + apexY) / 2, hLabel, { size: 14 });
+    if (hLabel) body += line(cx, join, cx, apexY, { width: 1.3, dash: '5 4' }) + vDim(cx + rx + 18, join, apexY, hLabel, 1, { from1: cx + rx, from2: cx });
     return figure(W, H, body, { nda });
   }
   const hc = Math.min(130, Math.max(60, rx * 2 * ratio));
@@ -248,7 +263,7 @@ export function compositeFig(mode, { rLabel = null, hLabel = null, h2Label = nul
   body += ell(cx, top, rx, ry, 'back', { dash: '5 4', width: 1.3, color: MUTED }) + ell(cx, top, rx, ry, 'front', { width: 1.5 });
   if (rLabel) body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 }) + text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14 });
   if (hLabel) body += text(cx + rx + 10 + textWidth(hLabel, 14) / 2, (top + bot) / 2, hLabel, { size: 14 });
-  if (h2Label) body += line(cx, top, cx, top - capH, { width: 1.3, dash: '5 4' }) + htext(cx + 10 + textWidth(h2Label, 14) / 2, top - capH / 2, h2Label, { size: 14 });
+  if (h2Label) body += line(cx, top, cx, top - capH, { width: 1.3, dash: '5 4' }) + vDim(cx + rx + 18, top - capH, top - 3, h2Label, 1, { from1: cx });
   return figure(W, H, body, { nda });
 }
 

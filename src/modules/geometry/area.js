@@ -3,7 +3,7 @@
 import { pick, int, size, shuffle, chance, tnum, num, roundTo, frac, gcd } from '../../core.js';
 import {
   ggen, line, polygon, text, dot, circle, path, rightMark, equalTicks, figure, arcLabel, place, polar, add, sub, scale,
-  unit, mid, centroid, dimLabel, textWidth, htext, squareGrid, wrongs, FILL, SHADE, ACCENT, ACCENT2, MUTED, GRID, degS,
+  unit, mid, centroid, dimLabel, textWidth, htext, heightLabel, squareGrid, wrongs, FILL, SHADE, ACCENT, ACCENT2, MUTED, GRID, degS,
 } from './diagrams.js';
 
 /* ------------------------------------------------------------------ */
@@ -113,7 +113,7 @@ export const perimCompound = ggen('geo-perim-compound', 'geo-perimeter', (rng, d
     prompt: `Work out the perimeter of this shape.<br>All corners are right angles.`,
     visual: drawCompound(sh, u),
     answer: L(P, u),
-    distractors: wrongs(P, ds, { min: 0 }).map((v) => L(v, u)),
+    distractors: wrongs(P, ds, { min: 0 }).filter((v) => roundTo(v, 1) === v).map((v) => L(v, u)),
     typed: { kind: 'number', value: P },
     hint: 'Work out the missing side lengths first, then add up <b>all</b> the sides.',
     solution: sh.kind === 'L' ? [
@@ -341,7 +341,7 @@ function drawPolyomino(shape, cols, rows, s = 30) {
 }
 
 export const perimGrid = ggen('geo-perim-grid', 'geo-perimeter', (rng, d) => {
-  const k = d === 'easy' ? int(rng, 4, 6) : d === 'medium' ? int(rng, 6, 9) : int(rng, 9, 13);
+  const k = d === 'easy' ? int(rng, 4, 8) : d === 'medium' ? int(rng, 6, 9) : int(rng, 9, 13);
   const cols = 9; const rows = 7;
   const shape = polyomino(rng, k, cols, rows);
   const pic = drawPolyomino(shape, cols, rows);
@@ -438,7 +438,7 @@ function drawTriArea(b, h, xa, labels, { u = 'cm', W = 400, H = 260, slant = nul
   const hx = xa === 0 ? -1 : 1;
   const mH = mid(V[2], F);
   const hl = lab(labels.h, u);
-  body += htext(mH[0] + hx * (textWidth(hl, 14) / 2 + 8), mH[1], hl, { size: 14 });
+  body += Math.abs(xa) < 1e-9 || Math.abs(xa - b) < 1e-9 ? htext(mH[0] + hx * (textWidth(hl, 14) / 2 + 8), mH[1], hl, { size: 14 }) : heightLabel(V[2], F, hl, V);
   if (slant) {
     const [i, j, val] = slant;
     body += dimLabel(V[i], V[j], lab(val, u), V[3 - i - j] || centroid(V), { offset: 12 });
@@ -485,8 +485,8 @@ export const areaParallelogram = ggen('geo-area-parallelogram', 'geo-area-basic'
   const F = pl.map([off * kx, 0]);
   let body = polygon(V, { fill: FILL }) + line(...V[3], ...F, { width: 1.5, dash: '5 4' }) + rightMark(F, V[3], V[1], 10);
   body += dimLabel(V[0], V[1], lab(b, u), V[2], { offset: 14 });
-  const hl = lab(h, u); const mH = mid(V[3], F);
-  body += htext(mH[0] + textWidth(hl, 14) / 2 + 8, mH[1], hl, { size: 14 });
+  const hl = lab(h, u);
+  body += heightLabel(V[3], F, hl, V);
   if (d !== 'easy') body += dimLabel(V[0], V[3], lab(sl, u), V[1], { offset: 12 });
   const ans = roundTo(b * h, 4);
   return {
@@ -597,8 +597,8 @@ export const areaReverse = ggen('geo-area-reverse', 'geo-area-basic', (rng, d) =
     const V = pts.map(pl.map); const F = pl.map([b * 0.4 * kx, 0]);
     let body = polygon(V, { fill: FILL }) + line(...V[2], ...F, { width: 1.5, dash: '5 4' }) + rightMark(F, V[2], V[1], 10);
     body += dimLabel(V[0], V[1], askH ? lab(b, u) : 'x', V[2], { offset: 14, italic: !askH });
-    const mH = mid(V[2], F); const hl = askH ? 'h' : lab(h, u);
-    body += htext(mH[0] + textWidth(hl, 14) / 2 + 8, mH[1], hl, { size: 14, italic: askH });
+    const hl = askH ? 'h' : lab(h, u);
+    body += heightLabel(V[2], F, hl, V);
     void visualLabels;
     const ans = askH ? h : b; const other = askH ? b : h;
     return {
@@ -606,7 +606,7 @@ export const areaReverse = ggen('geo-area-reverse', 'geo-area-basic', (rng, d) =
       visual: figure(W, H, body, { nda: true }),
       answer: L(ans, u), distractors: wrongs(ans, [ar / other, ar - other, ar * 2 - other, ar / 2, 2 * ar * other, ans * 2].filter((v) => Number.isInteger(v * 2)), { min: 0 }).map((v) => L(v, u)),
       typed: { kind: 'number', value: ans },
-      solution: [`Area $= \\frac{1}{2} \\times \\text{base} \\times \\text{height}$`, `$\\frac{1}{2} \\times ${askH ? `${b} \\times h` : `x \\times ${h}`} = ${tnum(ar)}$, so $${askH ? `${b}h` : `${h}x`} = ${tnum(2 * ar)}$`, `${askH ? 'h' : 'x'} $= ${tnum(2 * ar)} \\div ${other} = ${ans}$`, `Answer: ${L(ans, u)}`],
+      solution: [`Area $= \\frac{1}{2} \\times \\text{base} \\times \\text{height}$`, `$\\frac{1}{2} \\times ${askH ? `${b} \\times h` : `x \\times ${h}`} = ${tnum(ar)}$, so $${askH ? `${b}h` : `${h}x`} = ${tnum(2 * ar)}$`, `$${askH ? 'h' : 'x'} = ${tnum(2 * ar)} \\div ${other} = ${ans}$`, `Answer: ${L(ans, u)}`],
     };
   }
   // para: area given, base given, find height
@@ -617,7 +617,7 @@ export const areaReverse = ggen('geo-area-reverse', 'geo-area-basic', (rng, d) =
   const V = pts.map(pl.map); const F = pl.map([off * kx, 0]);
   let body = polygon(V, { fill: FILL }) + line(...V[3], ...F, { width: 1.5, dash: '5 4' }) + rightMark(F, V[3], V[1], 10);
   body += dimLabel(V[0], V[1], lab(b, u), V[2], { offset: 14 });
-  const mH = mid(V[3], F); body += htext(mH[0] + 14, mH[1], 'h', { size: 15, italic: true });
+  body += heightLabel(V[3], F, 'h', V, { size: 15 });
   return {
     prompt: `The area of the parallelogram is ${A2(ar, u)}.<br>Work out the perpendicular height $h$.`,
     visual: figure(W, H, body, { nda: true }),
@@ -658,7 +658,7 @@ export const areaTrapezium = ggen('geo-area-trapezium', 'geo-area-trapezium-comp
     const F = [top[0], V[0][1]];
     body += line(...top, ...F, { width: 1.5, dash: '5 4' }) + rightMark(F, top, V[1], 9);
     const hl = reverse ? 'h' : lab(h, u);
-    body += htext(top[0] + textWidth(hl, 14) / 2 + 7, (top[1] + F[1]) / 2, hl, { size: 14, italic: reverse });
+    body += heightLabel(top, F, hl, V);
   }
   body += dimLabel(V[0], V[1], lab(b, u), centroid(V)) + dimLabel(V[2], V[3], lab(a, u), centroid(V));
   if (reverse) {
@@ -729,7 +729,7 @@ export const areaCompoundTri = ggen('geo-area-compound-tri', 'geo-area-trapezium
     const apexFoot = pl.map([w / 2, hr]);
     body += line(...V[3], ...apexFoot, { width: 1.4, dash: '3 3', color: MUTED });
     body += dimLabel(V[0], V[1], lab(w, u), centroid(V)) + dimLabel(V[0], V[4], lab(hr, u), centroid(V));
-    body += htext(apexFoot[0] + 8 + textWidth(lab(ht, u), 13) / 2, (apexFoot[1] + V[3][1]) / 2, lab(ht, u), { size: 13 });
+    body += heightLabel(V[3], apexFoot, lab(ht, u), [V[4], V[2], V[3]], { size: 13 });
     body += rightMark(V[0], V[1], V[4], 11) + rightMark(V[1], V[2], V[0], 11);
     const ar = w * hr + (w * ht) / 2;
     return {
@@ -795,26 +795,41 @@ export const areaCompoundTri = ggen('geo-area-compound-tri', 'geo-area-trapezium
 }, { title: 'Compound shapes with triangles' });
 
 const SHADED_CONTEXTS = [
-  { outer: 'garden', inner: 'pond', shaded: 'grass', verb: 'The rest of the garden is grass.' },
-  { outer: 'picture frame', inner: 'picture', shaded: 'frame', verb: 'The frame is the shaded part around the picture.' },
-  { outer: 'floor', inner: 'rug', shaded: 'uncovered floor', verb: 'The rug covers part of the floor.' },
-  { outer: 'wall', inner: 'window', shaded: 'wall to be painted', verb: 'The window is not painted.' },
-  { outer: 'sheet of card', inner: 'hole', shaded: 'card left', verb: 'A rectangular hole is cut out of the card.' },
-  { outer: 'field', inner: 'barn', shaded: 'field that can be ploughed', verb: 'A barn stands in the field.' },
+  { outer: 'garden', inner: 'pond', triName: 'flower bed', verb: 'The rest of the garden is grass.', u: 'm', Wo: [8, 20], Ho: [6, 14], wi: [2, 5], hi: [2, 4], tri: true, cost: { prices: [3, 4, 5, 6, 8], what: 'Turf for the grass costs' } },
+  { outer: 'picture frame', inner: 'picture', verb: 'The frame is the shaded border around the picture.', u: 'cm', frame: true, Wo: [20, 50], Ho: [15, 40], border: [2, 6] },
+  { outer: 'floor', inner: 'rug', verb: 'The rug covers part of the floor.', u: 'm', Wo: [4, 9], Ho: [3, 7], wi: [2, 3], hi: [1, 2], cost: { prices: [8, 12, 15, 20, 25], what: 'Varnishing the uncovered floor costs' } },
+  { outer: 'wall', inner: 'window', verb: 'The window is not painted.', u: 'm', Wo: [4, 9], Ho: [3, 4], wi: [1, 3], hi: [1, 2], cost: { prices: [2, 3, 4, 5], what: 'Painting the wall costs' } },
+  { outer: 'sheet of card', inner: 'hole', triName: 'triangular hole', verb: 'A hole is cut out of the card.', u: 'cm', Wo: [20, 40], Ho: [15, 30], wi: [5, 14], hi: [4, 10], tri: true },
+  { outer: 'field', inner: 'barn', verb: 'A barn stands in the field.', u: 'm', Wo: [40, 90], Ho: [30, 70], wi: [10, 25], hi: [8, 20], step: 5 },
 ];
 
 export const areaShaded = ggen('geo-area-shaded', 'geo-area-trapezium-compound', (rng, d) => {
   const ctx = pick(rng, SHADED_CONTEXTS);
-  const u = ctx.outer === 'picture frame' || ctx.outer === 'sheet of card' ? 'cm' : 'm';
-  const Wo = int(rng, 8, 24); const Ho = int(rng, 6, Math.max(7, Wo - 2));
-  const innerTri = d === 'hard' && chance(rng, 0.5);
-  const wi = int(rng, Math.max(2, Math.ceil(Wo / 3)), Wo - 3); const hi = int(rng, Math.max(2, Math.ceil(Ho / 3)), Ho - 3);
+  const u = ctx.u;
+  const st = ctx.step || 1;
+  const rnd = ([lo, hi]) => st * int(rng, Math.ceil(lo / st), Math.floor(hi / st));
+  const Wo = rnd(ctx.Wo); const Ho = Math.min(rnd(ctx.Ho), Wo);
+  const innerTri = d === 'hard' && Boolean(ctx.tri) && chance(rng, 0.5);
+  let wi; let hi; let ox; let oy;
+  if (ctx.frame) {
+    const b = int(rng, ctx.border[0], ctx.border[1]);
+    wi = Wo - 2 * b; hi = Ho - 2 * b; ox = b; oy = b;
+    if (hi < 4) throw new Error('thin frame');
+  } else {
+    wi = Math.min(rnd(ctx.wi), Wo - 2 * st); hi = Math.min(rnd(ctx.hi), Ho - 2 * st);
+    ox = st * int(rng, 1, Math.max(1, Math.floor((Wo - wi) / st) - 1)); oy = st * int(rng, 1, Math.max(1, Math.floor((Ho - hi) / st) - 1));
+    if (ox + wi >= Wo || oy + hi >= Ho) throw new Error('inner too big');
+  }
   const W = 420; const H = 270;
+  // drawing: inner shape drawn at least a third of the outer size so its labels fit (not to scale)
+  const sx = Math.max(1, (Wo / 3) / wi); const sy = Math.max(1, (Ho / 3) / hi);
+  const dw = Math.min(wi * sx, Wo * 0.7); const dh = Math.min(hi * sy, Ho * 0.7);
+  const dox = ctx.frame ? (Wo - dw) / 2 : Math.min(Math.max(ox, Wo * 0.08), Wo - dw - Wo * 0.08);
+  const doy = ctx.frame ? (Ho - dh) / 2 : Math.min(Math.max(oy, Ho * 0.08), Ho - dh - Ho * 0.08);
   const pts = [[0, 0], [Wo, 0], [Wo, Ho], [0, Ho]];
   const pl = place(pts, { width: W, height: H, pad: 50 });
   const V = pts.map(pl.map);
-  const ox = int(rng, 1, Wo - wi - 1); const oy = int(rng, 1, Ho - hi - 1);
-  const inner = innerTri ? [[ox, oy], [ox + wi, oy], [ox, oy + hi]] : [[ox, oy], [ox + wi, oy], [ox + wi, oy + hi], [ox, oy + hi]];
+  const inner = innerTri ? [[dox, doy], [dox + dw, doy], [dox, doy + dh]] : [[dox, doy], [dox + dw, doy], [dox + dw, doy + dh], [dox, doy + dh]];
   const I = inner.map(pl.map);
   let body = polygon(V, { fill: SHADE }) + polygon(I, { fill: 'var(--surface, #fff)' });
   body += dimLabel(V[0], V[1], lab(Wo, u), centroid(V)) + dimLabel(V[1], V[2], lab(Ho, u), centroid(V));
@@ -824,13 +839,13 @@ export const areaShaded = ggen('geo-area-shaded', 'geo-area-trapezium-compound',
   if (innerTri) body += rightMark(I[0], I[1], I[2], 9);
   const innerA = innerTri ? (wi * hi) / 2 : wi * hi;
   const ar = Wo * Ho - innerA;
-  const costMode = d !== 'easy' && chance(rng, 0.45);
-  const name = innerTri ? `triangular ${ctx.inner}` : ctx.inner;
+  const costMode = d !== 'easy' && Boolean(ctx.cost) && chance(rng, 0.55);
+  const name = innerTri ? (ctx.triName.startsWith('triangular') ? ctx.triName : `triangular ${ctx.triName}`) : ctx.inner;
   if (costMode) {
-    const price = pick(rng, [2, 3, 4, 5, 6, 8, 12, 15]);
+    const price = pick(rng, ctx.cost.prices);
     const cost = ar * price;
     return {
-      prompt: `The diagram shows a rectangular ${ctx.outer} with a ${name}. ${ctx.verb}<br>The shaded area costs £${price} per ${u}² to cover.<br>Work out the total cost.`,
+      prompt: `The diagram shows a rectangular ${ctx.outer} with a ${name}. ${ctx.verb}<br>${ctx.cost.what} £${price} per ${u}².<br>Work out the total cost for the shaded part.`,
       visual: figure(W, H, body, { nda: true }),
       answer: `£${num(cost, Number.isInteger(cost) ? 0 : 2)}`,
       distractors: wrongs(cost, [Wo * Ho * price, innerA * price, (Wo * Ho + innerA) * price, ar, 2 * (Wo + Ho) * price, cost + price]).map((v) => `£${num(v, Number.isInteger(v) ? 0 : 2)}`),
@@ -1001,7 +1016,7 @@ export const circlePart = ggen('geo-circle-semicircle', 'geo-circles', (rng, d) 
 
 export const circleReverse = ggen('geo-circle-reverse', 'geo-circles', (rng, d) => {
   const fromArea = d === 'easy' ? false : chance(rng, 0.5);
-  const exact = d !== 'hard' || chance(rng, 0.4);
+  const exact = d !== 'hard';
   const r = int(rng, 2, 15);
   const u = pick(rng, ['cm', 'm']);
   const askD = chance(rng, 0.4);
@@ -1045,7 +1060,7 @@ const PART_DEF = {
 };
 
 export const circleParts = ggen('geo-circle-parts', 'geo-circles', (rng, d) => {
-  const pool = d === 'easy' ? ['Radius', 'Diameter', 'Chord', 'Circumference', 'Tangent'] : CIRCLE_PARTS;
+  const pool = d === 'easy' ? ['Radius', 'Diameter', 'Chord', 'Circumference', 'Tangent'] : d === 'hard' ? ['Chord', 'Tangent', 'Arc', 'Sector', 'Segment'] : CIRCLE_PARTS;
   const want = pick(rng, pool);
   const W = 300; const H = 260; const c = [150, 130]; const R = 95;
   const a0 = int(rng, 0, 359);
@@ -1109,7 +1124,8 @@ export const circleCompound = ggen('geo-circle-compound', 'geo-circles', (rng, d
         prompt: `A circle fits exactly inside a square of side ${lab(s, u)}.<br>Work out the shaded area. Give your answer in terms of $\\pi$.`,
         visual: figure(W, H, body, { nda: true }),
         answer: ans,
-        distractors: [`$${s * s} - ${piT(s * s)}$ cm²`, `$${piT(r * r)} - ${s * s}$ cm²`, `$${s * s} - ${piT(s)}$ cm²`, `$${4 * s} - ${piT(r * r)}$ cm²`, `$${s * s} - ${piT(2 * r * r)}$ cm²`],
+        // all distractors are positive: pi*d or pi*r instead of pi*r², the circle alone, (s² - r²)pi
+        distractors: [`$${s * s} - ${piT(s)}$ cm²`, `$${s * s} - ${piT(r)}$ cm²`, `$${piT(r * r)}$ cm²`, `$${piT(s * s - r * r)}$ cm²`, `$${s * s} + ${piT(r * r)}$ cm²`],
         typed: { kind: 'text', accept: [`${s * s}-${r * r}π`, `${s * s}-${r * r}pi`] },
         solution: [`Square: $${s} \\times ${s} = ${s * s}$`, `The circle's diameter is ${s}, so its radius is ${r}: area $= \\pi \\times ${r}^2 = ${piT(r * r)}$`, `Shaded $=$ square $-$ circle $= ${s * s} - ${piT(r * r)}$`, `Answer: ${ans}`],
       };
@@ -1119,7 +1135,7 @@ export const circleCompound = ggen('geo-circle-compound', 'geo-circles', (rng, d
       prompt: `A circle fits exactly inside a square of side ${lab(s, u)}.<br>Work out the shaded area. Give your answer to 1 decimal place.`,
       visual: figure(W, H, body, { nda: true }),
       answer: dp1(val, 'cm²'),
-      distractors: [s * s - Math.PI * s * s / 2, Math.PI * r * r, s * s - Math.PI * s, 4 * s - Math.PI * r * r > 0 ? 4 * s - Math.PI * r * r : val + 5, val / 4].map((v) => dp1(v, 'cm²')),
+      distractors: [Math.PI * r * r, s * s - Math.PI * s, s * s - Math.PI * r, val / 4, s * s - 3 * r * r, val * 2].filter((v) => v > 0 && r1(v) !== r1(val)).map((v) => dp1(v, 'cm²')),
       typed: typed1(val), calculator: true,
       solution: [`Square: $${s}^2 = ${s * s}$`, `Circle (radius ${r}): $\\pi \\times ${r}^2 = ${tnum(roundTo(Math.PI * r * r, 3))}\\ldots$`, `Shaded $= ${s * s} - ${tnum(roundTo(Math.PI * r * r, 3))}\\ldots = ${tnum(roundTo(val, 3))}\\ldots$`, `Answer: ${dp1(val, 'cm²')}`],
     };
@@ -1178,6 +1194,7 @@ function sectorFig(r, theta, { rLabel, thetaLabel, u = 'cm', W = 340, H = 270, r
   const big = theta > 180 ? 1 : 0;
   let body = path(`M ${c[0]} ${c[1]} L ${P1[0]} ${P1[1]} A ${Rs} ${Rs} 0 ${big} 0 ${P2[0]} ${P2[1]} Z`, { fill: FILL, width: 2 });
   if (arcHL) body += path(`M ${P1[0]} ${P1[1]} A ${Rs} ${Rs} 0 ${big} 0 ${P2[0]} ${P2[1]}`, { color: ACCENT, width: 3.5 });
+  if (arcHL === 'all') body += line(...c, ...P1, { color: ACCENT, width: 3.5 }) + line(...c, ...P2, { color: ACCENT, width: 3.5 });
   body += arcLabel(c, P1, P2, thetaLabel, { reflex: theta > 180, r: 20 });
   if (rLabel) body += dimLabel(c, P1, rLabel, P2, { offset: 12 });
   void u;
@@ -1190,7 +1207,7 @@ function sectorBuild(rng, d, ask) {
   const u = pick(rng, ['cm', 'cm', 'm']);
   const f = frac(theta, 360);
   const rot = int(rng, 0, 359);
-  const visual = sectorFig(r, theta, { rLabel: lab(r, u), thetaLabel: degS(theta), u, rot, arcHL: ask !== 'area' });
+  const visual = sectorFig(r, theta, { rLabel: lab(r, u), thetaLabel: degS(theta), u, rot, arcHL: ask === 'area' ? false : ask === 'perim' ? 'all' : true });
   return { theta, r, u, f, visual };
 }
 
@@ -1253,7 +1270,7 @@ export const sectorArea = ggen('geo-sector-area', 'geo-arcs-sectors', (rng, d) =
 }, { title: 'Area of a sector' });
 
 export const sectorPerimeter = ggen('geo-sector-perimeter', 'geo-arcs-sectors', (rng, d) => {
-  const { theta, r, u, f, visual } = sectorBuild(rng, d, 'arc');
+  const { theta, r, u, f, visual } = sectorBuild(rng, d, 'perim');
   const arc = f.value() * 2 * Math.PI * r;
   const val = arc + 2 * r;
   const k = f.mul(2 * r);
@@ -1278,14 +1295,17 @@ export const sectorPerimeter = ggen('geo-sector-perimeter', 'geo-arcs-sectors', 
 }, { title: 'Perimeter of a sector' });
 
 export const sectorReverse = ggen('geo-sector-reverse', 'geo-arcs-sectors', (rng, d) => {
-  const theta = pick(rng, SECTOR_ANGLES);
-  const r = int(rng, 3, 15);
   const u = 'cm';
   const fromArea = chance(rng, 0.5);
   const askAngle = d !== 'hard' || chance(rng, 0.5);
-  const f = frac(theta, 360);
-  const k = fromArea ? f.mul(r * r) : f.mul(2 * r);
-  if (!(k.isInt) && d === 'easy') throw new Error('messy');
+  // choose the angle and radius so the given area / arc length is a whole number times pi (as on real papers)
+  let theta; let r; let f; let k;
+  for (let t = 0; t < 300; t += 1) {
+    theta = pick(rng, SECTOR_ANGLES); r = int(rng, 3, d === 'easy' ? 12 : 15);
+    f = frac(theta, 360); k = fromArea ? f.mul(r * r) : f.mul(2 * r);
+    if (k.isInt) break;
+  }
+  if (!k.isInt) throw new Error('messy');
   const kT = k.isInt ? (k.n === 1 ? '' : tnum(k.n)) : k.tex();
   const given = `$${kT}\\pi$ ${fromArea ? 'cm²' : 'cm'}`;
   const W = 340; const H = 260;
@@ -1316,7 +1336,7 @@ export const sectorCompound = ggen('geo-sector-compound', 'geo-arcs-sectors', (r
   // area between two arcs (part of a ring), e.g. a shaded band of a fan or a curved path
   const theta = pick(rng, [60, 72, 90, 120, 135, 150]);
   const R = int(rng, 6, 15); const r = int(rng, Math.max(2, Math.ceil(R * 0.35)), Math.floor(R * 0.75));
-  const askPerim = d === 'hard' && chance(rng, 0.5);
+  const askPerim = d === 'hard';
   const W = 380; const H = 270;
   const rot = 90 - theta / 2;
   const pts = [[0, 0]];
@@ -1343,7 +1363,8 @@ export const sectorCompound = ggen('geo-sector-compound', 'geo-arcs-sectors', (r
   }
   const k = f.mul(R * R - r * r);
   const val = k.value() * Math.PI;
-  const exact = d !== 'hard' && k.isInt;
+  if (d === 'easy' && !k.isInt) throw new Error('need a whole multiple of pi');
+  const exact = d === 'easy';
   if (exact) {
     return {
       prompt: `The shaded shape is part of a ring. It is made from two sectors with the same centre and angle ${degT2(theta)}.<br>Work out the shaded area. Give your answer in terms of $\\pi$.`,

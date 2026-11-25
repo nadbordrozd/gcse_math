@@ -84,27 +84,50 @@ export const volCubesFit = ggen('geo-vol-cubes-fit', 'geo-volume-cuboid', (rng, 
       solution: [`Each layer has $${l} \\times ${w} = ${l * w}$ cubes.`, `There are ${h} layers: $${l * w} \\times ${h} = ${l * w * h}$`, `Answer: $${l * w * h}$`],
     };
   }
-  // boxes packed in a crate
-  const a = int(rng, 2, 6); const b = int(rng, 2, 5); const c = int(rng, 2, 5);
-  const na = int(rng, 2, 6); const nb = int(rng, 2, 5); const nc = int(rng, 2, 4);
-  const awkward = d === 'hard';
-  const extra = awkward ? [int(rng, 1, a - 1), 0, int(rng, 0, c - 1)] : [0, 0, 0];
-  if (awkward && extra[0] === 0) throw new Error('need waste');
-  const A = a * na + extra[0]; const B = b * nb + extra[1]; const C = c * nc + extra[2];
-  const ans = na * nb * nc;
-  const naive = Math.floor((A * B * C) / (a * b * c));
-  const ctx = pick(rng, [['box', 'crate'], ['packet', 'carton'], ['brick', 'pallet space'], ['sugar cube', 'tin'], ['parcel', 'van']]);
+  // Items packed in a container, all the same way round. Every orientation is checked, so the key is the true maximum.
+  const CTX = [
+    { item: 'box', items: 'boxes', cont: 'crate', iu: 'cm', cu: 'cm', dims: [[10, 30, 5]], n: [2, 5] },
+    { item: 'packet', items: 'packets', cont: 'carton', iu: 'cm', cu: 'cm', dims: [[4, 12, 1]], n: [2, 6] },
+    { item: 'sugar cube', items: 'sugar cubes', cont: 'tin', iu: 'cm', cu: 'cm', cube: [1, 2], n: [3, 8] },
+    { item: 'tile pack', items: 'tile packs', cont: 'storage box', iu: 'cm', cu: 'cm', dims: [[5, 20, 5]], n: [2, 5] },
+    ...(d === 'hard' ? [{ item: 'parcel', items: 'parcels', cont: 'van', iu: 'cm', cu: 'm', dims: [[20, 60, 10]], n: [3, 8] }] : []),
+  ];
+  const ctx = pick(rng, CTX);
+  const [lo, hi, st] = ctx.dims ? ctx.dims[0] : [1, 2, 1];
+  const side = ctx.cube ? pick(rng, ctx.cube) : 0;
+  const it = ctx.cube ? [side, side, side] : [0, 0, 0].map(() => st * int(rng, Math.ceil(lo / st), Math.floor(hi / st)));
+  if (!ctx.cube && new Set(it).size < 2) throw new Error('want a non-cube item');
+  const cnt = [0, 0, 0].map(() => int(rng, ctx.n[0], ctx.n[1]));
+  const waste = d === 'hard' && !ctx.cube ? [0, 1, 2].map((i) => (i === 1 ? 0 : st * int(rng, 0, Math.max(0, Math.floor((it[i] - 1) / st))))) : [0, 0, 0];
+  if (d === 'hard' && !ctx.cube && waste[0] + waste[2] === 0) throw new Error('need waste');
+  const box = it.map((x, i) => x * cnt[i] + waste[i]); // container in cm
+  if (ctx.cu === 'm' && box.some((x) => x % 10)) throw new Error('van needs tidy metres');
+  const perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  let best = null;
+  for (const pm of perms) {
+    const fit = [0, 1, 2].map((i) => Math.floor(box[i] / it[pm[i]]));
+    const n = fit[0] * fit[1] * fit[2];
+    if (!best || n > best.n) best = { pm, fit, n };
+  }
+  const ans = best.n;
+  const naive = Math.floor((box[0] * box[1] * box[2]) / (it[0] * it[1] * it[2]));
+  const fmtC = (x) => (ctx.cu === 'm' ? lab(x / 100, 'm') : lab(x));
+  const conv = ctx.cu === 'm' ? `First change the van's measurements to centimetres: ${box.map((x) => `${num(x / 100)} m = ${x} cm`).join(', ')}.` : null;
+  const wrongFit = [0, 1, 2].map((i) => Math.floor(box[i] / it[i])).reduce((p, q) => p * q, 1);
   return {
-    prompt: `A ${ctx[1]} is a cuboid measuring ${lab(A)} by ${lab(B)} by ${lab(C)}.<br>Each ${ctx[0]} is a cuboid measuring ${lab(a)} by ${lab(b)} by ${lab(c)}.<br>What is the greatest number of ${ctx[0]}es that fit in the ${ctx[1]}, all the same way round?`.replace('boxes', 'boxes').replace(/(packet|brick|parcel|sugar cube)es/, '$1s'),
-    visual: cuboidFig(A, B, C, { labels: [lab(A), lab(B), lab(C)] }),
-    answer: `$${ans}$`,
-    distractors: wrongs(ans, [naive, A * B * C, ans * 2, na * nb, (na + 1) * nb * nc, na * nb * (nc + 1)]).map((v) => `$${tnum(v)}$`),
+    prompt: ctx.cube
+      ? `A tin is a cuboid measuring ${fmtC(box[0])} by ${fmtC(box[1])} by ${fmtC(box[2])}.<br>Sugar cubes have edges of ${lab(side)}.<br>How many sugar cubes fill the tin exactly?`
+      : `A ${ctx.cont} is a cuboid measuring ${fmtC(box[0])} by ${fmtC(box[1])} by ${fmtC(box[2])}.<br>Each ${ctx.item} is a cuboid measuring ${lab(it[0])} by ${lab(it[1])} by ${lab(it[2])}.<br>What is the greatest number of ${ctx.items} that fit in the ${ctx.cont}, all the same way round?`,
+    visual: cuboidFig(box[0], box[1], box[2], { labels: [fmtC(box[0]), fmtC(box[1]), fmtC(box[2])] }),
+    answer: `$${tnum(ans)}$`,
+    distractors: wrongs(ans, [naive, wrongFit, box[0] * box[1] * box[2], ans * 2, best.fit[0] * best.fit[1], (best.fit[0] + 1) * best.fit[1] * best.fit[2], best.fit[0] * best.fit[1] * (best.fit[2] + 1)]).map((v) => `$${tnum(v)}$`),
     typed: { kind: 'number', value: ans },
     solution: [
-      `Along each edge: $${A} \\div ${a}$ → ${na}, $${B} \\div ${b}$ → ${nb}, $${C} \\div ${c}$ → ${nc} (whole ${ctx[0]}s only).`,
-      `Number $= ${na} \\times ${nb} \\times ${nc} = ${ans}$`,
-      awkward ? `Dividing the volumes ($${A * B * C} \\div ${a * b * c}$) gives too many, because there are gaps that can't hold a whole ${ctx[0]}.` : `(Here the volumes also divide exactly: $${A * B * C} \\div ${a * b * c} = ${ans}$.)`,
-      `Answer: $${ans}$`,
+      ...(conv ? [conv] : []),
+      `Line the ${ctx.items} up along each edge (whole ${ctx.items} only): $${box[0]} \\div ${it[best.pm[0]]}$ → ${best.fit[0]}, $${box[1]} \\div ${it[best.pm[1]]}$ → ${best.fit[1]}, $${box[2]} \\div ${it[best.pm[2]]}$ → ${best.fit[2]}.`,
+      `Number $= ${best.fit[0]} \\times ${best.fit[1]} \\times ${best.fit[2]} = ${tnum(ans)}$${!ctx.cube && wrongFit !== ans ? `. (Matching the lengths in the order they are listed only fits ${wrongFit} — try every way round.)` : '.'}`,
+      naive !== ans ? `Dividing the volumes ($${tnum(box[0] * box[1] * box[2])} \\div ${tnum(it[0] * it[1] * it[2])}$) gives too many, because there are gaps that can't hold a whole ${ctx.item}.` : `(Here the volumes also divide exactly: $${tnum(box[0] * box[1] * box[2])} \\div ${tnum(it[0] * it[1] * it[2])} = ${tnum(ans)}$.)`,
+      `Answer: $${tnum(ans)}$`,
     ],
   };
 }, { title: 'How many fit in a box' });
@@ -208,7 +231,7 @@ export const volPrismCross = ggen('geo-vol-prism-cross', 'geo-volume-prism', (rn
     const A = W * H - a * bb; const V = A * len;
     const visual = prismFig(cs, len, {
       hidden: false, depthScale: Math.min(1.1, (W * 1.1) / len),
-      labels: [{ a: [0, 0, 0], b: [W, 0, 0], text: lab(W, u) }, { a: [0, 0, 0], b: [0, H, 0], text: lab(H, u) }, { a: [0, H, 0], b: [W - a, H, 0], text: lab(W - a, u), away: [W, 0, 0] }, { a: [W, 0, 0], b: [W, H - bb, 0], text: lab(H - bb, u), away: [0, 0, 0] }, { a: [W, 0, 0], b: [W, 0, len], text: lab(len, u), away: [0, H, 0] }],
+      labels: [{ a: [0, 0, 0], b: [W, 0, 0], text: lab(W, u) }, { a: [0, 0, 0], b: [0, H, 0], text: lab(H, u) }, { a: [0, H, 0], b: [W - a, H, 0], text: lab(W - a, u), away: [(W - a) / 2, H + 5, 0] }, { a: [W, 0, 0], b: [W, H - bb, 0], text: lab(H - bb, u), away: [W + 5, (H - bb) / 2, 0] }, { a: [W, 0, 0], b: [W, 0, len], text: lab(len, u), away: [0, H, 0] }],
     });
     return {
       prompt: 'The prism has an L-shaped cross-section. All corners are right angles.<br>Work out the volume of the prism.',
@@ -353,7 +376,7 @@ export const saTriPrism = ggen('geo-sa-tri-prism', 'geo-surface-area', (rng, d) 
   const showHyp = d !== 'hard';
   const cs = [[0, 0], [a, 0], [0, b]];
   const labels = [{ a: [0, 0, 0], b: [a, 0, 0], text: lab(a) }, { a: [0, 0, 0], b: [0, b, 0], text: lab(b) }, { a: [a, 0, 0], b: [a, 0, len], text: lab(len), away: [0, b, 0] }];
-  if (showHyp) labels.push({ a: [a, 0, 0], b: [0, b, 0], text: lab(c), away: [0, 0, 0] });
+  if (showHyp) labels.push({ a: [a, 0, 0], b: [0, b, 0], text: lab(c), away: [a, b, 0] });
   const SA = a * b + (a + b + c) * len;
   return {
     prompt: `The diagram shows a triangular prism. The cross-section is a right-angled triangle.${showHyp ? '' : '<br>Use Pythagoras to find the missing side first.'}<br>Work out the total surface area of the prism.`,
@@ -395,7 +418,7 @@ export const saCylinder = ggen('geo-sa-cylinder', 'geo-surface-area', (rng, d) =
     prompt: `A cylinder has radius ${L(r)} and height ${L(h)}.<br>Work out ${what}. Give your answer to 1 decimal place.`,
     visual,
     answer: dp1(val, 'cm²'),
-    distractors: [Math.PI * r * r * h, Math.PI * (r * h + kEnds), Math.PI * (kCurve + (kEnds ? 0 : 2 * r * r)), Math.PI * (kCurve + (kind === 'open' ? 2 * r * r : kind === 'total' ? r * r : r * r)), Math.PI * (4 * r * h + kEnds)].map((v) => dp1(v, 'cm²')),
+    distractors: [...new Set([r * r * h, r * h + kEnds, kCurve, kCurve + r * r, kCurve + 2 * r * r, 4 * r * h + kEnds, kCurve + 4 * r * r, kCurve + 8 * r * r].filter((k2) => k2 !== k).map((k2) => r1(Math.PI * k2)))].map((v) => dp1(v, 'cm²')),
     typed: typed1(val), calculator: true,
     solution: [...steps, `Total $= ${k}\\pi = ${tnum(dec3(val))}\\ldots$`, `Answer: ${dp1(val, 'cm²')}`],
   };
@@ -428,7 +451,7 @@ export const saReverse = ggen('geo-sa-problem', 'geo-surface-area', (rng, d) => 
     answer: `$${tins}$`,
     distractors: wrongs(tins, [Math.floor(walls / cover), Math.ceil((2 * (l * w + w * h + l * h)) / cover), Math.ceil((l * w * h) / cover), Math.ceil(((l + w) * h) / cover), tins + 1]).map((v) => `$${v}$`),
     typed: { kind: 'number', value: tins },
-    solution: [`Walls: two are $${l} \\times ${h}$ and two are $${w} \\times ${h}$: $2 \\times ${l * h} + 2 \\times ${w * h} = ${walls}$ m²`, `$${walls} \\div ${cover} = ${tnum(roundTo(walls / cover, 2))}$`, `You can't buy part of a tin, so round <b>up</b>: ${tins} tins.`, `Answer: $${tins}$`],
+    solution: [l === w ? `The four walls are all $${l} \\times ${h}$: $4 \\times ${l * h} = ${walls}$ m²` : `Walls: two are $${l} \\times ${h}$ and two are $${w} \\times ${h}$: $2 \\times ${l * h} + 2 \\times ${w * h} = ${walls}$ m²`, `$${walls} \\div ${cover} = ${tnum(roundTo(walls / cover, 2))}$`, `You can't buy part of a tin, so round <b>up</b>: ${tins} tins.`, `Answer: $${tins}$`],
   };
 }, { title: 'Surface area problems' });
 
@@ -602,7 +625,7 @@ export const csPyramid = ggen('geo-cs-pyramid', 'geo-cones-spheres', (rng, d) =>
 
 export const csComposite = ggen('geo-cs-composite', 'geo-cones-spheres', (rng, d) => {
   const mode = pick(rng, ['coneHemi', 'cylHemi', 'cylCone']);
-  const r = pick(rng, [3, 6, 9, 2, 4, 5]); const h = 3 * int(rng, 1, 5);
+  const r = d === 'easy' ? pick(rng, [3, 6]) : d === 'medium' ? pick(rng, [3, 6, 9, 2, 4, 5]) : int(rng, 2, 11); const h = d === 'hard' ? int(rng, 4, 20) : 3 * int(rng, 1, 5);
   let k; let parts; let label;
   if (mode === 'coneHemi') { k = frac(r * r * h, 3).add(frac(2 * r ** 3, 3)); parts = [`Cone: $\\frac{1}{3}\\pi \\times ${r}^2 \\times ${h} = ${frac(r * r * h, 3).tex()}\\pi$`, `Hemisphere: $\\frac{1}{2} \\times \\frac{4}{3}\\pi \\times ${r}^3 = ${frac(2 * r ** 3, 3).tex()}\\pi$`]; label = `a hemisphere on top of a cone of height ${lab(h)}, both with radius ${lab(r)} (like an ice-cream)`; } else if (mode === 'cylHemi') { k = frac(r * r * h).add(frac(2 * r ** 3, 3)); parts = [`Cylinder: $\\pi \\times ${r}^2 \\times ${h} = ${r * r * h}\\pi$`, `Hemisphere: $\\frac{2}{3}\\pi \\times ${r}^3 = ${frac(2 * r ** 3, 3).tex()}\\pi$`]; label = `a cylinder of height ${lab(h)} with a hemisphere on top, both with radius ${lab(r)}`; } else { k = frac(r * r * h).add(frac(r * r * h, 3)); parts = [`Cylinder: $\\pi \\times ${r}^2 \\times ${h} = ${r * r * h}\\pi$`, `Cone: $\\frac{1}{3}\\pi \\times ${r}^2 \\times ${h} = ${frac(r * r * h, 3).tex()}\\pi$`]; label = `a cylinder and a cone, each of height ${lab(h)} and radius ${lab(r)}`; }
   const exact = d !== 'hard' && k.isInt;
