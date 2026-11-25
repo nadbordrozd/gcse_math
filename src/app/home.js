@@ -1,5 +1,5 @@
 // Home page: greeting, recommendations and the full topic catalogue.
-import { AREAS, UNITS } from '../registry.js';
+import { AREAS, UNITS, TUTORIALS_BY_SKILL } from '../registry.js';
 import { state, save, points, skillStatus, dayStreak, answeredToday } from './state.js';
 import { esc, gradeBadge, higherBadge, STATUS, progressBar, areaStyle, AREA } from './ui.js';
 import { visibleUnitSkills, recommendations, unitSummary, overallSummary, hasQuestions } from './plan.js';
@@ -32,6 +32,7 @@ export function renderHome(root) {
           <a class="tile" href="#/check-pick"><span class="tile-icon">⏱</span><span><b>Start with a quick check</b><small>About 5 minutes on one topic. Find out where you are and what to practise first.</small></span></a>` : ''}
         ${recs.length ? `<h2 class="small-title">${firstVisit ? 'Or start from the very beginning' : 'Up next'}</h2>${recs.slice(0, firstVisit ? 2 : 4).map((r) => recCard(r)).join('')}` : ''}
         <div class="tile-row">
+          <a class="tile mini" href="#/learn"><span class="tile-icon">📖</span><span><b>Learn</b><small>Explanations &amp; examples</small></span></a>
           <a class="tile mini" href="#/check-pick"><span class="tile-icon">⏱</span><span><b>Quick check</b><small>5-minute level test</small></span></a>
           <a class="tile mini" href="#/mixed"><span class="tile-icon">🔀</span><span><b>Mixed practice</b><small>Review what you've learned</small></span></a>
           <a class="tile mini" href="#/mock"><span class="tile-icon">📝</span><span><b>Mock exam</b><small>Timed exam-style paper</small></span></a>
@@ -86,6 +87,11 @@ function renderAreas(el) {
       <div class="units">${unitHTML}</div>
     </section>`;
   }).join('') || '<p class="empty">No skills match your search.</p>';
+  el.querySelectorAll('.row-learn').forEach((b) => {
+    const go = (e) => { e.preventDefault(); e.stopPropagation(); location.hash = `#/learn/${b.dataset.learn}`; };
+    b.addEventListener('click', go);
+    b.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(e); });
+  });
   el.querySelectorAll('details.unit').forEach((d) => d.addEventListener('toggle', () => {
     if (d.open) openUnits.add(d.dataset.unit); else openUnits.delete(d.dataset.unit);
     sessionStorage.setItem('gcse_open_units', JSON.stringify([...openUnits]));
@@ -129,5 +135,6 @@ function skillRow(s) {
     ${gradeBadge(s.grade)}
     <span class="skill-main"><span class="skill-title">${esc(s.title)} ${higherBadge(s)}</span><span class="skill-sum">${esc(s.summary)}</span></span>
     <span class="skill-side">${st.icon ? `<span class="status ${st.cls}" title="${st.label}">${st.icon} <span class="status-label">${st.label}</span></span>` : ''}${p ? progressBar(p) : ready ? '' : '<span class="muted small">coming soon</span>'}</span>
+    ${TUTORIALS_BY_SKILL[s.id] ? `<span class="row-learn" role="link" tabindex="0" data-learn="${TUTORIALS_BY_SKILL[s.id][0].id}" title="Learn: ${esc(TUTORIALS_BY_SKILL[s.id][0].title)}">📖</span>` : ''}
   </a></li>`;
 }

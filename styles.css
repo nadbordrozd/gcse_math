@@ -134,7 +134,7 @@ main { max-width: 1120px; margin: 0 auto; padding: 1.2rem clamp(.8rem, 3vw, 2rem
 .tile b { display: block; }
 .tile small { display: block; color: var(--muted); }
 .tile-icon { font-size: 1.5rem; }
-.tile-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+.tile-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
 .tile.mini { flex-direction: column; align-items: flex-start; gap: .2rem; padding: .7rem .8rem; }
 .tile.mini .tile-icon { font-size: 1.2rem; }
 .tile.mini small { font-size: .78rem; }
@@ -414,3 +414,7 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
 .t-try { margin-top: 2.2rem; border-top: 1px solid var(--line); padding-top: .5rem; }
 .t-try .question { box-shadow: none; border: 1px solid var(--line); }
 .t-next { margin-top: 2rem; }
+
+.row-learn { font-size: 1.05rem; padding: .2rem .35rem; border-radius: 8px; opacity: .65; cursor: pointer; }
+.row-learn:hover, .row-learn:focus { opacity: 1; background: var(--surface); outline: none; }
+@media (max-width: 860px) { .tile-row { grid-template-columns: repeat(2, 1fr); } }

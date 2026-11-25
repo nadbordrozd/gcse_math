@@ -128,6 +128,8 @@ export function renderAbout(root) {
       <h2>Practising</h2>
       <p>Every skill is open from the start. Each correct answer earns <b>7 points</b> (3 if you used a hint); a wrong answer loses <b>10</b>. At <b>100 points</b> a skill is <span class="status st-mastered">★ Mastered</span>. As your points rise, questions move from Level 1 (warm-up) to Level 2 (standard) to Level 3 (challenge, the hardest exam style).</p>
       <p>Every question has a worked solution under <b>How to solve it</b>. Keyboard: <kbd>1</kbd>–<kbd>5</kbd> pick an answer, <kbd>Enter</kbd> for the next question, <kbd>H</kbd> for a hint.</p>
+      <h2>Learn pages</h2>
+      <p>Every topic has a short <b>Learn</b> page: the key idea, where it comes from, a method, worked examples and common mistakes. Pages link back to the ideas they build on, so if something is new you can step back as far as you need. Worked solutions link to the relevant page under <b>📖 New to this?</b></p>
       <h2>Quick checks</h2>
       <p>A quick check is a short adaptive test on one topic – usually 3 to 6 questions. It works out which skills already look secure and which need practice, and builds your study plan. It never locks anything.</p>
       <h2>Mock exams</h2>

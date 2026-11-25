@@ -5,7 +5,7 @@
 // prerequisites and anything two or more grades easier are secure too; a wrong answer (or "not learned
 // yet") marks it for practice and infers that its in-unit dependents and anything two or more grades
 // harder are not secure yet. So a 6-skill unit takes about 3–5 questions.
-import { UNITS, UNIT, SKILL, GENERATORS_BY_SKILL, ancestors, descendants } from '../registry.js';
+import { UNITS, UNIT, SKILL, GENERATORS_BY_SKILL, TUTORIALS_BY_SKILL, ancestors, descendants } from '../registry.js';
 import { generateSafely } from '../core.js';
 import { state, save, isMastered } from './state.js';
 import { esc, gradeBadge, higherBadge, areaStyle, AREA, randomSeed, STATUS } from './ui.js';
@@ -134,7 +134,8 @@ function finish(root) {
   const rows = skills.map((s) => {
     const st = isMastered(s.id) ? 'mastered' : status[s.id];
     const label = { secure: source[s.id] === 'tested' ? 'Secure – you got it right' : 'Probably fine (skipped)', practice: source[s.id] === 'tested' ? 'Practise this' : 'Practise this (follows on from one you missed)', new: 'Not learned yet', mastered: 'Mastered' }[st];
-    return `<li class="${STATUS[st === 'secure' ? 'secure' : st].cls}"><a href="#/skill/${s.id}">${gradeBadge(s.grade)} <span>${esc(s.title)}</span></a><span class="res">${STATUS[st === 'secure' ? 'secure' : st].icon} ${label}</span></li>`;
+    const tut = (st === 'new' || st === 'practice') && TUTORIALS_BY_SKILL[s.id]?.[0];
+    return `<li class="${STATUS[st === 'secure' ? 'secure' : st].cls}"><a href="#/skill/${s.id}">${gradeBadge(s.grade)} <span>${esc(s.title)}</span></a><span class="res">${tut ? `<a class="small" href="#/learn/${tut.id}">📖 Learn it</a> · ` : ''}${STATUS[st === 'secure' ? 'secure' : st].icon} ${label}</span></li>`;
   }).join('');
   const correct = run.asked.filter((a) => a.outcome === 'correct').length;
   root.querySelector('.check').innerHTML = `
