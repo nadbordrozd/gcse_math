@@ -13,30 +13,32 @@ import { svg, line, polyline, text, ACCENT } from '../../svg.js';
 
 // [what, unit, per-person base range, phrase]
 const RECIPES = [
-  ['flour', 'g', (s, n, a) => `A recipe for pancakes for ${s} people uses ${a} g of flour. How much flour is needed for ${n} people?`],
-  ['milk', 'ml', (s, n, a) => `A recipe for ${s} portions of rice pudding needs ${a} ml of milk. How much milk is needed for ${n} portions?`],
-  ['carrots', 'g', (s, n, a) => `A soup for ${s} people uses ${a} g of carrots. How many grams of carrots are needed to make the soup for ${n} people?`],
-  ['butter', 'g', (s, n, a) => `${s} flapjacks need ${a} g of butter. How much butter is needed for ${n} flapjacks?`],
-  ['pasta', 'g', (s, n, a) => `A pasta bake for ${s} people uses ${a} g of pasta. How much pasta is needed for ${n} people?`],
-  ['stock', 'ml', (s, n, a) => `A curry for ${s} people uses ${a} ml of stock. How much stock is needed for ${n} people?`],
-  ['oats', 'g', (s, n, a) => `A café uses ${a} g of oats to make porridge for ${s} customers. How many grams of oats does it need for ${n} customers?`],
-  ['sugar', 'g', (s, n, a) => `A batch of ${s} biscuits contains ${a} g of sugar. How much sugar is in ${n} biscuits?`],
-  ['yoghurt', 'ml', (s, n, a) => `Smoothies for ${s} people use ${a} ml of yoghurt. How much yoghurt is needed for ${n} people?`],
-  ['minced beef', 'g', (s, n, a) => `A cottage pie for ${s} people uses ${a} g of minced beef. How much minced beef is needed for ${n} people?`],
-  ['lemon juice', 'ml', (s, n, a) => `Lemonade for ${s} glasses takes ${a} ml of lemon juice. How much lemon juice is needed for ${n} glasses?`],
-  ['cheese', 'g', (s, n, a) => `Sandwiches for ${s} pupils use ${a} g of cheese. How much cheese is needed for ${n} pupils?`],
-  ['rice', 'g', (s, n, a) => `A paella for ${s} people needs ${a} g of rice. How much rice is needed to serve ${n} people?`],
-  ['chocolate', 'g', (s, n, a) => `${s} brownies need ${a} g of chocolate. How much chocolate is needed for ${n} brownies?`],
+  ['flour', 'g', [25, 60], (s, n, a) => `A recipe for pancakes for ${s} people uses ${a} g of flour. How much flour is needed for ${n} people?`],
+  ['milk', 'ml', [80, 150], (s, n, a) => `A recipe for ${s} portions of rice pudding needs ${a} ml of milk. How much milk is needed for ${n} portions?`],
+  ['carrots', 'g', [50, 150], (s, n, a) => `A soup for ${s} people uses ${a} g of carrots. How many grams of carrots are needed to make the soup for ${n} people?`],
+  ['butter', 'g', [10, 25], (s, n, a) => `${s} flapjacks need ${a} g of butter. How much butter is needed for ${n} flapjacks?`],
+  ['pasta', 'g', [75, 125], (s, n, a) => `A pasta bake for ${s} people uses ${a} g of pasta. How much pasta is needed for ${n} people?`],
+  ['stock', 'ml', [100, 250], (s, n, a) => `A curry for ${s} people uses ${a} ml of stock. How much stock is needed for ${n} people?`],
+  ['oats', 'g', [40, 80], (s, n, a) => `A café uses ${a} g of oats to make porridge for ${s} customers. How many grams of oats does it need for ${n} customers?`],
+  ['sugar', 'g', [5, 15], (s, n, a) => `A batch of ${s} biscuits contains ${a} g of sugar. How much sugar is in ${n} biscuits?`],
+  ['yoghurt', 'ml', [50, 150], (s, n, a) => `Smoothies for ${s} people use ${a} ml of yoghurt. How much yoghurt is needed for ${n} people?`],
+  ['minced beef', 'g', [100, 150], (s, n, a) => `A cottage pie for ${s} people uses ${a} g of minced beef. How much minced beef is needed for ${n} people?`],
+  ['lemon juice', 'ml', [10, 30], (s, n, a) => `Lemonade for ${s} glasses takes ${a} ml of lemon juice. How much lemon juice is needed for ${n} glasses?`],
+  ['cheese', 'g', [20, 50], (s, n, a) => `Sandwiches for ${s} pupils use ${a} g of cheese. How much cheese is needed for ${n} pupils?`],
+  ['rice', 'g', [60, 100], (s, n, a) => `A paella for ${s} people needs ${a} g of rice. How much rice is needed to serve ${n} people?`],
+  ['chocolate', 'g', [15, 40], (s, n, a) => `${s} brownies need ${a} g of chocolate. How much chocolate is needed for ${n} brownies?`],
 ];
 
 export const directRecipe = gen('rat-direct-recipe', 'rat-direct-proportion', (rng, d) => {
   for (let i = 0; i < 300; i += 1) {
-    const [what, unit, t] = pick(rng, RECIPES);
+    const [what, unit, [lo, hi], t] = pick(rng, RECIPES);
     const s = pick(rng, size(d, [2, 4, 5, 10], [4, 6, 8, 12, 5], [6, 8, 12, 15, 9, 18]));
     const n = pick(rng, size(d, [6, 8, 10, 20, 3, 15], [3, 9, 10, 14, 18, 15, 20, 7], [4, 10, 14, 20, 21, 25, 27, 5]));
     if (n === s) continue;
     if (d === 'easy' && n % s !== 0 && s % n !== 0) continue;
-    const per = size(d, int(rng, 2, 30) * 5, int(rng, 3, 60) * 5, int(rng, 10, 120) * 2.5);
+    if (d === 'hard' && (n % s === 0 || s % n === 0)) continue; // hard: no whole-number scale factor
+    // a realistic amount per person / item
+    const per = size(d, int(rng, Math.ceil(lo / 5), Math.floor(hi / 5)) * 5, int(rng, lo, hi), int(rng, lo * 2, hi * 2) / 2);
     const a = tidy(per * s);
     const ans = tidy(per * n);
     if (!hasDp(ans, 1) || !Number.isInteger(a)) continue;
@@ -273,7 +275,9 @@ const RATE_CTX = [
 
 export const directRates = gen('rat-direct-rates', 'rat-direct-proportion', (rng, d) => {
   for (let i = 0; i < 100; i += 1) {
-    const c = pick(rng, RATE_CTX)(rng);
+    // easy: one-step rates; medium: a unit change or two steps; hard: several steps
+    const pool = size(d, [2, 4, 5, 8, 12, 7], [1, 6, 10, 11, 7, 9], [0, 3, 9, 6, 1, 11]);
+    const c = RATE_CTX[pick(rng, pool)](rng);
     if (!c || !hasDp(c.ans, 2) || c.ans <= 0) continue;
     const fmt = c.money ? gbp : withUnit(c.unit);
     return {
@@ -313,12 +317,12 @@ const BUYS = ['a hotel room for one night', 'a pair of sunglasses', 'a train tic
 export const exchangeConvert = gen('rat-exchange-convert', 'rat-exchange-rates', (rng, d) => {
   for (let i = 0; i < 300; i += 1) {
     const C = pick(rng, CURR);
-    const rate = d === 'hard' && !C.whole ? tidy(pick(rng, C.rates) + int(rng, 1, 9) / 1000) : pick(rng, C.rates);
+    const rate = pick(rng, C.rates);
     const toForeign = chance(rng, 0.5);
     const [N] = names(rng, 1);
     const item = pick(rng, BUYS);
     if (toForeign) {
-      const pounds = size(d, int(rng, 2, 30) * 10, int(rng, 20, 500), int(rng, 5, 90) * 10);
+      const pounds = size(d, int(rng, 2, 30) * 10, int(rng, 4, 60) * 5, int(rng, 53, 987));
       const ans = tidy(pounds * rate);
       if (!hasDp(ans, C.whole ? 0 : 2)) continue;
       const wrongDiv = roundTo(pounds / rate, C.whole ? 0 : 2);
@@ -499,7 +503,9 @@ export const bestBuyPacks3 = gen('rat-best-buy-packs', 'rat-best-buy', (rng, d) 
   const labels = sizes.map((s, j) => `${P.noun(s)} for ${gbp(prices[j])}`);
   // unit to compare: per 100 g / per kg / per item
   const [perQ, perUnit] = perUnitOf(P);
-  const perLabel = perQ === 100 ? perUnit : `1 ${perUnit}`;
+  const perLabel = perUnit;
+  // big unit costs read better in pounds
+  const pounds = Math.max(...real.map((r) => r * perQ)) >= 100;
   return {
     prompt: `${cap(P.p)} ${P.pl ? 'are' : 'is'} sold in ${k === 2 ? 'two' : 'three'} sizes:<br>${labels.map((l) => `• ${l}`).join('<br>')}<br>Which size is the best value for money?`,
     answer: labels[best],
@@ -507,9 +513,11 @@ export const bestBuyPacks3 = gen('rat-best-buy-packs', 'rat-best-buy', (rng, d) 
     count: k === 2 ? 3 : 4,
     calculator: d !== 'easy',
     solution: [
-      `Work out the cost of the same amount for each size – here the cost of ${perLabel}.`,
-      sizes.map((s, j) => `${cap(P.noun(s))}: $${tnum(prices[j])} \\div ${tnum(s / perQ)} = ${tnum(roundTo(real[j] * perQ, 2))}${hasDp(real[j] * perQ, 2) ? '' : '\\ldots'}$p per ${perLabel}`).join('<br>'),
-      `The lowest cost per ${perLabel} is the best value. (The cheapest pack is not always the best buy!)`,
+      `Work out the cost of the same amount for each size – here the cost of ${perQ === 100 ? perLabel : `one ${perLabel}`}.`,
+      sizes.map((s, j) => (pounds
+        ? `${cap(P.noun(s))}: £$${tnum(prices[j] / 100, 2)} \\div ${tnum(s / perQ)} = ${tnum(roundTo((real[j] * perQ) / 100, 3))}${hasDp((real[j] * perQ) / 100, 3) ? '' : '\\ldots'}$ per ${perLabel}`
+        : `${cap(P.noun(s))}: $${tnum(prices[j])} \\div ${tnum(s / perQ)} = ${tnum(roundTo(real[j] * perQ, 2))}${hasDp(real[j] * perQ, 2) ? '' : '\\ldots'}$p per ${perLabel}`)).join('<br>'),
+      `The lowest cost per ${perLabel} is the best value.${prices.indexOf(Math.min(...prices)) !== best ? ' (The cheapest pack is not always the best buy!)' : ''}`,
       `Answer: the ${labels[best]}`,
     ],
   };
@@ -573,8 +581,8 @@ export const bestBuyUnitDiff = gen('rat-best-buy-unit-diff', 'rat-best-buy', (rn
     const [perQ, per] = perUnitOf(P);
     // unit prices in pence per "per" unit, in a realistic range: whole pence (hard: 1 dp)
     const lo = Math.max(1, Math.round(P.ppu[0] * perQ)); const hi = Math.round(P.ppu[1] * perQ);
-    const u2 = int(rng, lo * size(d, 1, 1, 10), hi * size(d, 1, 1, 10)) / size(d, 1, 1, 10);
-    const u1 = tidy(u2 + int(rng, 1, Math.max(2, Math.round(hi / 5))) / size(d, 1, 1, 10));
+    const u2 = int(rng, lo * size(d, 1, 2, 10), hi * size(d, 1, 2, 10)) / size(d, 1, 2, 10);
+    const u1 = tidy(u2 + int(rng, 1, Math.max(2, Math.round(hi / 5))) / size(d, 1, 2, 10));
     const p1 = tidy((u1 * s1) / perQ); const p2 = tidy((u2 * s2) / perQ);
     if (!Number.isInteger(p1) || !Number.isInteger(p2) || p1 < 30 || p2 <= p1) continue;
     const ans = tidy(u1 - u2);
@@ -627,8 +635,8 @@ export const inverseWorkers = gen('rat-inverse-workers', 'rat-inverse-proportion
     const divs = []; for (let k = 2; k <= total; k += 1) if (total % k === 0 && k !== a && k !== x && k <= 60) divs.push(k);
     if (!divs.length) continue;
     let ans; let q; let b; let y;
-    if (mode === 'time') { b = pick(rng, divs.filter((v) => v * 4 >= a && v <= a * 4)); if (!b) continue; ans = total / b; q = tpl.q.time(b); if (ans === x) continue; } else {
-      y = pick(rng, divs.filter((v) => v < x * 3 && v * 3 >= x)); if (!y) continue;
+    if (mode === 'time') { b = pick(rng, divs.filter((v) => v * 4 >= a && v <= a * 4 && (d !== 'hard' || (v % a !== 0 && a % v !== 0)))); if (!b) continue; ans = total / b; q = tpl.q.time(b); if (ans === x) continue; } else {
+      y = pick(rng, divs.filter((v) => v < x * 3 && v * 3 >= x && (d !== 'hard' || (v % x !== 0 && x % v !== 0)))); if (!y) continue;
       const needed = total / y; if (needed === a) continue;
       if (mode === 'more' && needed <= a) continue;
       ans = mode === 'more' ? needed - a : needed; q = (mode === 'more' ? tpl.q.more : tpl.q.need)(y);
@@ -647,7 +655,7 @@ export const inverseWorkers = gen('rat-inverse-workers', 'rat-inverse-proportion
       solution: [
         `More ${tpl.w} means less time: this is <b>inverse</b> proportion, so ${tpl.w} × time stays the same.`,
         `Total work: $${a} \\times ${x} = ${total}$ ${tpl.w.replace(/s$/, '')}-${tpl.unit}.`,
-        mode === 'time' ? `With ${b} ${tpl.w}: $${total} \\div ${b} = ${ans}$ ${tpl.unit}.` : `To take ${y} ${tpl.unit}: $${total} \\div ${y} = ${total / y}$ ${tpl.w}${mode === 'more' ? `, which is $${total / y} - ${a} = ${ans}$ more` : ''}.`,
+        mode === 'time' ? `With ${b} ${tpl.w}: $${total} \\div ${b} = ${ans}$ ${ans === 1 ? tpl.unit.replace(/s$/, '') : tpl.unit}.` : `To take ${y} ${tpl.unit}: $${total} \\div ${y} = ${total / y}$ ${tpl.w}${mode === 'more' ? `, which is $${total / y} - ${a} = ${ans}$ more` : ''}.`,
         `Answer: ${fmt(ans)}`,
       ],
     };
@@ -694,7 +702,9 @@ export const inverseRecognise = gen('rat-inverse-recognise', 'rat-inverse-propor
     const x1 = pick(rng, [2, 3, 4, 5, 6, 8, 10, 12]);
     const y1 = pick(rng, [6, 8, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45, 60]);
     const k = x1 * y1;
-    const x2 = pick(rng, [2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 20, 24, 30].filter((v) => v !== x1));
+    // easy: x is multiplied by a whole number; medium/hard: awkward scale factors
+    const x2 = pick(rng, [2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 20, 24, 30].filter((v) => v !== x1 && (d === 'easy' ? v % x1 === 0 : v % x1 !== 0 && (d === 'medium' || x1 % v !== 0))));
+    if (!x2) continue;
     const yInv = tidy(k / x2); const yDir = tidy((y1 / x1) * x2);
     const yAdd = inverse ? y1 - (x2 - x1) : y1 + (x2 - x1);
     if (!hasDp(yInv, 1) || !hasDp(yDir, 1) || !hasDp(y1 / x1, 2) || yInv === yDir || yAdd <= 0 || yAdd === yInv || yAdd === yDir) continue;
@@ -738,6 +748,22 @@ const eqTex = (kind, k, y, x) => {
   if (P.inv) return `${y} = \\frac{${kt}}{${P.tex(x)}}`;
   return `${y} = ${kt === '1' ? '' : kt}${P.tex(x)}`;
 };
+/** Typed forms accepted for an equation such as y = 3x^2, y = 27/8 x^3, y = 12/x^2. */
+function eqAccept(kind, k, Y, X) {
+  const pw = { x: X, x2: X + '^2', x3: X + '^3', sqrt: 'sqrt(' + X + ')', inv: X, inv2: X + '^2', invsqrt: 'sqrt(' + X + ')' }[kind];
+  const inv = PROPS[kind].inv;
+  const out = new Set();
+  const ks = [];
+  if (k instanceof Frac) {
+    ks.push(k.n + '/' + k.d, '(' + k.n + '/' + k.d + ')');
+    if (hasDp(k.value(), 4)) ks.push(String(tidy(k.value())));
+    if (!inv) out.add(Y + '=' + k.n + pw + '/' + k.d);
+  } else ks.push(String(tidy(k)));
+  for (const kt of ks) {
+    if (inv) { out.add(Y + '=' + kt + '/' + pw); out.add(Y + '=' + kt + '/(' + pw + ')'); } else { out.add(Y + '=' + (kt === '1' ? '' : kt) + pw); out.add(Y + '=' + kt + '*' + pw); out.add(Y + '=' + kt + '×' + pw); }
+  }
+  return [...out];
+}
 const xValsFor = (kind) => (kind === 'sqrt' || kind === 'invsqrt' ? [1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 144] : [1, 2, 3, 4, 5, 6, 8, 10, 12]);
 
 function propParams(rng, d, kinds) {
@@ -835,7 +861,7 @@ export const propEquation = gen('rat-prop-equation', 'rat-proportion-algebra', (
       prompt: `${desc}. $${Y} = ${tnum(y1)}$ when $${X} = ${tnum(x1)}$. Find an equation connecting $${Y}$ and $${X}$.`,
       answer: `$${ans}$`,
       distractors: dist,
-      typed: { kind: 'text', accept: [ans.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2').replace(/\^2/g, '^2').replace(/[{}\\]/g, '').replace(/sqrt/g, 'sqrt').replace(/\s/g, '')] },
+      typed: { kind: 'text', accept: eqAccept(kind, k, Y, X) },
       calculator: d === 'hard',
       solution: [
         `Start with $${eqTex(kind, 'k', Y, X)}$.`,
@@ -908,9 +934,12 @@ const PROP_WORD = [
 
 export const propWord = gen('rat-prop-word', 'rat-proportion-algebra', (rng, d) => {
   for (let i = 0; i < 300; i += 1) {
-    const tpl = pick(rng, PROP_WORD);
+    // easy: squares and simple inverse; hard: cubes, roots, inverse squares and the 'next t seconds' twist
+    const tpl = pick(rng, PROP_WORD.filter((t) => size(d, ['x2', 'inv'], ['x2', 'x3', 'inv', 'sqrt', 'inv2'], ['x3', 'inv2', 'sqrt', 'x2']).includes(t.kind)));
     const P = PROPS[tpl.kind];
     const [x1, x2] = sample(rng, tpl.xs, 2);
+    if (d === 'easy' && x2 % x1 !== 0 && x1 % x2 !== 0) continue;
+    if (d === 'hard' && tpl.ball && x2 <= x1) continue;
     const k = pick(rng, tpl.ks);
     const y1 = tidy(k * P.f(x1)); const y2 = tidy(k * P.f(x2));
     if (!hasDp(y1, 2) || !hasDp(y2, 2)) continue;
@@ -946,7 +975,7 @@ const SHAPES = {
   lin: { f: (t) => 0.3 + 0.6 * t, label: null, from0: true },
   x2: { f: (t) => t * t, label: 'directly proportional to $x^2$', from0: true },
   inv: { f: (t) => Math.min(1, 0.08 / t), label: 'inversely proportional to $x$', from0: false },
-  down: { f: (t) => 0.95 - 0.85 * t, label: null, from0: true },
+  down: { f: (t) => 0.8 - 0.7 * t, label: null, from0: true },
   sqrt: { f: (t) => Math.sqrt(t), label: 'directly proportional to $\\sqrt{x}$', from0: true },
 };
 function graphPanels(order) {
@@ -955,7 +984,7 @@ function graphPanels(order) {
   order.forEach((key, i) => {
     const x0 = i * W + pad; const y0 = H - 22; const w = W - 2 * pad; const h = H - 40;
     body += line(x0, y0, x0 + w, y0, { width: 1.5 }) + line(x0, y0, x0, y0 - h, { width: 1.5 });
-    body += text(x0 - 6, y0 + 8, 'O', { size: 11 }) + text(x0 + w + 2, y0 + 10, 'x', { size: 13, italic: true }) + text(x0 - 8, y0 - h, 'y', { size: 13, italic: true });
+    body += text(x0 - 6, y0 + 8, 'O', { size: 11 }) + text(x0 + w + 2, y0 + 10, 'x', { size: 13, italic: true }) + text(x0 - 9, y0 - h - 2, 'y', { size: 13, italic: true });
     const pts = [];
     for (let j = 0; j <= 40; j += 1) {
       const t = SHAPES[key].from0 ? j / 40 : 0.08 + (0.92 * j) / 40;
@@ -967,8 +996,8 @@ function graphPanels(order) {
   return svg(W * order.length, H, body, { label: 'Four sketch graphs numbered 1 to 4' });
 }
 
-function graphRecognise(rng) {
-  const target = pick(rng, ['x', 'x2', 'inv', 'inv', 'sqrt']);
+function graphRecognise(rng, d) {
+  const target = pick(rng, size(d, ['x', 'inv'], ['x', 'x2', 'inv'], ['x2', 'sqrt', 'inv']));
   const pool = ['x', 'lin', 'x2', 'inv', 'down', 'sqrt'].filter((s) => s !== target && !(target === 'x2' && s === 'sqrt') && !(target === 'sqrt' && s === 'x2'));
   const order = shuffle(rng, [target, ...sample(rng, pool, 3)]);
   const ans = `Graph ${order.indexOf(target) + 1}`;
@@ -989,7 +1018,7 @@ function graphRecognise(rng) {
 }
 
 export const propRecognise = gen('rat-prop-recognise', 'rat-proportion-algebra', (rng, d) => {
-  if (chance(rng, 0.35)) return graphRecognise(rng);
+  if (chance(rng, 0.35)) return graphRecognise(rng, d);
   const kinds = size(d, ['x', 'inv', 'x2'], ['x2', 'inv', 'inv2', 'x3', 'sqrt'], ['inv2', 'invsqrt', 'sqrt', 'x3', 'x2']);
   const kind = pick(rng, kinds);
   const P = PROPS[kind];

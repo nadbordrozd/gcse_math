@@ -8,6 +8,7 @@ import {
 } from './helpers.js';
 
 const P = (v) => `${num(v)}\\%`; // percentage inside TeX
+const pct1 = (v) => `${num(v, 1)}%`; // percentage to exactly 1 dp
 /** Multiplier for a p% increase (sign +1) or decrease (sign −1), tidy. */
 const mult = (p, s = 1) => tidy(1 + (s * p) / 100);
 
@@ -27,11 +28,14 @@ function blocks(p) {
 }
 const BLOCK_HOW = { 50: 'halve it', 25: 'divide by 4', 10: 'divide by 10', 5: 'half of 10%', 2.5: 'half of 5%', 1: 'divide by 100', 0.5: 'half of 1%' };
 /** Solution steps for p% of A by building blocks. fmt formats a value. */
+// blocks that must be worked out first (5% comes from 10%, 2.5% from 5%, 0.5% from 1%)
+const BLOCK_DEPS = { 5: [10], 2.5: [10, 5], 0.5: [1] };
 function blockSteps(p, A, fmt) {
   const bl = blocks(p);
   const uniq = [...new Set(bl)];
+  const shown = [...new Set([...uniq, ...uniq.flatMap((b) => BLOCK_DEPS[b] || [])])].sort((x, y) => y - x);
   const val = (b) => tidy((A * b) / 100);
-  const steps = uniq.map((b) => `${num(b)}% of ${fmt(A)} $=$ ${fmt(val(b))} (${BLOCK_HOW[b]})`);
+  const steps = shown.map((b) => `${num(b)}% of ${fmt(A)} $=$ ${fmt(val(b))} (${BLOCK_HOW[b]})`);
   if (bl.length > 1) {
     const counts = uniq.map((b) => [b, bl.filter((x) => x === b).length]);
     const expr = counts.map(([b, c]) => (c > 1 ? `${c} \\times ${tnum(val(b))}` : tnum(val(b)))).join(' + ');
@@ -190,7 +194,7 @@ export const percentFromKnown = gen('rat-percent-from-known', 'rat-percent-of', 
     const type = size(d, 'ten', pick(rng, ['ten', 'other']), pick(rng, ['other', 'one']));
     const A = int(rng, 11, 99) * size(d, 10, 10, 1) * (d === 'hard' ? 10 : 1);
     if (type === 'ten') {
-      const q = pick(rng, [20, 30, 40, 5, 15, 45, 35, 43, 21, 32, 61]);
+      const q = pick(rng, d === 'easy' ? [20, 30, 40, 5, 15, 45, 35, 60] : [43, 21, 32, 61, 17, 56, 72]);
       const ten = A / 10; const ans = tidy((A * q) / 100);
       if (!hasDp(ans, 2) || !hasDp(ten, 2)) continue;
       return {
@@ -199,8 +203,8 @@ export const percentFromKnown = gen('rat-percent-from-known', 'rat-percent-of', 
         distractors: dvals(ans, [ten * q, ten + q, ten * Math.floor(q / 10) + (q % 10), ans * 10, ten * (q / 10 + 1), A - ans], (v) => num(v)),
         typed: { kind: 'number', value: ans },
         solution: [
-          `10% is ${num(ten)}, so 1% is $${tnum(ten)} \\div 10 = ${tnum(ten / 10)}$ and 5% is half of 10%, $${tnum(ten / 2)}$.`,
-          ...blockSteps(q, A, (v) => num(v)).slice(-1),
+          `Use 10% $= ${tnum(ten)}$ to build the other percentages you need.`,
+          ...blockSteps(q, A, (v) => num(v)),
           `Answer: ${num(ans)}`,
         ],
       };
@@ -311,12 +315,12 @@ const INC_DEC_CTX = [
   { up: true, u: 'count', t: (A, p) => `A village has a population of ${num(A)}. Over ten years it increases by ${num(p)}%. What is the new population?` },
   { up: false, u: 'money', t: (A, p) => `A gym membership costs ${gbp(A)} a year. Students get ${num(p)}% off. How much does a student pay?` },
   { up: true, u: 'money', t: (A, p) => `A restaurant bill comes to ${gbp(A)}. A service charge of ${num(p)}% is added. What is the total bill?` },
-  { up: false, u: 'kg', t: (A, p) => `A puppy weighed ${num(A)} kg. After an illness its weight dropped by ${num(p)}%. What does it weigh now?` },
-  { up: true, u: 'cm', t: (A, p) => `A sunflower is ${num(A)} cm tall. Over the next week its height increases by ${num(p)}%. How tall is it at the end of the week?` },
+  { up: false, u: 'kg', r: [3, 30], t: (A, p) => `A puppy weighed ${num(A)} kg. After an illness its weight dropped by ${num(p)}%. What does it weigh now?` },
+  { up: true, u: 'cm', r: [40, 250], t: (A, p) => `A sunflower is ${num(A)} cm tall. Over the next week its height increases by ${num(p)}%. How tall is it at the end of the week?` },
   { up: false, u: 'money', t: (A, p) => `An electricity company cuts its standard monthly charge of ${gbp(A)} by ${num(p)}%. What is the new monthly charge?` },
   { up: true, u: 'money', t: (A, p) => `Rent on a flat is ${gbp(A)} a month. The landlord increases it by ${num(p)}%. What is the new monthly rent?` },
   { up: false, u: 'count', t: (A, p) => `A football club had ${num(A)} season-ticket holders last year. This year the number fell by ${num(p)}%. How many season-ticket holders are there this year?` },
-  { up: true, u: 'g', t: (A, p) => `A chocolate bar weighs ${num(A)} g. A special offer bar contains ${num(p)}% extra. How much does the offer bar weigh?` },
+  { up: true, u: 'g', r: [40, 250], t: (A, p) => `A chocolate bar weighs ${num(A)} g. A special offer bar contains ${num(p)}% extra. How much does the offer bar weigh?` },
   { up: false, u: 'minutes', t: (A, p) => `A train journey takes ${num(A)} minutes. A new timetable cuts the journey time by ${num(p)}%. How long does the journey take now?` },
 ];
 
@@ -328,7 +332,7 @@ export const incDecWord = gen('rat-pct-inc-dec-word', 'rat-percent-increase', (r
     if (tpl.u === 'money') A = tpl.big ? int(rng, 160, 450) * size(d, 10000, 10000, 1000) * size(d, 1, 1, 10) : int(rng, size(d, 2, 10, 50), size(d, 40, 400, 2500)) * size(d, 100, 10, 1) * 5;
     else if (tpl.u === 'count') A = int(rng, 30, 900) * size(d, 10, 5, 1) * 2;
     else if (tpl.u === 'minutes') A = int(rng, 4, 30) * 5 * size(d, 2, 1, 1);
-    else A = int(rng, 10, 400) * size(d, 2, 1, 1);
+    else A = tpl.r ? int(rng, tpl.r[0], tpl.r[1]) : int(rng, 10, 400) * size(d, 2, 1, 1);
     const change = (A * p) / 100;
     if (tpl.u === 'money' ? !Number.isInteger(change) : !hasDp(change, 2)) continue;
     if (tpl.u === 'count' && !Number.isInteger(change)) continue;
@@ -374,8 +378,9 @@ const SUCC_CTX = [
 export const successive = gen('rat-pct-successive', 'rat-percent-increase', (rng, d) => {
   for (let i = 0; i < 400; i += 1) {
     const tpl = pick(rng, SUCC_CTX);
-    const p1 = pick(rng, tpl.p1[d === 'hard' ? 1 : 0]);
-    const p2 = pick(rng, tpl.p2[d === 'hard' ? 1 : 0]);
+    // easy: the simple percentages; medium: a mix; hard: awkward percentages
+    const p1 = pick(rng, d === 'medium' ? [...tpl.p1[0], ...tpl.p1[1]] : tpl.p1[d === 'hard' ? 1 : 0]);
+    const p2 = pick(rng, d === 'medium' ? [...tpl.p2[0], ...tpl.p2[1]] : tpl.p2[d === 'hard' ? 1 : 0]);
     if (tpl.kind === 'upDown' && d === 'easy' && p1 !== p2) continue;
     const step = tpl.amt[1] >= 10000 ? 1000 : tpl.amt[1] >= 1000 ? 10 : 1;
     const A = int(rng, tpl.amt[0] / step, tpl.amt[1] / step) * step * 100 * (d === 'easy' && step === 1 ? 1 : 1);
@@ -448,7 +453,7 @@ const EXPRESS_UNITS = [
   { t: (a, b) => `Write ${a} g as a percentage of ${num(b / 1000)} kg.`, big: [1000, 2000, 4000, 5000, 2500, 500], F: 1000 },
   { t: (a, b) => `A ribbon is ${num(b / 100)} m long. A piece ${a} cm long is cut off. What percentage of the ribbon is cut off?`, big: [100, 200, 300, 400, 250, 500], F: 100 },
   { t: (a, b) => `A runner has completed ${num(a)} m of a ${num(b / 1000)} km race. What percentage of the race has she completed?`, big: [5000, 10000, 2000, 4000, 8000], F: 1000 },
-  { t: (a, b) => `A jug holds ${num(b / 1000)} litres. It contains ${a} ml of water. What percentage of the jug is full?`, big: [1000, 2000, 1500, 2500, 4000], F: 1000 },
+  { t: (a, b) => `A jug holds ${num(b / 1000)} ${b === 1000 ? "litre" : "litres"}. It contains ${a} ml of water. What percentage of the jug is full?`, big: [1000, 2000, 1500, 2500, 4000], F: 1000 },
 ];
 
 export const expressWord = gen('rat-express-word', 'rat-percent-express', (rng, d) => {
@@ -476,7 +481,7 @@ export const expressWord = gen('rat-express-word', 'rat-percent-express', (rng, 
     const b = pick(rng, tpl.b);
     const a = int(rng, 1, b - 1);
     const ans = tidy((100 * a) / b);
-    if (!hasDp(ans, d === 'easy' ? 0 : 1)) continue;
+    if (!hasDp(ans, d === 'easy' ? 0 : 1) || (d === 'medium' && Number.isInteger(ans) && i < 150)) continue;
     return {
       prompt: tpl.t(a, b, N),
       answer: pct(ans),
@@ -649,19 +654,19 @@ export const pctChangeBasic = gen('rat-pct-change-basic', 'rat-percent-change', 
 }, { title: 'Percentage change between two numbers' });
 
 const CHANGE_CTX = [
-  { u: 'money', t: (o, n, N) => `${N} bought a bike for ${gbp(o)} and sold it for ${gbp(n)}. Work out ${N}'s percentage ${n > o ? 'profit' : 'loss'}.`, w: (up) => (up ? 'profit' : 'loss') },
+  { u: 'money', r: [80, 600], t: (o, n, N) => `${N} bought a bike for ${gbp(o)} and sold it for ${gbp(n)}. Work out ${N}'s percentage ${n > o ? 'profit' : 'loss'}.`, w: (up) => (up ? 'profit' : 'loss') },
   { u: 'money', t: (o, n) => `A house was bought for ${gbp(o)} and sold five years later for ${gbp(n)}. What was the percentage ${n > o ? 'increase' : 'decrease'} in its value?`, big: true },
   { u: 'count', t: (o, n) => `The number of tickets sold for a football match changed from ${num(o)} last season to ${num(n)} this season. Work out the percentage ${n > o ? 'increase' : 'decrease'}.`, big: true },
   { u: 'count', t: (o, n) => `The population of a village went from ${num(o)} to ${num(n)}. Work out the percentage ${n > o ? 'increase' : 'decrease'} in the population.` },
-  { u: 'kg', t: (o, n) => `A puppy weighed ${num(o)} kg at its first check-up and ${num(n)} kg at its second. What was the percentage ${n > o ? 'increase' : 'decrease'} in its weight?` },
+  { u: 'kg', r: [3, 30], t: (o, n) => `A puppy weighed ${num(o)} kg at its first check-up and ${num(n)} kg at its second. What was the percentage ${n > o ? 'increase' : 'decrease'} in its weight?` },
   { u: 'money', t: (o, n) => `A car cost ${gbp(o)} when new. Three years later it is worth ${gbp(n)}. What is the percentage ${n > o ? 'increase' : 'decrease'} in its value?`, big: true },
-  { u: 'money', t: (o, n) => `The price of a phone changed from ${gbp(o)} to ${gbp(n)}. Work out the percentage ${n > o ? 'increase' : 'decrease'} in the price.` },
+  { u: 'money', r: [150, 1000], t: (o, n) => `The price of a phone changed from ${gbp(o)} to ${gbp(n)}. Work out the percentage ${n > o ? 'increase' : 'decrease'} in the price.` },
   { u: 'count', t: (o, n) => `A museum had ${num(o)} visitors in March and ${num(n)} visitors in April. What was the percentage ${n > o ? 'increase' : 'decrease'}?` },
   { u: 'money', t: (o, n, N) => `${N}'s hourly wage went from ${gbp(o)} to ${gbp(n)}. What was the percentage ${n > o ? 'increase' : 'decrease'}?`, wage: true },
   { u: 'minutes', t: (o, n) => `A new road cuts a journey from ${o} minutes to ${n} minutes. What is the percentage ${n > o ? 'increase' : 'decrease'} in the journey time?`, down: true },
-  { u: 'money', t: (o, n) => `A family's monthly electricity bill rose from ${gbp(o)} to ${gbp(n)}. Work out the percentage ${n > o ? 'increase' : 'decrease'}.`, upOnly: true },
-  { u: 'cm', t: (o, n) => `A tomato plant was ${num(o)} cm tall. A month later it was ${num(n)} cm tall. Work out the percentage ${n > o ? 'increase' : 'decrease'} in its height.`, upOnly: true },
-  { u: 'money', t: (o, n, N) => `A trader buys a box of T-shirts for ${gbp(o)} and sells them all for ${gbp(n)}. What is the percentage ${n > o ? 'profit' : 'loss'}?` },
+  { u: 'money', r: [50, 250], t: (o, n) => `A family's monthly electricity bill rose from ${gbp(o)} to ${gbp(n)}. Work out the percentage ${n > o ? 'increase' : 'decrease'}.`, upOnly: true },
+  { u: 'cm', r: [20, 150], t: (o, n) => `A tomato plant was ${num(o)} cm tall. A month later it was ${num(n)} cm tall. Work out the percentage ${n > o ? 'increase' : 'decrease'} in its height.`, upOnly: true },
+  { u: 'money', r: [80, 600], t: (o, n, N) => `A trader buys a box of T-shirts for ${gbp(o)} and sells them all for ${gbp(n)}. What is the percentage ${n > o ? 'profit' : 'loss'}?` },
   { u: 'count', t: (o, n) => `A school had ${num(o)} students last year and has ${num(n)} this year. Work out the percentage ${n > o ? 'increase' : 'decrease'} in the number of students.` },
 ];
 
@@ -672,11 +677,11 @@ export const pctChangeWord = gen('rat-pct-change-word', 'rat-percent-change', (r
     const rounded = d === 'hard';
     let o; let n;
     if (tpl.u === 'money') {
-      o = tpl.big ? int(rng, 50, 400) * 100000 / (tpl.big && tpl.t(1, 2).includes('car') ? 10 : 1) : tpl.wage ? int(rng, 900, 2400) : int(rng, 20, 900) * 100;
+      o = tpl.big ? int(rng, 50, 400) * 100000 / (tpl.big && tpl.t(1, 2).includes('car') ? 10 : 1) : tpl.wage ? int(rng, 900, 2400) : int(rng, tpl.r[0], tpl.r[1]) * 100;
       if (tpl.wage) o = Math.round(o / 5) * 5;
     } else if (tpl.u === 'count') o = tpl.big ? int(rng, 20, 60) * 1000 : int(rng, 40, 900) * 10;
     else if (tpl.u === 'minutes') o = int(rng, 6, 24) * 5;
-    else o = int(rng, 4, 60) * 5;
+    else o = int(rng, tpl.r[0], tpl.r[1]);
     let ans;
     if (rounded) {
       const delta = Math.round(o * (int(rng, 3, 45) / 100 + rng() * 0.01));
@@ -688,7 +693,7 @@ export const pctChangeWord = gen('rat-pct-change-word', 'rat-percent-change', (r
       const p = pick(rng, size(d, [10, 20, 25, 50, 5, 30, 40], [12, 15, 35, 8, 45, 12.5, 2.5, 60], [0]));
       if (tpl.big && !up && p > 30) continue; // houses and cars rarely lose more than 30%
       n = tidy(o * mult(p, up ? 1 : -1));
-      if (!Number.isInteger(n)) continue;
+      if (!(tpl.u === 'kg' || tpl.u === 'cm' ? hasDp(n, 1) : Number.isInteger(n))) continue;
       ans = p;
     }
     if (n <= 0 || n === o) continue;
@@ -699,14 +704,14 @@ export const pctChangeWord = gen('rat-pct-change-word', 'rat-percent-change', (r
     const word = tpl.t(o, n, N).match(/percentage (\w+)/)[1];
     return {
       prompt: tpl.t(o, n, N) + (rounded ? ' Give your answer to 1 decimal place.' : ''),
-      answer: pct(ans),
-      distractors: dvals(ans, [roundTo((100 * diff) / n, 1), roundTo(diff / pound, 1) <= 300 ? roundTo(diff / pound, 1) : null, roundTo((100 * n) / o, 1), roundTo((100 * o) / n, 1), roundTo(diff / o, 3) * 100 === ans ? null : roundTo(diff / o, 2), roundTo(ans + 1, 1)], pct, { dp: 1, round: true }),
+      answer: rounded ? pct1(ans) : pct(ans),
+      distractors: dvals(ans, [roundTo((100 * diff) / n, 1), roundTo(diff / pound, 1) <= 300 ? roundTo(diff / pound, 1) : null, roundTo((100 * n) / o, 1), roundTo((100 * o) / n, 1), roundTo(diff / o, 3) * 100 === ans ? null : roundTo(diff / o, 2), roundTo(ans + 1, 1)], rounded ? pct1 : pct, { dp: 1, round: true }),
       typed: { kind: 'number', value: ans, tolerance: rounded ? 0.05 : undefined },
       calculator: d !== 'easy',
       solution: [
         `Actual ${word}: ${fmt(Math.max(n, o))} $-$ ${fmt(Math.min(n, o))} $=$ ${fmt(diff)}.`,
         `Percentage ${word} $= \\frac{${tnum(diff / pound)}}{${tnum(o / pound)}} \\times 100 = ${rounded ? `${tnum(roundTo((100 * diff) / o, 3))}\\ldots` : tnum(ans)}$ (divide by the <b>original</b> amount).`,
-        `Answer: ${pct(ans)}`,
+        `Answer: ${rounded ? pct1(ans) : pct(ans)}`,
       ],
     };
   }
@@ -739,7 +744,7 @@ export const pctChangeCompare = gen('rat-pct-change-compare', 'rat-percent-chang
     const bigInc = Math.max(...incs);
     const bi = ps.indexOf(best);
     if (incs.indexOf(bigInc) === bi && chance(rng, 0.75)) continue; // biggest actual rise is usually NOT the answer
-    const tbl = `<table class="qtable"><tr><th>Item</th><th>Last year</th><th>This year</th></tr>${rows.map((r) => `<tr><td>${r.nm}</td><td>${gbp(r.o)}</td><td>${gbp(r.n)}</td></tr>`).join('')}</table>`;
+    const tbl = `<table class="qtable"><tr><th>Item</th><th>Last year</th><th>This year</th></tr>${rows.map((r) => `<tr><td>${r.nm}</td><td>${gbpF(r.o)}</td><td>${gbpF(r.n)}</td></tr>`).join('')}</table>`;
     return {
       prompt: 'The table shows the prices of four items last year and this year. Which item had the greatest <b>percentage</b> increase in price?',
       visual: tbl,
@@ -850,23 +855,24 @@ export const reverseTwoStep = gen('rat-reverse-two-step', 'rat-reverse-percent',
     const type = pick(rng, size(d, ['undo', 'undo', 'diff'], ['diff', 'undo', 'orig2'], ['orig2', 'diff', 'orig2']));
     const p1 = pick(rng, [10, 20, 25, 5, 15, 30, 40]);
     const p2 = type === 'diff' ? p1 : pick(rng, [10, 20, 25, 5, 15, 30]);
-    const orig = int(rng, 4, 90) * 100 * pick(rng, [1, 1, 5]);
+    // realistic prices: a tie £8–£40, a lamp £20–£120, a bike £100–£600
+    const orig = { undo: int(rng, 8, 40), diff: int(rng, 20, 120), orig2: int(rng, 100, 600) }[type] * 100;
     const after1 = tidy(orig * mult(p1)); const after2 = tidy(after1 * mult(p2, -1));
     if (!Number.isInteger(after1) || !Number.isInteger(after2)) continue;
     const [N] = names(rng, 1);
     if (type === 'undo') {
-      // given price after an increase; work out the original
+      // given the price after an increase, work back to the original, then see the sale is not the same
+      const sale = Math.round(after1 * mult(p1, -1));
       return {
-        prompt: `${N} increases the price of each tie by ${p1}% to ${gbp(after1)}. Later, the ties go into a sale with ${p1}% off. What is the sale price of a tie?`,
-        answer: gbp(Math.round(after1 * mult(p1, -1))),
-        distractors: pvals(Math.round(after1 * mult(p1, -1)), [orig, after1 - (orig * p1) / 100, after1 * mult(p1, -1) + 100, orig * mult(p1, -1), after1]),
-        typed: { kind: 'number', value: Math.round(after1 * mult(p1, -1)) / 100 },
+        prompt: `${N} increases the price of each tie by ${p1}% to ${gbp(after1)}. Later, the ties go into a sale with ${p1}% off. ${N} says the sale price is the same as the price before the increase. What <b>was</b> the price before the increase?`,
+        answer: gbp(orig),
+        distractors: pvals(orig, [sale, after1 - (after1 * p1) / 100, after1 - p1 * 100, after1 / (p1 / 100), after1 * mult(p1, -1) + 100]),
+        typed: { kind: 'number', value: orig / 100 },
         calculator: true,
         solution: [
-          `The sale takes ${p1}% off the <b>increased</b> price, ${gbp(after1)}.`,
-          `$${tnum(after1 / 100, after1 % 100 ? 2 : null)} \\times ${tnum(mult(p1, -1))} = ${tnum(Math.round(after1 * mult(p1, -1)) / 100, 2)}$`,
-          `This is less than the original price, ${gbp(orig)} – the ${p1}% decrease is of a bigger amount than the ${p1}% increase was.`,
-          `Answer: ${gbp(Math.round(after1 * mult(p1, -1)))}`,
+          `The increased price is ${num(100 + p1)}% of the original, so divide by $${tnum(mult(p1))}$: ${gbp(after1)} $\\div ${tnum(mult(p1))} =$ ${gbp(orig)}.`,
+          `The sale price is $${tnum(after1 / 100, after1 % 100 ? 2 : null)} \\times ${tnum(mult(p1, -1))} = ${tnum(sale / 100, 2)}$, which is <b>less</b> than ${gbp(orig)} – so ${N} is wrong: the ${p1}% decrease is taken from a bigger amount.`,
+          `Answer: ${gbp(orig)}`,
         ],
       };
     }
@@ -1060,7 +1066,7 @@ export const compoundYears = gen('rat-compound-years', 'rat-compound-interest', 
     const m = mult(r, up ? 1 : -1);
     let n = 0; let v = P;
     while ((up ? v < target : v > target) && n < 60) { v *= m; n += 1; }
-    if (n < 2 || n > 25) continue;
+    if (n < (d === 'hard' ? 5 : 2) || n > 25) continue;
     // avoid near-ties
     if (Math.abs(v - target) / target < 0.002) continue;
     const vPrev = P * m ** (n - 1);

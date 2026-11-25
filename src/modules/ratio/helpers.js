@@ -96,7 +96,12 @@ export function rvals(answer, list, { keepEquivalent = false } = {}) {
  * Like core gen(), but switches off core's numeric fillers (they mangle numbers with thousands
  * separators, e.g. "1,600 ml" -> "1700,600 ml"). Use near() for explicit nearby-value fallbacks.
  */
-export const rgen = (id, skill, build, meta) => gen(id, skill, (rng, d) => ({ fill: false, ...build(rng, d) }), meta);
+export const rgen = (id, skill, build, meta) => gen(id, skill, (rng, d) => {
+  const out = { fill: false, ...build(rng, d) };
+  // percentage answers: let the student type "35" or "35%"
+  if (out.typed?.kind === 'number' && /%$/.test(String(out.answer)) && out.typed.percent === undefined) out.typed = { ...out.typed, percent: true };
+  return out;
+}, meta);
 
 /** Nearby values as a last-resort distractor list: ans ± step, ± 2 step … (positive only). */
 export function near(ans, fmt, { step = null, dp = 2, k = 4 } = {}) {

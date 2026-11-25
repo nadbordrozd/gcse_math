@@ -1,6 +1,6 @@
 // Ratio unit: simplifying, sharing, one part known, ratio and fractions, combining, changing ratios.
 import {
-  pick, int, chance, sample, shuffle, size, gcd, lcm, names, num, tnum, Frac, tidy, cap,
+  pick, int, chance, sample, shuffle, size, gcd, lcm, names, num, tnum, Frac, tidy, cap, money, terms,
 } from '../../core.js';
 import {
   withUnit, gbp, pct, ratio, ratioTex, ratioTyped, simplify, isSimplest, rvals, dvals, pvals, hasDp,
@@ -111,7 +111,12 @@ const UNIT_PAIRS = [
 const FRACS = [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 6], [5, 6], [1, 8], [3, 8], [5, 8], [3, 10], [7, 10], [1, 10], [3, 20], [7, 20], [9, 20], [1, 12], [5, 12], [7, 12]];
 
 const fmtSmall = (u, v) => (u.money ? `${num(v)}p` : `${num(v)} ${u.small}`);
-const fmtBig = (u, v) => (u.money ? `£${num(v)}` : `${num(v)} ${v === 1 && u.bigOne ? u.bigOne : u.big}`);
+const fmtBig = (u, v) => (u.money ? money(v, { forcePence: !Number.isInteger(v) }) : `${num(v)} ${v === 1 && u.bigOne ? u.bigOne : u.big}`);
+/** a·x + c as TeX, e.g. lin(1, -8) -> "x - 8"; fac(1, e) drops a 1 in front of a bracket. */
+const lin = (a, c, v = 'x') => terms([[a, v], [c, '']]);
+const fac = (k, e) => (k === 1 ? e : `${k}(${e})`);
+/** "…, so 4x = 24 and x = 6" (or just "x = 6" when the coefficient is 1). */
+const solveLine = (coef, rhs, sol, v = 'x') => (Math.abs(coef) === 1 ? `$${v} = ${tnum(sol)}$` : `$${Math.abs(coef)}${v} = ${tnum(Math.abs(rhs))}$ and $${v} = ${tnum(sol)}$`);
 
 export const simplifyUnits = gen('rat-simplify-units', 'rat-simplify', (rng, d) => {
   const u = pick(rng, d === 'easy' ? UNIT_PAIRS.filter((x) => x.F !== 60) : UNIT_PAIRS);
@@ -353,7 +358,7 @@ export const shareTwo = gen('rat-share-two', 'rat-share', (rng, d) => {
         ...ratioLine,
         `Total number of parts: $${a} + ${b} = ${a + b}$.`,
         `One part: ${fmt(T)} $\\div ${a + b} =$ ${fmt(part)}.`,
-        `${cap(fmt === gbp ? 'the share' : 'the amount')} wanted is ${mine} part${mine === 1 ? '' : 's'}:$${mine} \\times$ ${fmt(part)} $=$ ${fmt(ans)}.`,
+        `${cap(fmt === gbp ? 'the share' : 'the amount')} wanted is ${mine} part${mine === 1 ? '' : 's'}: $${mine} \\times$ ${fmt(part)} $=$ ${fmt(ans)}.`,
         `Answer: ${fmt(ans)}`,
       ],
     };
@@ -515,14 +520,15 @@ export const shareGeometry = gen('rat-share-geometry', 'rat-share', (rng, d) => 
   const r = pickParts(cfg.k, cfg.total);
   const s = r.reduce((x, y) => x + y, 0);
   const u = cfg.total / s;
-  const ask = chance(rng, 0.5) ? 'largest' : 'smallest';
-  const v = ask === 'largest' ? Math.max(...r) : Math.min(...r);
+  const big = chance(rng, 0.5);
+  const ask = cfg.k === 2 ? (big ? 'larger' : 'smaller') : (big ? 'largest' : 'smallest');
+  const v = big ? Math.max(...r) : Math.min(...r);
   const ans = v * u;
   const altTotal = cfg.total === 180 ? 360 : 180;
   return {
     prompt: `${cfg.what} are in the ratio $${ratioTex(r)}$. Work out the size of the ${ask} angle.`,
     answer: `$${ans}^\\circ$`,
-    distractors: dvals(ans, [v * altTotal / s, u, (ask === 'largest' ? Math.min(...r) : Math.max(...r)) * u, cfg.total - ans, ...r.map((x) => x * u), v * 10, (v + 1) * u, (v - 1) * u, cfg.total / r.length, ans + 10, ans - 10, ans + 20], (x) => `$${tnum(x)}^\\circ$`, { dp: 1 }),
+    distractors: dvals(ans, [v * altTotal / s, u, (big ? Math.min(...r) : Math.max(...r)) * u, cfg.total - ans, ...r.map((x) => x * u), v * 10, (v + 1) * u, (v - 1) * u, cfg.total / r.length, ans + 10, ans - 10, ans + 20], (x) => `$${tnum(x)}^\\circ$`, { dp: 1 }),
     typed: { kind: 'number', value: ans },
     solution: [
       `${cfg.fact} $${cfg.total}^\\circ$.`,
@@ -537,13 +543,13 @@ export const shareDivide = gen('rat-share-divide-number', 'rat-share', (rng, d) 
   let a; let b; let part; let T;
   for (let i = 0; i < 200; i += 1) {
     [a, b] = coprimePair(rng, size(d, 6, 9, 13));
-    if (d === 'medium') {
+    if (d === 'hard') {
       // whole-number total, one part with one decimal place (e.g. 62 in the ratio 3 : 7)
       T = int(rng, 20, 150);
       part = tidy(T / (a + b));
       if (hasDp(part, 1) && !Number.isInteger(part)) break;
     } else {
-      part = size(d, int(rng, 2, 15), 0, int(rng, 13, 60));
+      part = size(d, int(rng, 2, 15), int(rng, 13, 60), 0);
       T = (a + b) * part;
       break;
     }
@@ -551,7 +557,7 @@ export const shareDivide = gen('rat-share-divide-number', 'rat-share', (rng, d) 
   if (!hasDp(part, 1)) throw new Error('part');
   const x = tidy(a * part); const y = tidy(b * part);
   const pair = (p, q) => `$${tnum(p)}$ and $${tnum(q)}$`;
-  const shifts = [[x - part, y + part], [x + part, y - part], [part, tidy(T - part)], [tidy(T / 2), tidy(T / 2)], [x - 2 * part, y + 2 * part], [y, x], [Math.round(T / a * 10) / 10, Math.round(T / b * 10) / 10], [x * 2, T - x * 2], [x + 1, y - 1], [x - 1, y + 1], [x + 2, y - 2], [x - 2, y + 2], [x + 3, y - 3], [x - 3, y + 3]];
+  const shifts = [[x - part, y + part], [x + part, y - part], [part, tidy(T - part)], [tidy(T / 2), tidy(T / 2)], [x - 2 * part, y + 2 * part], [y, x], [x * 2, T - x * 2], [x + 1, y - 1], [x - 1, y + 1], [x + 2, y - 2], [x - 2, y + 2], [x + 3, y - 3], [x - 3, y + 3]];
   const seen = new Set([`${x}|${y}`]);
   const distractors = [];
   for (const [p, q] of shifts) {
@@ -589,7 +595,7 @@ const PART_CTX = [
   { kind: 'g', lab: () => ['flour', 'sugar'], t: (A, B, r, kv, ki, ask) => `A biscuit recipe uses flour and sugar in the ratio flour : sugar $= ${ratioTex(r)}$. ${['', ''][0]}A baker uses ${kv} of ${['flour', 'sugar'][ki]}. ${ask === 'total' ? 'What is the total mass of flour and sugar?' : `How much ${['flour', 'sugar'][1 - ki]} does he use?`}` },
   { kind: 'count', lab: () => ['fiction', 'non-fiction'], t: (A, B, r, kv, ki, ask) => `In a bookshop the ratio of fiction books to non-fiction books is $${ratioTex(r)}$. There are ${kv} ${['fiction', 'non-fiction'][ki]} books. ${ask === 'total' ? 'How many books are there altogether?' : `How many ${['fiction', 'non-fiction'][1 - ki]} books are there?`}` },
   { kind: 'l', scale: 10, lab: () => ['fridge', 'freezer'], t: (A, B, r, kv, ki, ask) => `In a fridge-freezer, fridge capacity : freezer capacity $= ${ratioTex(r)}$. The ${['fridge', 'freezer'][ki]} capacity is ${kv}. ${ask === 'total' ? 'What is the total capacity?' : `What is the ${['fridge', 'freezer'][1 - ki]} capacity?`}` },
-  { kind: 'money', lab: () => ['deposit', 'monthly payments'], t: (A, B, r, kv, ki, ask) => `${A} buys a holiday. She pays a deposit and then monthly payments in the ratio deposit : total of monthly payments $= ${ratioTex(r)}$. ${ki === 0 ? `The deposit is ${kv}.` : `The monthly payments add up to ${kv}.`} ${ask === 'total' ? 'What is the cost of the holiday?' : (ki === 0 ? 'What is the total of the monthly payments?' : 'How much is the deposit?')}` },
+  { kind: 'money', scale: 10, lab: () => ['deposit', 'monthly payments'], t: (A, B, r, kv, ki, ask) => `${A} books a family holiday and pays a deposit and then monthly payments in the ratio deposit : total of monthly payments $= ${ratioTex(r)}$. ${ki === 0 ? `The deposit is ${kv}.` : `The monthly payments add up to ${kv}.`} ${ask === 'total' ? 'What is the cost of the holiday?' : (ki === 0 ? 'What is the total of the monthly payments?' : 'How much is the deposit?')}` },
   { kind: 'count', lab: () => ['wins', 'losses'], t: (A, B, r, kv, ki, ask) => `A chess club’s results this season are in the ratio wins : losses $= ${ratioTex(r)}$ (there were no draws). They had ${kv} ${['wins', 'losses'][ki]}. ${ask === 'total' ? 'How many games did they play?' : `How many ${['wins', 'losses'][1 - ki]} did they have?`}` },
   { kind: 'ml', lab: () => ['juice', 'water'], t: (A, B, r, kv, ki, ask) => `${A} mixes juice and water in the ratio juice : water $= ${ratioTex(r)}$. She uses ${kv} of ${['juice', 'water'][ki]}. ${ask === 'total' ? 'How much drink does she make?' : `How much ${['juice', 'water'][1 - ki]} does she use?`}` },
   { kind: 'count', lab: () => ['red', 'green'], t: (A, B, r, kv, ki, ask) => `A greengrocer has red apples and green apples in the ratio red : green $= ${ratioTex(r)}$. He has ${kv} ${['red', 'green'][ki]} apples. ${ask === 'total' ? 'How many apples does he have altogether?' : `How many ${['red', 'green'][1 - ki]} apples does he have?`}` },
@@ -603,7 +609,7 @@ export const partKnown = gen('rat-part-known', 'rat-given-part', (rng, d) => {
   const ki = int(rng, 0, 1);
   const ask = chance(rng, 0.5) ? 'other' : 'total';
   let part;
-  if (tpl.kind === 'money') part = size(d, int(rng, 2, 20) * 100, int(rng, 3, 30) * 100, int(rng, 21, 250) * 10 + pick(rng, [0, 5]));
+  if (tpl.kind === 'money') part = size(d, int(rng, 2, 20) * 100, int(rng, 3, 30) * 100, int(rng, 21, 250) * 10 + pick(rng, [0, 5])) * (tpl.scale || 1);
   else part = size(d, int(rng, 2, 10), int(rng, 3, 20), int(rng, 6, 40)) * (['g', 'ml'].includes(tpl.kind) ? pick(rng, [5, 10, 25]) : 1) * (tpl.scale && d !== 'hard' ? tpl.scale : 1);
   const fmt = tpl.kind === 'money' ? gbp : tpl.kind === 'count' ? (v) => num(v) : withUnit(tpl.kind === 'l' ? 'litres' : tpl.kind);
   const known = r[ki] * part; const other = r[1 - ki] * part; const total = known + other;
@@ -669,7 +675,7 @@ export const diffKnown = gen('rat-diff-known', 'rat-given-part', (rng, d) => {
     solution: [
       `The difference between the shares is $${b} - ${a} = ${b - a}$ part${b - a === 1 ? '' : 's'}.`,
       `${b - a} part${b - a === 1 ? '' : 's'} $=$ ${fmt(diff)}, so one part $=$ ${fmt(diff)} $\\div ${b - a} =$ ${fmt(part)}.`,
-      ask === 'total' ? `Total $= ${a + b}$ parts $= ${a + b} \\times$ ${fmt(part)} $=$ ${fmt(total)}.` : `The smaller share is ${a} parts $= ${a} \\times$ ${fmt(part)} $=$ ${fmt(small)}.`,
+      ask === 'total' ? `Total $= ${a + b}$ parts $= ${a + b} \\times$ ${fmt(part)} $=$ ${fmt(total)}.` : `The smaller share is ${a} part${a === 1 ? '' : 's'} $= ${a} \\times$ ${fmt(part)} $=$ ${fmt(small)}.`,
       `Answer: ${fmt(ans)}`,
     ],
   };
@@ -799,7 +805,7 @@ export const ratioToFraction = gen('rat-ratio-to-fraction', 'rat-ratio-fractions
       answer: fopt(...ans),
       distractors: fvals(ans, [[r[ci], n - r[ci]], [r[ci], r[(ci + 1) % 3]], [r[ci], n + 1], [n - r[ci], n], [1, 3], [r[ci], 10]], { proper: true }),
       typed: { kind: 'number', value: new Frac(r[ci], n) },
-      solution: [`Total parts: $${r.join(' + ')} = ${n}$.`, `${cap(cols[ci])} is ${r[ci]} of these ${n} parts.`, `Answer: $${ftex(...ans)}$`],
+      solution: [`Total parts: $${r.join(' + ')} = ${n}$.`, `${cap(cols[ci])} is ${r[ci]} of these ${n} parts, so the fraction is $\\frac{${r[ci]}}{${n}}$${gcd(r[ci], n) > 1 ? `, which simplifies to $${ftex(r[ci], n)}$` : ''}.`, `Answer: $${ftex(...ans)}$`],
     };
   }
   let [a, b] = coprimePair(rng, size(d, 7, 9, 11), 2);
@@ -840,7 +846,7 @@ export const fractionToRatio = gen('rat-fraction-to-ratio', 'rat-ratio-fractions
       const s = (p + q) / gcd(rest, p + q);
       const parts = simplify([num1 * s, rest * s * p / (p + q), rest * s * q / (p + q)]);
       if (!parts.every(Number.isInteger)) continue;
-      const cols = pick(rng, [['red', 'blue', 'green'], ['gold', 'silver', 'bronze'], ['oak', 'ash', 'beech']]);
+      const cols = pick(rng, [['red', 'blue', 'green'], ['gold', 'silver', 'bronze'], ['pink', 'white', 'black'], ['yellow', 'purple', 'orange']]);
       return {
         prompt: `A box contains ${cols[0]}, ${cols[1]} and ${cols[2]} beads. $\\frac{${num1}}{${den}}$ of the beads are ${cols[0]}. The rest are ${cols[1]} and ${cols[2]} in the ratio $${p} : ${q}$. Work out the ratio ${cols[0]} : ${cols[1]} : ${cols[2]} in its simplest form.`,
         answer: ratio(parts),
@@ -849,7 +855,7 @@ export const fractionToRatio = gen('rat-fraction-to-ratio', 'rat-ratio-fractions
         solution: [
           `The rest is $1 - \\frac{${num1}}{${den}} = \\frac{${rest}}{${den}}$ of the beads.`,
           `Split $\\frac{${rest}}{${den}}$ in the ratio $${p} : ${q}$: ${cols[1]} $= \\frac{${p}}{${p + q}} \\times \\frac{${rest}}{${den}}$, ${cols[2]} $= \\frac{${q}}{${p + q}} \\times \\frac{${rest}}{${den}}$.`,
-          `Write all three over a common denominator and compare numerators: $${ratioTex([num1 * (p + q), rest * p, rest * q])}$, which simplifies to $${ratioTex(parts)}$.`,
+          `Write all three over a common denominator and compare numerators: $${ratioTex([num1 * (p + q), rest * p, rest * q])}$${[num1 * (p + q), rest * p, rest * q].join() !== parts.join() ? `, which simplifies to $${ratioTex(parts)}$` : ''}.`,
           `Answer: ${ratio(parts)}`,
         ],
       };
@@ -991,7 +997,7 @@ export const ratioFractionWord = gen('rat-ratio-fraction-of-parts', 'rat-ratio-f
         return [
           `Pick a convenient number: imagine ${X} ${x} and ${Y} ${y} (this is in the ratio $${a} : ${b}$, and works with both fractions).`,
           `${cap(x)} ${who} ${act}: $\\frac{${fx[0]}}{${fx[1]}} \\times ${X} = ${ax}$. ${cap(y)} ${who} ${act}: $\\frac{${fy[0]}}{${fy[1]}} \\times ${Y} = ${ay}$.`,
-          `That is ${ax + ay} out of ${X + Y}, so the fraction is $\\frac{${ax + ay}}{${X + Y}} = ${ans.tex()}$. (You can't just add or average the two fractions.)`,
+          `That is ${ax + ay} out of ${X + Y}, so the fraction is $\\frac{${ax + ay}}{${X + Y}}${ans.d !== X + Y ? ` = ${ans.tex()}` : ''}$. (You can't just add or average the two fractions.)`,
           `Answer: $${ans.tex()}$`,
         ];
       })(),
@@ -1165,9 +1171,9 @@ export const changeAdd = gen('rat-change-add', 'rat-ratio-change', (rng, d) => {
       distractors: dvals(ans, vals, (v) => num(v), { dp: 0 }),
       typed: { kind: 'number', value: ans },
       solution: [
-        `Let the numbers at the start be $${a}x$ ${tpl.g[0]} and $${b}x$ ${tpl.g[1]}.`,
-        `After the change: $\\frac{${a}x ${d1 >= 0 ? '+' : '-'} ${Math.abs(d1)}}{${b}x ${d2 >= 0 ? '+' : '-'} ${Math.abs(d2)}} = \\frac{${nr[0]}}{${nr[1]}}$`.replace(/ \+ 0\}/g, '}').replace(/ - 0\}/g, '}'),
-        `Cross-multiply: $${nr[1]}(${a}x ${d1 >= 0 ? '+' : '-'} ${Math.abs(d1)}) = ${nr[0]}(${b}x ${d2 >= 0 ? '+' : '-'} ${Math.abs(d2)})$, so $${qa}x = ${qa * x}$ and $x = ${x}$.`.replace(/ \+ 0\)/g, ')').replace(/ - 0\)/g, ')').replace(/\$-(\d+)x = -(\d+)\$/, '$$$1x = $2$'),
+        `Let the numbers at the start be $${lin(a, 0)}$ ${tpl.g[0]} and $${lin(b, 0)}$ ${tpl.g[1]}.`,
+        `After the change: $\\frac{${lin(a, d1)}}{${lin(b, d2)}} = \\frac{${nr[0]}}{${nr[1]}}$`,
+        `Cross-multiply: $${fac(nr[1], lin(a, d1))} = ${fac(nr[0], lin(b, d2))}$, so ${solveLine(qa, qa * x, x)}.`,
         { orig1: `At the start there were $${a} \\times ${x} = ${a * x}$ ${tpl.g[0]}.`, orig2: `At the start there were $${b} \\times ${x} = ${b * x}$ ${tpl.g[1]}.`, origTotal: `At the start there were $${a * x} + ${b * x} = ${(a + b) * x}$.`, newTotal: `Now there are $${n1} + ${n2} = ${n1 + n2}$.` }[ask],
         `Answer: ${num(ans)}`,
       ],
@@ -1248,7 +1254,7 @@ export const changeWeeks = gen('rat-change-over-time', 'rat-ratio-change', (rng,
     const w = int(rng, 2, size(d, 6, 10, 15));
     let x; let y; let ia; let ib;
     if (tpl.ages) { ia = 1; ib = 1; x = int(rng, 25, 50); y = int(rng, 2, 15); } else {
-      const m = tpl.kind === 'money' ? pick(rng, [100, 50, 500]) : 1;
+      const m = tpl.kind === 'money' ? (tpl.unit === 'months' ? pick(rng, [5000, 10000, 2500]) : pick(rng, [100, 50, 200])) : 1;
       x = int(rng, 2, 40) * m; y = int(rng, 2, 40) * m; ia = int(rng, 2, 9) * m; ib = int(rng, 2, 9) * m;
       if (tpl.kind === 'count' && tpl.unit === 'months') { x *= 100; y *= 100; ia *= 50; ib *= 50; }
     }
@@ -1262,6 +1268,8 @@ export const changeWeeks = gen('rat-change-over-time', 'rat-ratio-change', (rng,
     const [A, B] = names(rng, 2);
     const q = nr[1] * ia - nr[0] * ib; const c = nr[0] * y - nr[1] * x;
     const fmtv = (v) => (tpl.kind === 'money' ? gbp(v) : num(v));
+    const sc = (v) => (tpl.kind === 'money' ? tidy(v / 100) : v);
+    const ln = (c0, k) => `${tnum(c0)} + ${k === 1 ? '' : tnum(k)}n`;
     const wrong = [w + 1, w - 1, w * 2, Math.round((nr[0] - nr[1]) || 0), nr[0], nr[1], w + 2];
     return {
       prompt: tpl.t(A, B, tpl.kind === 'money' ? x : x, y, ia, ib, nr),
@@ -1269,9 +1277,9 @@ export const changeWeeks = gen('rat-change-over-time', 'rat-ratio-change', (rng,
       distractors: dvals(w, wrong, (v) => `${v} ${v === 1 ? tpl.unit.replace(/s$/, '') : tpl.unit}`, { dp: 0 }),
       typed: { kind: 'number', value: w },
       solution: [
-        `After $n$ ${tpl.unit}: first $= ${tpl.kind === 'money' ? tnum(x / 100) : tnum(x)} + ${tpl.kind === 'money' ? tnum(ia / 100) : tnum(ia)}n$ and second $= ${tpl.kind === 'money' ? tnum(y / 100) : tnum(y)} + ${tpl.kind === 'money' ? tnum(ib / 100) : tnum(ib)}n$${tpl.kind === 'money' ? ' (in £)' : ''}.`,
-        `Set up the ratio: $${nr[1]}(${tpl.kind === 'money' ? tnum(x / 100) : tnum(x)} + ${tpl.kind === 'money' ? tnum(ia / 100) : tnum(ia)}n) = ${nr[0]}(${tpl.kind === 'money' ? tnum(y / 100) : tnum(y)} + ${tpl.kind === 'money' ? tnum(ib / 100) : tnum(ib)}n)$`,
-        `Expand and collect: $${tpl.kind === 'money' ? tnum(Math.abs(q) / 100) : tnum(Math.abs(q))}n = ${tpl.kind === 'money' ? tnum(Math.abs(c) / 100) : tnum(Math.abs(c))}$, so $n = ${w}$.`,
+        `After $n$ ${tpl.unit}: first $= ${ln(sc(x), sc(ia))}$ and second $= ${ln(sc(y), sc(ib))}$${tpl.kind === 'money' ? ' (in £)' : ''}.`,
+        `Set up the ratio: $${fac(nr[1], ln(sc(x), sc(ia)))} = ${fac(nr[0], ln(sc(y), sc(ib)))}$`,
+        `Expand and collect: ${solveLine(sc(q), sc(c), w, 'n')}.`,
         `Check: ${fmtv(X)} : ${fmtv(Y)} $= ${ratioTex(nr)}$ ✓`,
         `Answer: ${w} ${tpl.unit}`,
       ],
@@ -1282,12 +1290,12 @@ export const changeWeeks = gen('rat-change-over-time', 'rat-ratio-change', (rng,
 function sameNR(x, y, nr) { return x * nr[1] === y * nr[0]; }
 
 const GIVE_CTX = [
-  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} share some money in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv}. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s share to ${C}.` },
-  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} share a bag of sweets in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv} sweets. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s sweets to ${C}.` },
-  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} split a collection of stamps in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv} stamps. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s stamps to ${C}.` },
-  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} split their earnings from a car-boot sale in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv}. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ of this money to ${C}.` },
-  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} picked conkers and shared them in the ratio $${ratioTex(r)}$. ${[A, B][ki]} ended up with ${kv}. ${A} then hands $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s conkers to a younger cousin, ${C}.` },
-  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `A grandad splits some birthday money between ${A} and ${B} in the ratio $${ratioTex(r)}$. ${[A, B][ki]} receives ${kv}. ${A} lends $\\frac{${f[0]}}{${f[1]}}$ of this money to a friend, ${C}.` },
+  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} share some money in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv}. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of this money' : `of ${A}'s share`} to ${C}.` },
+  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} share a bag of sweets in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv} sweets. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of these sweets' : `of ${A}'s sweets`} to ${C}.` },
+  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} split a collection of stamps in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv} stamps. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of these stamps' : `of ${A}'s stamps`} to ${C}.` },
+  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} split their earnings from a car-boot sale in the ratio $${ratioTex(r)}$. ${[A, B][ki]} gets ${kv}. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of this money' : `of ${A}'s earnings`} to ${C}.` },
+  { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} picked conkers and shared them in the ratio $${ratioTex(r)}$. ${[A, B][ki]} ended up with ${kv}. ${A} then hands $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of these conkers' : `of ${A}'s conkers`} to a younger cousin, ${C}.` },
+  { kind: 'money', t: (A, B, C, r, kv, ki, f) => `A grandad splits some birthday money between ${A} and ${B} in the ratio $${ratioTex(r)}$. ${[A, B][ki]} receives ${kv}. ${A} lends $\\frac{${f[0]}}{${f[1]}}$ ${ki === 0 ? 'of this money' : `of ${A}'s share`} to a friend, ${C}.` },
   { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} grow tomato seedlings in the ratio $${ratioTex(r)}$. ${[A, B][ki]} grows ${kv} seedlings. ${A} gives $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s seedlings to a neighbour, ${C}.` },
   { kind: 'count', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} baked cookies for a sale in the ratio $${ratioTex(r)}$. ${[A, B][ki]} baked ${kv} cookies. ${A} then gives $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s cookies to ${C} to sell on another stall.` },
   { kind: 'money', t: (A, B, C, r, kv, ki, f) => `${A} and ${B} share a quiz prize in the ratio $${ratioTex(r)}$. ${[A, B][ki]}'s share is ${kv}. ${A} donates $\\frac{${f[0]}}{${f[1]}}$ of ${A}'s share to a charity run by ${C}.` },
@@ -1299,7 +1307,8 @@ export const changeGiveFraction = gen('rat-change-give-fraction', 'rat-ratio-cha
   for (let i = 0; i < 200; i += 1) {
     const tpl = pick(rng, GIVE_CTX);
     const [a, b] = coprimePair(rng, 9);
-    const f = pick(rng, [[1, 2], [1, 3], [1, 4], [2, 5], [1, 5], [3, 4], [2, 3]]);
+    // easy: unit fractions; medium/hard: non-unit fractions
+    const f = pick(rng, d === 'easy' ? [[1, 2], [1, 3], [1, 4], [1, 5]] : [[2, 5], [3, 4], [2, 3], [3, 5], [3, 8]]);
     // A's share must be divisible by f[1]
     const unit = tpl.kind === 'money' ? 100 : 1;
     const part = int(rng, 2, 12) * f[1] * (tpl.kind === 'money' ? pick(rng, [1, 2, 5]) : 1);
@@ -1321,7 +1330,7 @@ export const changeGiveFraction = gen('rat-change-give-fraction', 'rat-ratio-cha
         solution: [
           `One part $=$ ${fmt([Av, Bv][ki])} $\\div ${[a, b][ki]} =$ ${fmt(part * unit)}, so ${A} gets ${fmt(Av)} and ${B} gets ${fmt(Bv)}.`,
           `${C} gets $\\frac{${f[0]}}{${f[1]}}$ of ${fmt(Av)} $=$ ${fmt(give)}, leaving ${A} with ${fmt(Av - give)}.`,
-          `${A} : ${B} : ${C} $= ${ratioTex(tpl.kind === 'money' ? [Av - give, Bv, give].map((v) => v / 100) : [Av - give, Bv, give])}$, which simplifies to $${ratioTex(nr)}$.`,
+          `${A} : ${B} : ${C} $= ${ratioTex(tpl.kind === 'money' ? [Av - give, Bv, give].map((v) => v / 100) : [Av - give, Bv, give])}$${(tpl.kind === 'money' ? [Av - give, Bv, give].map((v) => v / 100) : [Av - give, Bv, give]).join() !== nr.join() ? `, which simplifies to $${ratioTex(nr)}$` : ''}.`,
           `Answer: ${ratio(nr)}`,
         ],
       };
@@ -1334,7 +1343,7 @@ export const changeGiveFraction = gen('rat-change-give-fraction', 'rat-ratio-cha
       typed: { kind: 'number', value: ans / unit },
       solution: [
         `One part $=$ ${fmt([Av, Bv][ki])} $\\div ${[a, b][ki]} =$ ${fmt(part * unit)}.`,
-        `${A}'s share is ${a} parts $=$ ${fmt(Av)}.`,
+        `${A}'s share is ${a} part${a === 1 ? '' : 's'} $=$ ${fmt(Av)}.`,
         `${C} gets $\\frac{${f[0]}}{${f[1]}} \\times$ ${fmt(Av)} $=$ ${fmt(ans)}.`,
         `Answer: ${fmt(ans)}`,
       ],

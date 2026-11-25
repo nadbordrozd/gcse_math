@@ -152,7 +152,8 @@ const IMPERIAL = [
 export const convertImperial = gen('rat-convert-imperial', 'rat-unit-conversion', (rng, d) => {
   for (let i = 0; i < 200; i += 1) {
     const c = pick(rng, IMPERIAL);
-    const forward = chance(rng, 0.55); // a -> b
+    // easy: multiply by the factor; hard: work backwards (divide)
+    const forward = d === 'easy' ? true : d === 'hard' ? false : chance(rng, 0.55); // a -> b
     const ratio = c.b[0] / c.a[0]; // b-units per a-unit
     // a sensible amount in the first unit (half-units allowed when hard)
     const aVal = () => (c.vals ? c.vals(rng) : d === 'hard' && c.r[1] <= 40 ? int(rng, c.r[0] * 2, c.r[1] * 2) / 2 : int(rng, c.r[0], c.r[1]));
@@ -205,7 +206,8 @@ const CONV_WORD = [
 
 export const convertWord = gen('rat-convert-word', 'rat-unit-conversion', (rng, d) => {
   for (let i = 0; i < 200; i += 1) {
-    const c = pick(rng, CONV_WORD);
+    // easy: a single conversion; medium: convert then divide; hard: several steps or awkward units
+    const c = CONV_WORD[pick(rng, size(d, [5, 9, 6, 10, 0], [1, 2, 4, 11, 7], [3, 8, 12, 7, 4]))];
     const m = c.mk(rng);
     if (!hasDp(m.ans, 2) || m.ans <= 0) continue;
     if (m.floor && Number.isInteger(tidy((typeof m.a === 'number' ? 1 : 1) * m.ans)) && d === 'hard' && chance(rng, 0.3)) continue;
@@ -389,8 +391,8 @@ export const scaleDrawing = gen('rat-scale-drawing', 'rat-scales-maps', (rng, d)
         ],
       };
     }
-    const toReal = chance(rng, 0.55);
-    const realM = tidy(roundTo(c.real[0] + rng() * (c.real[1] - c.real[0]), 1));
+    const toReal = d === 'easy' ? true : chance(rng, 0.55);
+    const realM = tidy(roundTo(c.real[0] + rng() * (c.real[1] - c.real[0]), d === 'easy' ? 0 : 1));
     const modelCm = tidy((realM * 100) / n);
     if (!hasDp(modelCm, 1)) continue;
     const ans = toReal ? realM : modelCm;
@@ -412,7 +414,7 @@ export const scaleDrawing = gen('rat-scale-drawing', 'rat-scales-maps', (rng, d)
 
 export const scaleFind = gen('rat-scale-find', 'rat-scales-maps', (rng, d) => {
   for (let i = 0; i < 200; i += 1) {
-    const n = pick(rng, [500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000, 100000, 200000]);
+    const n = pick(rng, d === 'easy' ? [1000, 2000, 5000, 10000, 50000, 100000] : [500, 2000, 2500, 5000, 20000, 25000, 40000, 50000, 200000, 250000]);
     if (d === 'hard' && chance(rng, 0.6)) {
       // PQ = a cm, QR = b cm on drawing, real QR - PQ = diff metres
       const a = int(rng, 4, 16) / 2; const b = a + int(rng, 2, 10) / 2;
@@ -431,7 +433,7 @@ export const scaleFind = gen('rat-scale-find', 'rat-scales-maps', (rng, d) => {
         ],
       };
     }
-    const cm = int(rng, 2, 8);
+    const cm = d === 'easy' ? int(rng, 2, 4) : int(rng, 3, 9);
     const realCm = cm * n;
     const inKm = realCm >= 100000;
     const real = inKm ? realCm / 100000 : realCm / 100;
@@ -522,7 +524,7 @@ export const speedSDT = gen('rat-speed-sdt', 'rat-speed', (rng, d) => {
       calculator: d === 'hard',
       solution: [
         `Time $= \\text{distance} \\div \\text{speed} = ${tnum(dist)} \\div ${tnum(v)} = ${tnum(roundTo(tH, 3))}${hasDp(tH, 3) ? '' : '\\ldots'}$ hours.`,
-        tMin % 60 ? `Change the decimal part to minutes: $${tnum(roundTo(tH - Math.floor(tH), 3))}${hasDp(tH, 3) ? '' : '\\ldots'} \\times 60 = ${tMin % 60}$ minutes.` : `That is a whole number of hours.`,
+        ...(tMin % 60 ? [`Change the decimal part to minutes: $${tnum(roundTo(tH - Math.floor(tH), 3))}${hasDp(tH, 3) ? '' : '\\ldots'} \\times 60 = ${tMin % 60}$ minutes.`] : []),
         `Answer: ${ans}`,
       ],
     };
@@ -541,7 +543,7 @@ export const speedAverage = gen('rat-speed-average', 'rat-speed', (rng, d) => {
       if (!Number.isInteger(d1)) continue;
       const restD = totalD - d1; const restT = totalT * 60 - t1Min;
       const ans = tidy((restD / restT) * 60);
-      if (!hasDp(ans, 1) || ans <= 0) continue;
+      if (!hasDp(ans, 1) || ans < 20 || ans > 70) continue; // a sensible car speed
       const fmt = withUnit('mph');
       return {
         prompt: `${N} drives ${totalD} miles in ${totalT} hours. ${N} drives the first ${d1} miles at an average speed of ${v1} mph. Work out ${N}'s average speed for the rest of the journey.`,
@@ -568,7 +570,7 @@ export const speedAverage = gen('rat-speed-average', 'rat-speed', (rng, d) => {
     if (!hasDp(ans, 1)) continue;
     const fmt = withUnit('mph');
     return {
-      prompt: `${N} goes on a car journey. For the first ${hm(t1)} the average speed is ${v1} mph.${stop ? ` ${N} then stops for ${stop} minutes.` : ''} ${N} then drives for ${hm(t2)} at an average speed of ${v2} mph. Work out the average speed for the whole journey${stop ? ', including the stop' : ''}.`,
+      prompt: `${N} goes on a car journey. For the first ${t1 === 60 ? 'hour' : hm(t1)} the average speed is ${v1} mph.${stop ? ` ${N} then stops for ${stop} minutes.` : ''} ${N} then drives for ${hm(t2)} at an average speed of ${v2} mph. Work out the average speed for the whole journey${stop ? ', including the stop' : ''}.`,
       answer: fmt(ans),
       distractors: dvals(ans, [(v1 + v2) / 2, ((d1 + d2) / (t1 + t2)) * 60, (d1 + d2) / ((t1 + t2 + stop) / 100), v1 + v2, ((v1 * t1 + v2 * t2) / (t1 + t2))], fmt, { dp: 1, round: true }),
       typed: { kind: 'number', value: ans },
@@ -589,7 +591,7 @@ export const speedUnits = gen('rat-speed-units', 'rat-speed', (rng, d) => {
   for (let i = 0; i < 200; i += 1) {
     const type = pick(rng, size(d, ['ms2kmh', 'kmh2ms'], ['ms2kmh', 'kmh2ms', 'race'], ['race', 'mpm', 'kmh2ms']));
     if (type === 'ms2kmh') {
-      const ms = int(rng, 2, 40) * size(d, 5, 1, 1) / size(d, 5, 1, 2);
+      const ms = size(d, int(rng, 1, 8) * 5, int(rng, 2, 40), int(rng, 5, 80) / 2);
       const ans = tidy(ms * 3.6);
       if (!hasDp(ans, 2)) continue;
       return {
@@ -606,7 +608,7 @@ export const speedUnits = gen('rat-speed-units', 'rat-speed', (rng, d) => {
       };
     }
     if (type === 'kmh2ms') {
-      const ms = int(rng, 2, 40) / size(d, 1, 1, 2);
+      const ms = size(d, int(rng, 1, 6) * 5, int(rng, 2, 40), int(rng, 5, 80) / 2);
       const kmh = tidy(ms * 3.6);
       if (!hasDp(kmh, 1)) continue;
       return {
@@ -637,14 +639,15 @@ export const speedUnits = gen('rat-speed-units', 'rat-speed', (rng, d) => {
     // race: one runner given time, the other given speed in km/h
     const [A, B] = names(rng, 2);
     const dist = pick(rng, [100, 200, 400, 800]);
-    const tA = int(rng, Math.round(dist / 9), Math.round(dist / 5));
-    const vB = int(rng, 50, 110) * 0.36; // km/h equivalent to a whole/half m/s
+    // realistic school running speeds: about 4 to 7 m/s (14 to 25 km/h)
+    const tA = int(rng, Math.round(dist / 7), Math.round(dist / 4));
+    const vB = tidy(int(rng, 40, 69) * 0.36); // km/h for a speed of 4.0 to 6.9 m/s
     const msB = tidy(vB / 3.6);
     const tB = dist / msB;
     if (!hasDp(vB, 2) || Math.abs(tB - tA) < 0.3) continue;
     const win = tB < tA ? B : A;
     return {
-      prompt: `${A} and ${B} run a ${dist} m race. ${A} finishes in ${tA} seconds. ${B} runs at an average speed of ${num(vB)} km/h. Who wins the race?`,
+      prompt: `${A} and ${B} run ${dist === 800 ? 'an' : 'a'} ${dist} m race. ${A} finishes in ${tA} seconds. ${B} runs at an average speed of ${num(vB)} km/h. Who wins the race?`,
       answer: win,
       distractors: [win === A ? B : A, 'They finish at the same time'],
       count: 3,
@@ -703,7 +706,7 @@ export const densityCalc = gen('rat-density-calc', 'rat-density-pressure', (rng,
     if (!hasDp(m, 2)) continue;
     const ask = pick(rng, ['density', 'mass', 'volume']);
     // match the material to the density for real-world values
-    const NAMED = { 0.8: 'a block of pine wood', 1.2: 'a piece of plastic', 2.5: 'a glass paperweight', 7.8: 'a steel bolt', 11.3: 'a lead weight', 2.7: 'a block of aluminium', 0.6: 'a piece of oak', 19.3: 'a gold ring', 8.96: 'a copper pipe', 10.5: 'a silver bracelet', 7.87: 'an iron bar', 0.92: 'a block of ice', 13.6: 'a flask of mercury' };
+    const NAMED = { 0.8: 'a block of pine wood', 1.2: 'a piece of plastic', 2.5: 'a glass paperweight', 7.8: 'a steel block', 11.3: 'a lead weight', 2.7: 'a block of aluminium', 0.6: 'a block of oak', 19.3: 'a gold bar', 8.96: 'a copper pipe', 10.5: 'a silver bar', 7.87: 'an iron bar', 0.92: 'a block of ice', 13.6: 'a flask of mercury' };
     const material = NAMED[rho] || pick(rng, ['a piece of metal', 'a stone', 'a lump of clay', 'an ornament', 'a paperweight', 'a small statue']);
     const kgGiven = d === 'hard' && ask === 'density' && m >= 100 && hasDp(m / 1000, 3) && chance(rng, 0.6);
     if (ask === 'density') {
@@ -821,7 +824,8 @@ const DENS_WORD = [
 
 export const densityWord = gen('rat-density-word', 'rat-density-pressure', (rng, d) => {
   for (let i = 0; i < 300; i += 1) {
-    const c = pick(rng, DENS_WORD);
+    // easy: one formula step; medium: a unit or shape step; hard: kg/g or m³ conversions
+    const c = DENS_WORD[pick(rng, size(d, [2, 4, 5, 11, 12, 9], [6, 8, 10, 9, 3, 4], [0, 1, 7, 3, 8, 6]))];
     let V; let mm; let ans; let fmt; let steps;
     if (c.ask === 'pop') {
       V = int(rng, 5, 90) * pick(rng, [1, 2, 0.5]); const dens = int(rng, 80, 4000);
@@ -839,7 +843,7 @@ export const densityWord = gen('rat-density-word', 'rat-density-pressure', (rng,
       const vol = int(rng, 2, 40) / 20; mm = tidy(vol * c.si); ans = vol; fmt = withUnit('m³');
       if (!Number.isInteger(mm)) continue;
       steps = [`Volume $= \\dfrac{\\text{mass}}{\\text{density}}$.`, `$${tnum(mm)} \\div ${c.si} = ${tnum(vol)}$ m³`];
-      return { prompt: c.t(0, mm), answer: fmt(ans), distractors: dvals(ans, [mm * c.si / 1000, c.si / mm, ans * 10, ans / 10, ans * 1000], fmt, { dp: 3 }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`] };
+      return { prompt: c.t(0, mm), answer: fmt(ans), distractors: dvals(ans, [mm * c.si / 1000, c.si / mm, ans * 10, ans / 10, ans * 1000, ans * 100], fmt, { dp: 3, round: true }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`] };
     }
     V = c.ask === 'massBox' ? 20 * int(rng, 2, 15) : c.ask === 'massKg' ? int(rng, 5, 100) * 10 : int(rng, 10, 500) * size(d, 2, 1, 1);
     mm = tidy(V * c.rho);
@@ -848,7 +852,7 @@ export const densityWord = gen('rat-density-word', 'rat-density-pressure', (rng,
       ans = c.rho; fmt = withUnit('g/cm³');
       if (c.ask === 'densityKg' && !hasDp(mm / 1000, 3)) continue;
       steps = [...(c.ask === 'densityKg' ? [`Change kg to g: ${num(mm / 1000)} kg $= ${tnum(mm)}$ g.`] : []), `Density $= \\dfrac{\\text{mass}}{\\text{volume}} = ${tnum(mm)} \\div ${tnum(V)} = ${tnum(ans)}$ g/cm³`];
-      return { prompt: c.t(V, mm), answer: fmt(ans), distractors: dvals(ans, [V / mm, c.ask === 'densityKg' ? mm / 1000 / V : ans * 10, ans / 10, roundTo(ans + 0.5, 3)], fmt, { dp: 3 }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`] };
+      return { prompt: c.t(V, mm), answer: fmt(ans), distractors: dvals(ans, [V / mm, c.ask === 'densityKg' ? mm / 1000 / V : null, ans * 10, ans / 10, ans * 100, mm * V / 10000], fmt, { dp: 3, round: true }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`] };
     }
     if (c.ask === 'volume') {
       ans = V; fmt = withUnit('cm³');
@@ -859,7 +863,7 @@ export const densityWord = gen('rat-density-word', 'rat-density-pressure', (rng,
       ans = tidy(mm / 1000); fmt = withUnit('kg');
       if (!hasDp(ans, 4)) continue;
       steps = [`Mass $= \\text{density} \\times \\text{volume} = ${tnum(c.rho)} \\times ${tnum(V)} = ${tnum(mm)}$ g.`, `In kilograms: $${tnum(mm)} \\div 1000 = ${tnum(ans)}$ kg`];
-      return { prompt: c.t(V, mm), answer: fmt(ans), distractors: dvals(ans, [mm, V / c.rho / 1000, ans * 10, ans / 10, mm / 100], fmt, { dp: 3 }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`], longDecimalsOk: true };
+      return { prompt: c.t(V, mm), answer: fmt(ans), distractors: dvals(ans, [mm, V / c.rho / 1000, ans * 10, ans / 10, ans * 100, ans / 100], fmt, { dp: 3, round: true }), typed: { kind: 'number', value: ans }, calculator: true, solution: [...steps, `Answer: ${fmt(ans)}`], longDecimalsOk: true };
     }
     // mass / massBox
     ans = mm; fmt = withUnit('g');
@@ -876,7 +880,7 @@ const UNIT_Q = [
 ];
 
 export const measureChange = gen('rat-compound-measure-change', 'rat-density-pressure', (rng, d) => {
-  if (chance(rng, 0.2)) {
+  if (d !== 'hard' && chance(rng, size(d, 0.3, 0.15, 0))) {
     // which is a unit of density / pressure?
     const u = pick(rng, UNIT_Q);
     const ans = pick(rng, u.right);
@@ -972,18 +976,19 @@ const AV_WORD = [
   { t: (a, b, c) => `A water trough is a cuboid ${num(a / 100)} m long, ${b} cm wide and ${c} cm deep. How many litres does it hold?`, f: (a, b, c) => (a * b * c) / 1000, u: 'litres', how: (a, b, c) => [`Work in cm: ${num(a / 100)} m $= ${a}$ cm.`, `Volume $= ${a} \\times ${b} \\times ${c} = ${tnum(a * b * c)}$ cm³ $= ${tnum(tidy((a * b * c) / 1000))}$ litres.`], dims: [[100, 250], [30, 60], [20, 50]] },
   { t: (a, b, c) => `A skip is a cuboid ${num(a / 100)} m by ${num(b / 100)} m by ${num(c / 100)} m. What is its volume in m³?`, f: (a, b, c) => (a * b * c) / 1000000, u: 'm³', how: (a, b, c) => [`Change to metres: ${num(a / 100)} m, ${num(b / 100)} m, ${num(c / 100)} m.`, `Volume $= ${tnum(a / 100)} \\times ${tnum(b / 100)} \\times ${tnum(c / 100)} = ${tnum(tidy((a * b * c) / 1000000))}$ m³`], dims: [[150, 400], [100, 200], [50, 150]] },
   { t: (a, b) => `A floor is ${num(a / 100)} m by ${num(b / 100)} m. Square tiles of side ${'50'} cm are used to cover it. How many tiles are needed?`, f: (a, b) => (a * b) / 2500, u: 'tiles', how: (a, b) => [`Each tile covers $50 \\times 50 = 2500$ cm². The floor is $${a} \\times ${b} = ${tnum(a * b)}$ cm².`, `$${tnum(a * b)} \\div 2500 = ${tnum(tidy((a * b) / 2500))}$ tiles (or $${a / 50} \\times ${b / 50}$).`], dims: [[200, 800], [200, 600]], mult: 50 },
-  { t: (a, b) => `A lawn measures ${a} m by ${b} m. A bag of grass seed covers 25 m². How many bags are needed?`, f: (a, b) => Math.ceil((a * b) / 25), u: 'bags', how: (a, b) => [`Area $= ${a} \\times ${b} = ${a * b}$ m².`, `$${a * b} \\div 25 = ${tnum(roundTo((a * b) / 25, 2))}$, so round <b>up</b> to ${Math.ceil((a * b) / 25)} bags.`], dims: [[6, 20], [5, 15]], ceil: true },
+  { t: (a, b) => `A lawn measures ${a} m by ${b} m. A bag of grass seed covers 25 m². How many bags are needed?`, f: (a, b) => Math.ceil((a * b) / 25), u: 'bags', how: (a, b) => [`Area $= ${a} \\times ${b} = ${a * b}$ m².`, `$${a * b} \\div 25 = ${tnum(roundTo((a * b) / 25, 2))}$${(a * b) % 25 ? `, so round <b>up</b> to ${Math.ceil((a * b) / 25)} bags (a part-bag is not enough)` : ' bags'}.`], dims: [[6, 20], [5, 15]], ceil: true },
   { t: (a, b, c) => `A carton of juice is a cuboid ${a} cm by ${b} cm by ${c} cm. How many millilitres does it hold?`, f: (a, b, c) => a * b * c, u: 'ml', how: (a, b, c) => [`Volume $= ${a} \\times ${b} \\times ${c} = ${a * b * c}$ cm³.`, `$1$ cm³ $= 1$ ml, so it holds ${num(a * b * c)} ml.`], dims: [[5, 10], [4, 8], [10, 20]] },
   { t: (a, b) => `A field has an area of ${num(a * b)} m². What is its area in hectares? (1 hectare $= 10\\,000$ m²)`, f: (a, b) => (a * b) / 10000, u: 'hectares', how: (a, b) => [`Divide by $10\\,000$: $${tnum(a * b)} \\div 10\\,000 = ${tnum(tidy((a * b) / 10000))}$`], dims: [[100, 500], [80, 400]] },
   { t: (a, b, c) => `A swimming pool is ${a} m long, ${b} m wide and ${num(c / 10)} m deep. How many litres of water does it hold? (1 m³ $= 1000$ litres)`, f: (a, b, c) => (a * b * c * 1000) / 10, u: 'litres', how: (a, b, c) => [`Volume $= ${a} \\times ${b} \\times ${tnum(c / 10)} = ${tnum(tidy((a * b * c) / 10))}$ m³.`, `$\\times 1000$: $${tnum(tidy((a * b * c * 1000) / 10))}$ litres`], dims: [[10, 25], [5, 12], [10, 20]] },
-  { mult: 10, t: (a, b) => `A wall is ${num(a / 100)} m by ${num(b / 100)} m. One tin of paint covers 12 m². How many tins are needed to give the wall one coat?`, f: (a, b) => Math.ceil((a * b) / 120000), u: 'tins', how: (a, b) => [`Area $= ${tnum(a / 100)} \\times ${tnum(b / 100)} = ${tnum(tidy((a * b) / 10000))}$ m².`, `$${tnum(tidy((a * b) / 10000))} \\div 12 = ${tnum(roundTo((a * b) / 120000, 2))}$, so round up to ${Math.ceil((a * b) / 120000)} tins.`], dims: [[300, 1200], [200, 400]], ceil: true },
+  { mult: 10, t: (a, b) => `A wall is ${num(a / 100)} m by ${num(b / 100)} m. One tin of paint covers 12 m². How many tins are needed to give the wall one coat?`, f: (a, b) => Math.ceil((a * b) / 120000), u: 'tins', how: (a, b) => [`Area $= ${tnum(a / 100)} \\times ${tnum(b / 100)} = ${tnum(tidy((a * b) / 10000))}$ m².`, `$${tnum(tidy((a * b) / 10000))} \\div 12 = ${tnum(roundTo((a * b) / 120000, 2))}$${(a * b) % 120000 ? `, so round <b>up</b> to ${Math.ceil((a * b) / 120000)} tins` : ' tins'}.`], dims: [[300, 1200], [200, 400]], ceil: true },
   { t: (a, b, c) => `A box of sand is ${a} cm by ${b} cm by ${c} cm. What is the volume of sand in m³?`, f: (a, b, c) => (a * b * c) / 1000000, u: 'm³', how: (a, b, c) => [`Volume $= ${a} \\times ${b} \\times ${c} = ${tnum(a * b * c)}$ cm³.`, `$1$ m³ $= 100^3 = 1\\,000\\,000$ cm³, so divide: $${tnum(tidy((a * b * c) / 1000000))}$ m³`], dims: [[50, 200], [50, 150], [20, 100]] },
   { t: (a, b) => `A photo measures ${a} mm by ${b} mm. What is its area in cm²?`, f: (a, b) => (a * b) / 100, u: 'cm²', how: (a, b) => [`In cm the photo is ${num(a / 10)} cm by ${num(b / 10)} cm.`, `Area $= ${tnum(a / 10)} \\times ${tnum(b / 10)} = ${tnum(tidy((a * b) / 100))}$ cm²`], dims: [[60, 200], [40, 150]] },
 ];
 
 export const avWord = gen('rat-av-units-word', 'rat-area-volume-units', (rng, d) => {
   for (let i = 0; i < 300; i += 1) {
-    const c = pick(rng, AV_WORD);
+    // easy: one conversion; medium: volume/area then convert; hard: mixed units or rounding up
+    const c = AV_WORD[pick(rng, size(d, [1, 6, 7, 11, 0], [0, 4, 5, 3, 10], [2, 8, 9, 10, 3]))];
     const m = c.mult || pick(rng, [5, 10]);
     const dims = c.dims.map(([lo, hi]) => int(rng, Math.ceil(lo / m), Math.floor(hi / m)) * m);
     const ans = tidy(c.f(...dims));
@@ -1052,8 +1057,10 @@ function avStatement(rng, d) {
 
 export const avStatements = gen('rat-av-statements', 'rat-area-volume-units', (rng, d) => {
   const r = rng();
-  if (r < 0.3) return avStatement(rng, d);
-  return r < 0.65 ? avEqual(rng, d, AREA_PAIRS, 2) : avEqual(rng, d, VOL_PAIRS, 3);
+  // easy: mostly the facts; medium: area values; hard: volume values
+  if (d === 'easy') return r < 0.7 ? avStatement(rng, d) : avEqual(rng, d, AREA_PAIRS, 2);
+  if (d === 'medium') return r < 0.7 ? avEqual(rng, d, AREA_PAIRS, 2) : avStatement(rng, d);
+  return r < 0.75 ? avEqual(rng, d, VOL_PAIRS, 3) : avEqual(rng, d, AREA_PAIRS, 2);
 }, { title: 'Which area/volume value or conversion fact is correct?' });
 
 // Converting compound units (density, pressure, flow, fuel use, population density).
@@ -1109,9 +1116,10 @@ const CUC = [
 
 export const compoundUnitConvert = gen('rat-compound-unit-convert', 'rat-area-volume-units', (rng, d) => {
   for (let i = 0; i < 100; i += 1) {
-    const c = pick(rng, CUC)(rng);
+    // easy: density / population density; medium: flow and speed; hard: psi, fuel use, paper weight
+    const c = CUC[pick(rng, size(d, [0, 4, 2], [2, 5, 6, 0], [1, 3, 6, 5]))](rng);
     if (!c || !hasDp(c.ans, 3)) continue;
-    const fmt = withUnit(c.unit);
+    const fmt = c.tol ? (v) => `${num(v, 2)} ${c.unit}` : withUnit(c.unit);
     return {
       prompt: c.prompt,
       answer: fmt(c.ans),
