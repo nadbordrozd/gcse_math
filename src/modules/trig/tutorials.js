@@ -17,7 +17,7 @@ function rightTriangle({ hyp = 'hypotenuse', opp = 'opposite', adj = 'adjacent',
   return svg(400, 230, polygon([A, B, C])
     + rightAngleMark(A, B, C)
     + angleMark(B, A, C, { r: 34, label: angle, labelR: 52 })
-    + sideLabel(B, C, hyp, mid, { color: colours ? ACCENT : 'currentColor', offset: 18 })
+    + sideLabel(B, C, hyp, mid, { color: colours ? ACCENT : 'currentColor', offset: 30 })
     + sideLabel(C, A, opp, mid, { color: colours ? ACCENT2 : 'currentColor', offset: 14 })
     + sideLabel(A, B, adj, mid, { offset: 16 }), { maxWidth: 400, label: 'Right-angled triangle with sides labelled' });
 }
