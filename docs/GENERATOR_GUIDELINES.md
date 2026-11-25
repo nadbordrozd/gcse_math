@@ -82,7 +82,9 @@ student type the answer instead of choosing (used in "type answers" mode and in 
 
 - `{ kind: 'number', value: 13 }` – accepts `13`, `13 cm`, `13.0`. `value` may be a `Frac`.
   For rounded answers add `tolerance` (e.g. `0.05` for 1 dp) – accept anything that rounds correctly.
-  For percentages give the percentage number (`value: 35` for 35%).
+  For percentages give the percentage number and `percent: true` (`value: 35` for 35%).
+  When the question asks for a particular form, add `form: 'simplest' | 'improper' | 'mixed'` so that an
+  equivalent but unsimplified answer (e.g. `6/8` for `3/4`, `7/6` when a mixed number is asked for) is marked wrong.
 - `{ kind: 'coord', x: 2, y: -3 }` – accepts `(2, -3)` and `x = 2, y = -3`; optional `tolerance`.
 - `{ kind: 'list', values: [2, -5] }` – e.g. two solutions of a quadratic, any order; optional `tolerance` for rounded values.
 - `{ kind: 'text', accept: ['3x(x+2)', '3x(2+x)'] }` – only for short algebraic answers where you can list

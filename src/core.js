@@ -393,6 +393,29 @@ export function parseTypedNumber(input) {
 }
 
 /**
+ * Does the typed text have the requested form? form: 'simplest' (fraction or mixed number in lowest
+ * terms; integers as integers), 'improper' (a/b in lowest terms), 'mixed' (w a/b in lowest terms,
+ * or a proper fraction below 1). Decimals are rejected for non-integer answers.
+ */
+function typedFormOk(form, raw, value) {
+  const t = String(raw).trim().replace(/[−–]/g, '-').replace(/\s+/g, ' ');
+  const target = value instanceof Frac ? value : null;
+  const isInt = target ? target.isInt : Number.isInteger(Number(value));
+  if (isInt) return /^-?\d+$/.test(t.replace(/,/g, ''));
+  let m;
+  if ((m = t.match(/^-?(\d+) (\d+) ?\/ ?(\d+)$/))) {
+    const [, , a, b] = m.map(Number);
+    return form !== 'improper' && a < b && gcd(a, b) === 1;
+  }
+  if ((m = t.match(/^-?(\d+) ?\/ ?(\d+)$/))) {
+    const [, a, b] = m.map(Number);
+    if (gcd(a, b) !== 1 || b === 1) return false;
+    return form !== 'mixed' || a < b;
+  }
+  return false;
+}
+
+/**
  * Check a typed answer against a typed spec.
  * spec.kind: 'number' {value, tolerance?, percent?} | 'coord' {x, y} | 'text' {accept: [...]} | 'list' {values: [...] (any order)}
  */
@@ -403,6 +426,7 @@ export function checkTyped(spec, input) {
   if (spec.kind === 'number') {
     const p = parseTypedNumber(raw);
     if (!p) return false;
+    if (spec.form && !typedFormOk(spec.form, raw, spec.value)) return false;
     let target = spec.value instanceof Frac ? spec.value.value() : Number(spec.value);
     let got = p.value;
     if (p.percent && !spec.percent) got /= 100;

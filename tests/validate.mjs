@@ -117,7 +117,9 @@ for (const g of selected) {
           if (!Number.isFinite(tv)) bad('typed value not finite');
           else if (pv && Math.abs(pv.value - tv) > (q.typed.tolerance ?? 1e-6) + 1e-9 && !(pv.unit === '' && Math.abs(pv.value * 100 - tv) < 1e-6)) bad(`typed value ${tv} disagrees with answer ${q.answerText}`);
           // The typed checker must accept the canonical value itself.
-          if (!checkTyped(q.typed, String(tv))) bad(`checkTyped rejects its own value ${tv}`);
+          const canonical = q.typed.form && typeof q.typed.value === 'object' ? q.typed.value.text({ mixed: q.typed.form === 'mixed' }) : String(tv);
+          if (!checkTyped(q.typed, canonical)) bad(`checkTyped rejects its own value ${canonical}`);
+          if (q.typed.form && typeof q.typed.value !== 'object' && !Number.isInteger(tv)) bad('typed.form needs typed.value to be a Frac');
         } else if (q.typed.kind === 'coord') {
           if (!checkTyped(q.typed, `(${q.typed.x}, ${q.typed.y})`)) bad('coord typed spec rejects itself');
         } else if (q.typed.kind === 'list') {
