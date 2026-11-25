@@ -1,6 +1,6 @@
 // Learn pages: coordinates and straight lines. See docs/TUTORIAL_GUIDELINES.md.
 import { h, p, list, steps, key, display, note, mistake, figure, example, tbl } from '../../tutorial-kit.js';
-import { coordGrid, lineLabel, halo } from './diagrams.js';
+import { coordGrid, chart, lineLabel, halo } from './diagrams.js';
 import { ACCENT, ACCENT2 } from '../../svg.js';
 
 /* Diagrams ---------------------------------------------------------- */
@@ -44,6 +44,19 @@ function parallelPerpFigure() {
     + lineLabel(c, -0.5, 1, 'y = −½x + 1', { color: ACCENT2, at: 0.12 }));
 }
 
+function lineGraphFigure() {
+  // y = -3/2 x + 4, through (0, 4) and (2, 1)
+  const c = coordGrid({ xmin: -3, xmax: 5, ymin: -4, ymax: 7, unit: 24 });
+  const tri = c.poly([[0, 4], [2, 4], [2, 1]], { color: ACCENT2, width: 2, dash: '6 4' });
+  return c.wrap(c.lineEq(-1.5, 4) + tri + c.point(0, 4) + c.point(2, 1)
+    + halo(c.X(1.35), c.Y(4) - 12, 'run = 2', { size: 13, color: ACCENT2 }) + halo(c.X(2) + 40, c.Y(2.5), 'rise = −3', { size: 13, color: ACCENT2 }));
+}
+function scaleFigure() {
+  // x: 1 unit per square; y: 5 units per square. Line through (0, 5) and (4, 25).
+  const c = chart({ xmin: 0, xmax: 5, ymin: 0, ymax: 30, xstep: 1, ystep: 5, w: 200, h: 240, zeroAxes: true });
+  return c.wrap(c.lineEq(5, 5) + c.point(0, 5) + c.point(4, 25));
+}
+
 /* Pages ------------------------------------------------------------- */
 
 export const lineTutorials = [
@@ -76,6 +89,17 @@ export const lineTutorials = [
         'A$(-2, -1)$, B$(2, -1)$ and C$(4, 2)$ are three corners of parallelogram ABCD. Find D.',
         ['From B to A: 4 left, 0 up.', 'From C, go 4 left: D $= (4 - 4, 2) = (0, 2)$.', 'Check: from A to D is 2 right and 3 up – the same as from B to C ✓'],
         '$(0, 2)$'),
+      example('Example 4 – a kite',
+        'A$(0, 5)$, B$(2, 3)$ and C$(0, -2)$ are three corners of kite ABCD. Find D.',
+        ['A kite is not a parallelogram, so the "same move" trick does not work.', 'A kite has a line of symmetry through A and C – here the $y$-axis. D is the reflection of B in that line.', 'B is $2$ to the right of the line, so D is $2$ to the left, at the same height: D $= (-2, 3)$.'],
+        '$(-2, 3)$'),
+      h('Part of the way along a line'),
+      p('To find the point a fraction of the way from A to B, find how much $x$ and $y$ change from A to B, take that fraction of each change, and add the results to A.'),
+      example('Example 5 – a quarter of the way',
+        'A is $(-4, 3)$ and B is $(-8, 7)$. Find the point Q that is $\\frac{1}{4}$ of the way from A to B.',
+        ['From A to B, $x$ changes by $-8 - (-4) = -4$ and $y$ changes by $7 - 3 = 4$.', '$\\frac{1}{4}$ of each: $-1$ and $1$.', 'Q $= (-4 - 1, 3 + 1) = (-5, 4)$.'],
+        '$(-5, 4)$'),
+      p('Halfway is the special case $\\frac{1}{2}$: see [[gr-midpoint]].'),
       mistake('writing the coordinates the wrong way round. $(3, -2)$ and $(-2, 3)$ are different points.'),
       note('Go round the letters of a shape in order: in ABCD, D joins on to C and to A.'),
       h('What next?'),
@@ -123,7 +147,7 @@ export const lineTutorials = [
     id: 'gr-table-plot',
     title: 'Plotting straight-line graphs',
     skills: ['gr-table-plot'],
-    prereqs: ['gr-coordinates', 'alg-substitution'],
+    prereqs: ['gr-coordinates', 'alg-substitution', 'alg-rearrange-simple'],
     summary: 'Complete a table of values, plot a straight line, and decide whether a point lies on a line.',
     body: [
       h('The big idea'),
@@ -149,6 +173,7 @@ export const lineTutorials = [
         'Is the point $(-5, -6)$ above, below or on the line $y = 3x + 7$?',
         ['On the line, when $x = -5$: $y = 3 \\times (-5) + 7 = -8$.', 'The point has $y = -6$, which is bigger than $-8$.'],
         'above the line'),
+      note('If the equation is not in the form $y = \\dots$, [[alg-rearrange-simple|rearrange]] it first. For example, $3y = 3x + 27$ becomes $y = x + 9$ (divide everything by $3$). Then $(1, 8)$ is <b>below</b> it, because on the line $y = 1 + 9 = 10$.'),
       mistake('getting the sign wrong with negative $x$. $2 \\times (-2) = -4$, and $(-2)^2 = 4$.'),
       note('Plot at least three points. Two points always make a line, so a third one is your check.'),
       h('What next?'),
@@ -214,11 +239,16 @@ export const lineTutorials = [
         'Where does $2x + 3y = 12$ cross the axes?',
         ['On the $x$-axis, $y = 0$: $2x = 12$, so $x = 6$, giving $(6, 0)$.', 'On the $y$-axis, $x = 0$: $3y = 12$, so $y = 4$, giving $(0, 4)$.'],
         '$(6, 0)$ and $(0, 4)$'),
+      h('Gradient from a graph'),
       steps([
-        'From a graph: pick two points where the line crosses grid lines exactly, far apart.',
+        'Pick two points where the line crosses grid lines exactly, far apart.',
         'Count the rise (up is positive, down is negative) and the run, <b>using the numbers on the axes</b>.',
         'Divide rise by run. Check the sign: sloping down means negative.',
       ]),
+      example('Example 4 – different scales',
+        'Find the gradient of the line shown. Each square across is $1$; each square up is $5$.',
+        ['Two clear points: $(0, 5)$ and $(4, 25)$.', 'Rise $= 25 - 5 = 20$ (read the axis numbers – it is 4 squares, but each square is 5). Run $= 4 - 0 = 4$.', 'Gradient $= 20 \\div 4 = 5$. Counting squares would wrongly give $4 \\div 4 = 1$.'],
+        '$5$', { visual: scaleFigure() }),
       mistake('dividing run by rise. Gradient is "up over across": $\\frac{\\text{change in } y}{\\text{change in } x}$.'),
       mistake('reading the gradient from $2y = 6x + 8$ as $6$. You must get $y$ on its own first: [[alg-rearrange-simple|rearrange]].'),
       note('If the two axes have different scales, counting squares gives the wrong gradient. Always use the axis numbers.'),
@@ -257,7 +287,10 @@ export const lineTutorials = [
         'Does the point $(10, 31)$ lie on the line $y = 3x + 1$?',
         ['$3 \\times 10 + 1 = 31$, which is the $y$-coordinate of the point.'],
         'yes'),
-      p('From a graph, read $c$ where the line crosses the $y$-axis, and find $m$ from two clear points (see [[gr-gradient-intercept]]).'),
+      example('Example 5 – from a graph',
+        'Find the equation of the line shown.',
+        ['It crosses the $y$-axis at $4$, so $c = 4$.', 'Two clear points: $(0, 4)$ and $(2, 1)$. Run $= 2$, rise $= 1 - 4 = -3$ (it goes <b>down</b>).', 'Gradient $= \\dfrac{-3}{2} = -\\dfrac{3}{2}$ (see [[gr-gradient-intercept]]).'],
+        '$y = -\\frac{3}{2}x + 4$', { visual: lineGraphFigure() }),
       mistake('using the point\'s $y$-coordinate as $c$. $c$ is the $y$-value where $x = 0$, which is only the same if the point is on the $y$-axis.'),
       note('Keep fractions as fractions until the end. $-\\frac{2}{3}$ is exact; $-0.67$ is not.'),
       h('What next?'),

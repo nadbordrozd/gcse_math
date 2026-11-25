@@ -38,7 +38,7 @@ function twoLinesFigure() {
 function quadLineFigure() {
   const c = coordGrid({ xmin: -3, xmax: 5, ymin: -5, ymax: 7, unit: 22 });
   return c.wrap(c.curve((x) => x * x - 2 * x - 3) + c.lineEq(1, 1, { color: ACCENT2 }) + c.point(-1, 0) + c.point(4, 5)
-    + halo(c.X(-1.6), c.Y(-2.2), 'y = x + 1', { size: 14, color: ACCENT2 }) + c.smartLabel(-1, 0, '(−1, 0)') + c.smartLabel(4, 5, '(4, 5)'));
+    + halo(c.X(1.8), c.Y(4.2), 'y = x + 1', { size: 14, color: ACCENT2 }) + halo(c.X(-2.1), c.Y(0.45), '(−1, 0)', { size: 14 }) + c.smartLabel(4, 5, '(4, 5)'));
 }
 function regionFigure() {
   const qs = [ineq('x', { k: 1 }, '>='), ineq('y', { k: -1 }, '>'), ineq('sum', { p: 1, q: 1, k: 4 }, '<=')];
@@ -46,9 +46,11 @@ function regionFigure() {
   for (const q of qs) poly = clipHalf(poly, q);
   return regionVisual(qs, poly);
 }
-function trigFigure(f, { tan = false } = {}) {
-  const c = tan ? trigChart({ tan: true, ymin: -4, ymax: 4, ystep: 1 }) : trigChart({});
-  return c.wrap(c.curve(f, { samples: 720 }));
+function trigFigure(f, { tan = false, xmin = 0, xmax = 360 } = {}) {
+  const c = tan ? trigChart({ tan: true, ymin: -4, ymax: 4, ystep: 1, xmin, xmax }) : trigChart({ xmin, xmax });
+  // tan: dashed vertical asymptotes at 90° and 270°
+  const asym = tan ? [90, 270].map((a) => c.seg([a, -4], [a, 4], { color: ACCENT2, width: 1.4, dash: '5 4' })).join('') : '';
+  return c.wrap(asym + c.curve(f, { samples: 720 }));
 }
 function circleFigure() {
   const c = coordGrid({ xmin: -6, xmax: 6, ymin: -6, ymax: 6, unit: 22 });
@@ -63,7 +65,7 @@ function tangentFigure() {
   const r = Math.sqrt(80);
   const circ = c.curve((x) => Math.sqrt(Math.max(0, 80 - x * x)), { from: -r, to: r, samples: 300 }) + c.curve((x) => -Math.sqrt(Math.max(0, 80 - x * x)), { from: -r, to: r, samples: 300 });
   return c.wrap(circ + c.seg([0, 0], [4, 8], { color: ACCENT2, width: 2 }) + c.lineEq(-0.5, 10, { color: ACCENT2 }) + c.point(4, 8) + c.point(20, 0)
-    + c.smartLabel(4, 8, 'P(4, 8)') + c.smartLabel(20, 0, '(20, 0)'));
+    + c.smartLabel(4, 8, 'P(4, 8)') + halo(c.X(20), c.Y(0) + 30, '(20, 0)', { size: 14 }));
 }
 const F_PTS = [[-3, 0], [-1, 3], [1, 1], [2, 2]];
 function transFigure(kind) {
@@ -72,7 +74,7 @@ function transFigure(kind) {
   const lab = kind === 'up' ? 'y = f(x) + 2' : 'y = f(x − 3)';
   const end = img[img.length - 1];
   return c.wrap(c.poly(F_PTS) + c.poly(img, { color: ACCENT2, dash: '7 5' }) + c.point(-1, 3) + c.point(...img[1], null, { color: ACCENT2 })
-    + c.smartLabel(-3, 0, 'y = f(x)', { color: ACCENT, size: 13 })
+    + halo(c.X(-3.8), c.Y(1.4), 'y = f(x)', { color: ACCENT, size: 13 })
     + (kind === 'up' ? c.smartLabel(...end, lab, { color: ACCENT2, size: 13 }) : halo(c.X(4.6), c.Y(3.9), lab, { color: ACCENT2, size: 13 })));
 }
 
@@ -98,7 +100,7 @@ export const curveTutorials = [
         '<b>Roots</b>: where the curve crosses the $x$-axis. They are the solutions of $x^2 - 2x - 3 = 0$: here $x = -1$ and $x = 3$.',
         '<b>$y$-intercept</b>: where it crosses the $y$-axis – put $x = 0$. Here $(0, -3)$.',
         '<b>Line of symmetry</b>: a vertical line halfway between the roots. Here $x = \\frac{-1 + 3}{2} = 1$.',
-        '<b>Turning point</b> (minimum or maximum): on the line of symmetry. Here $(1, -4)$.',
+        '<b>Turning point</b> (minimum or maximum): on the line of symmetry. Here $x = 1$; substitute it: $1^2 - 2 \\times 1 - 3 = -4$, so the turning point is $(1, -4)$.',
       ])),
       p('The roots match the factorised form: $x^2 - 2x - 3 = (x + 1)(x - 3)$, which is zero when $x = -1$ or $x = 3$ (see [[alg-solve-quad-factorising]]).'),
       example('Example 1 – solving with the graph',
@@ -230,7 +232,7 @@ export const curveTutorials = [
       mistake('shading the wrong side of a sloping line. Always use a test point rather than guessing "above" or "below".'),
       note('To draw a line like $x + y = 4$, find where it meets the axes: $(4, 0)$ and $(0, 4)$. For lines like $y = 2x - 1$, use the gradient and intercept (see [[gr-gradient-intercept]]).'),
       h('What next?'),
-      p('Solving single inequalities with algebra is covered in [[alg-solve-inequalities]].'),
+      p('Where graphs cross is just as useful: see [[gr-graphical-solutions]]. Regions also appear with curves, such as the inside of a [[gr-circle-equation|circle]].'),
     ].join(''),
   },
   {
@@ -245,7 +247,9 @@ export const curveTutorials = [
         'You know $\\sin$, $\\cos$ and $\\tan$ from [[trig-sohcahtoa-side|right-angled triangles]]. Your calculator gives values for any angle, even $200^\\circ$ or $-90^\\circ$. Plotting $y = \\sin x$ for lots of angles gives a smooth wave that repeats every $360^\\circ$.',
       ),
       columns(figure(trigFigure(S), '$y = \\sin x$'), figure(trigFigure(C), '$y = \\cos x$')),
-      figure(trigFigure(Tn, { tan: true }), '$y = \\tan x$'),
+      figure(trigFigure(Tn, { tan: true }), '$y = \\tan x$, with its asymptotes dashed'),
+      p('The graphs carry on in the same pattern for angles below $0^\\circ$ and above $360^\\circ$. Here is $y = \\sin x$ from $-360^\\circ$ to $360^\\circ$: the part from $-360^\\circ$ to $0^\\circ$ is an exact copy of the part from $0^\\circ$ to $360^\\circ$.'),
+      figure(trigFigure(S, { xmin: -360, xmax: 360 }), '$y = \\sin x$ for $-360^\\circ \\leqslant x \\leqslant 360^\\circ$'),
       key('Key facts', list([
         '$y = \\sin x$: starts at $0$, maximum $1$ at $90^\\circ$, $0$ at $180^\\circ$, minimum $-1$ at $270^\\circ$, back to $0$ at $360^\\circ$.',
         '$y = \\cos x$: starts at $1$, $0$ at $90^\\circ$, minimum $-1$ at $180^\\circ$, $0$ at $270^\\circ$, $1$ at $360^\\circ$.',
@@ -270,12 +274,13 @@ export const curveTutorials = [
         '$300^\\circ$'),
       example('Example 3 – a negative value',
         'Solve $\\sin x = -0.5$ for $0^\\circ \\leqslant x \\leqslant 360^\\circ$.',
-        ['$\\sin 30^\\circ = 0.5$. The graph is below the axis between $180^\\circ$ and $360^\\circ$.', 'By symmetry the solutions are $180^\\circ + 30^\\circ = 210^\\circ$ and $360^\\circ - 30^\\circ = 330^\\circ$.', 'Check on a calculator: $\\sin 210^\\circ = -0.5$ ✓'],
+        ['The calculator gives $\\sin^{-1}(-0.5) = -30^\\circ$, which is outside the range.', 'Use the table: the other solution is $180^\\circ - (-30^\\circ) = 210^\\circ$.', 'The wave repeats every $360^\\circ$, so $-30^\\circ + 360^\\circ = 330^\\circ$ is also a solution.', 'Check on a calculator: $\\sin 210^\\circ = \\sin 330^\\circ = -0.5$ ✓'],
         '$210^\\circ$ and $330^\\circ$'),
-      example('Example 4 – stretched graphs',
-        'What is the maximum value of $y = 3\\sin x$?',
-        ['$\\sin x$ is at most $1$, so $3\\sin x$ is at most $3$.'],
-        '$3$'),
+      example('Example 4 – stretched and shifted graphs',
+        'What is the maximum value of $y = 3\\sin x$? What is the minimum value of $y = 5\\cos x - 1$?',
+        ['$\\sin x$ is at most $1$, so $3\\sin x$ is at most $3$.', '$\\cos x$ goes from $-1$ to $1$, so $5\\cos x$ goes from $-5$ to $5$.', 'Subtracting $1$ moves everything down: $5\\cos x - 1$ goes from $-6$ to $4$.'],
+        'maximum $3$; minimum $-6$'),
+      note('If an answer is outside the range you want, add or subtract $360^\\circ$ (for $\\tan$, $180^\\circ$) until it is inside.'),
       mistake('stopping after the calculator\'s answer. $\\sin^{-1}(0.5)$ gives only $30^\\circ$; the graph shows there is a second solution.'),
       note('Sketch the graph quickly before answering. It takes ten seconds and shows how many solutions there are.'),
       h('What next?'),
@@ -317,6 +322,10 @@ export const curveTutorials = [
         'Is $(5, -1)$ inside, outside or on the circle $x^2 + y^2 = 26$?',
         ['$5^2 + (-1)^2 = 25 + 1 = 26$, which equals $r^2$.'],
         'on the circle'),
+      example('Example 5 – surds',
+        'Find the radius of $x^2 + y^2 = 98$ in its simplest form. Find the equation of the circle with centre $(0, 0)$ and radius $4\\sqrt{3}$.',
+        ['$r = \\sqrt{98} = \\sqrt{49 \\times 2} = 7\\sqrt{2}$ ([[num-surds-simplify|simplifying surds]]).', '$r^2 = (4\\sqrt{3})^2 = 4^2 \\times 3 = 16 \\times 3 = 48$, so the equation is $x^2 + y^2 = 48$.'],
+        '$r = 7\\sqrt{2}$; $x^2 + y^2 = 48$'),
       mistake('giving $r = 64$ for $x^2 + y^2 = 64$. Square-root it: $r = 8$.'),
       note('If $x^2 + y^2$ is less than $r^2$ the point is inside the circle; if it is more, the point is outside.'),
       h('What next?'),

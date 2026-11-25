@@ -641,7 +641,7 @@ const deg = (v) => `${v}^\\circ`;
 export function trigChart({ tan = false, ymin = -1.5, ymax = 1.5, ystep = 0.5, xmax = 360, xmin = 0 } = {}) {
   const c = chart({
     xmin, xmax, ymin, ymax, xstep: 30, ystep, xlabelEvery: xmax - xmin > 400 ? 6 : 3, ylabelIf: (y) => Math.abs(y - Math.round(y)) < 1e-9, w: 380, h: tan ? 260 : 180,
-    zeroAxes: true, fontSize: 12.5, fmtX: (v) => `${v}°`, padL: 34, padR: 30,
+    zeroAxes: true, fontSize: 12.5, fmtX: (v) => `${String(v).replace('-', '−')}°`, padL: 34, padR: 30,
   });
   return c;
 }
@@ -848,7 +848,7 @@ export const circleRadius = G('gr-circle-radius', 'gr-circle-equation', (rng, d)
       `Answer: ${ans}`,
     ],
   };
-}, { title: 'Radius and diameter from x² + y² = r²' });
+}, { title: 'Radius and diameter from x² + y² = r²', learn: ['gr-circle-equation', 'num-surds-simplify'] });
 
 export const circleEquation = G('gr-circle-equation-find', 'gr-circle-equation', (rng, d) => {
   const [a0, b0] = pick(rng, d === 'easy' ? [[3, 4], [4, 3], [6, 8], [8, 6], [5, 12], [0, 5], [0, 7], [6, 0]] : PYTH);
@@ -910,7 +910,7 @@ export const circleEquation = G('gr-circle-equation-find', 'gr-circle-equation',
       `Answer: ${ans}`,
     ],
   };
-}, { title: 'Find the equation of a circle' });
+}, { title: 'Find the equation of a circle', learn: ['gr-circle-equation', 'num-surds-simplify'] });
 
 function tangentData(rng, d) {
   const [a0, b0] = pick(rng, PYTH.filter(([a, b]) => a !== 0 && b !== 0));

@@ -271,7 +271,7 @@ export const tttPattern = G('seq-ttt-pattern', 'seq-term-to-term', (rng, d) => {
       `Answer: $${ans}$ ${thing}`,
     ],
   };
-}, { title: 'Pattern sequences (matchsticks and tiles)' });
+}, { title: 'Pattern sequences (matchsticks and tiles)', learn: ['seq-term-to-term', 'seq-linear-nth-term'] });
 
 /* ================================================================== */
 /* seq-nth-term-use                                                    */
@@ -623,7 +623,7 @@ export const linTwoTerms = G('seq-lin-two-terms', 'seq-linear-nth-term', (rng, d
       `Answer: ${ans}`,
     ],
   };
-}, { title: 'nth term from two terms / combined sequences' });
+}, { title: 'nth term from two terms / combined sequences', learn: ['seq-linear-nth-term', 'alg-simultaneous-linear'] });
 
 /* ================================================================== */
 /* seq-special                                                         */
@@ -1146,7 +1146,7 @@ export const quadPartial = G('seq-quad-partial', 'seq-quadratic-nth-term', (rng,
       `Answer: $${qTex(a, b, c)}$`,
     ],
   };
-}, { title: 'Quadratic sequences from partial information' });
+}, { title: 'Quadratic sequences from partial information', learn: ['seq-quadratic-nth-term', 'alg-solve-quad-factorising'] });
 
 export const sequenceGenerators = [
   tttNext, tttRule, tttTwoStep, tttPattern,
