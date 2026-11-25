@@ -381,7 +381,7 @@ export const indReverse = gen('prob-tree-ind-reverse', 'prob-tree-independent', 
     typed: typedP(ans, 'dec'),
     solution: ['The events are independent, so the probability of a path is the product of its branches. Write an equation.', ...working, `Answer: $${tnum(ans.value())}$`],
   };
-}, { title: 'Work backwards from P(A and B)' });
+}, { title: 'Work backwards from P(A and B)', learn: ['prob-tree-independent', 'alg-solve-one-two-step'] });
 
 /* ================================================================== */
 /* Dependent events (without replacement)                              */
@@ -666,7 +666,7 @@ export const depAlgebra = gen('prob-dep-algebra', 'prob-tree-dependent', (rng, d
       `Answer: ${num(N)}`,
     ],
   };
-}, { title: 'Without replacement with an unknown (forming an equation)' });
+}, { title: 'Without replacement with an unknown (forming an equation)', learn: ['prob-tree-dependent', 'alg-solve-quad-factorising'] });
 
 export const depThree = gen('prob-dep-three', 'prob-tree-dependent', (rng, d) => {
   const ctx = pick(rng, DEP_CTX.filter((c) => !c.person));

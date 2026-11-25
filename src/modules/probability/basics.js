@@ -271,7 +271,7 @@ export const scaleOrder = gen('prob-scale-order', 'prob-scale', (rng, d) => {
     };
   }
   throw new Error('could not build ordering');
-}, { title: 'Order probabilities given as fractions, decimals and percentages' });
+}, { title: 'Order probabilities given as fractions, decimals and percentages', learn: ['prob-scale', 'num-fdp-order'] });
 
 export const scaleNotProbability = gen('prob-scale-impossible-value', 'prob-scale', (rng, d) => {
   const bad = pick(rng, size(d, [
@@ -673,7 +673,7 @@ export const singleReverse = gen('prob-single-reverse', 'prob-single-event', (rn
       `Answer: ${ft(ans)}`,
     ],
   };
-}, { title: 'Work backwards from a probability to a number of items' });
+}, { title: 'Work backwards from a probability to a number of items', learn: ['prob-single-event', 'num-fraction-of-amount'] });
 
 /* ================================================================== */
 /* prob-sum-to-one                                                     */
@@ -852,7 +852,7 @@ export const sumAlgebra = gen('prob-sum-algebra', 'prob-sum-to-one', (rng, d) =>
       `Answer: ${fAns}`,
     ],
   };
-}, { title: 'Probabilities in terms of x add up to 1' });
+}, { title: 'Probabilities in terms of x add up to 1', learn: ['prob-sum-to-one', 'alg-solve-one-two-step'] });
 
 export const sumFractions = gen('prob-sum-fractions', 'prob-sum-to-one', (rng, d) => {
   const ctx = pick(rng, COLLECTIONS.filter((c) => c.adj));
@@ -978,7 +978,7 @@ export const sumRatio = gen('prob-sum-ratio', 'prob-sum-to-one', (rng, d) => {
       `Answer: ${ft(ans)}`,
     ],
   };
-}, { title: 'Probabilities from ratios' });
+}, { title: 'Probabilities from ratios', learn: ['prob-sum-to-one', 'rat-share', 'rat-combine'] });
 
 export const basicsA = [
   scaleWordsMatch, scaleArrowEvent, scaleReadValue, scaleOrder, scaleNotProbability,

@@ -699,7 +699,7 @@ export const vennAlgebra = gen('prob-venn-algebra', 'prob-venn', (rng, d) => {
       `Answer: ${ft(p)}`,
     ],
   };
-}, { title: 'Venn diagram with algebraic expressions' });
+}, { title: 'Venn diagram with algebraic expressions', learn: ['prob-venn', 'alg-solve-one-two-step'] });
 
 export const twoWayArchetypes = [twoWayComplete, twoWayProb, twoWayFromInfo, ftreeComplete, ftreeProb];
 export const vennArchetypes = [vennRead, vennNotation, vennElements, vennComplete, vennThree, vennAlgebra];
