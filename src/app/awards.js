@@ -56,7 +56,7 @@ function achievementToast(a) {
   const t = document.createElement('a');
   t.className = 'ach-toast';
   t.href = '#/achievements';
-  t.innerHTML = `<span class="plinth small">${badgeHTML(a, 56)}</span><span><small>Achievement unlocked!</small><b>${esc(a.title)}</b></span>`;
+  t.innerHTML = `<span class="plinth small">${badgeHTML(a, 64)}</span><span><small>Achievement unlocked!</small><b>${esc(a.title)}</b></span>`;
   t.addEventListener('click', () => t.remove());
   toastStack().append(t);
   setTimeout(() => t.classList.add('leaving'), 6000);
@@ -69,7 +69,7 @@ function card(a) {
   const at = state.achievements[a.id];
   const unit = a.unitId ? UNIT[a.unitId] : null;
   return `<article class="ach-card ${at ? 'earned' : 'locked'}" ${unit ? `style="${areaStyle(unit.area)}"` : ''}>
-    <div class="plinth">${badgeHTML(a, 96)}</div>
+    <div class="plinth">${badgeHTML(a, 128)}</div>
     <div class="ach-copy">
       <h3>${esc(a.title)}</h3>
       <p class="ach-req">${esc(a.requirement)}</p>
@@ -169,7 +169,7 @@ export function celebrateMastery(skill, { first = true, mixed = false } = {}) {
       <p class="celebrate-kicker">Skill mastered!</p>
       <h2 id="celebrate-title">${gradeBadge(skill.grade)} ${esc(skill.title)}</h2>
       <p class="muted">100 points in ${r.attempts} question${r.attempts === 1 ? '' : 's'} · ${r.attempts ? Math.round((100 * r.correct) / r.attempts) : 0}% correct</p>
-      ${fresh.length ? `<div class="celebrate-unlocks"><p class="small-title">Also unlocked</p>${fresh.map((a) => `<a class="unlock" href="#/achievements"><span class="plinth small">${badgeHTML(a, 56)}</span><span><b>${esc(a.title)}</b><small>${esc(a.requirement)}</small></span></a>`).join('')}</div>` : ''}
+      ${fresh.length ? `<div class="celebrate-unlocks"><p class="small-title">Also unlocked</p>${fresh.map((a) => `<a class="unlock" href="#/achievements"><span class="plinth small">${badgeHTML(a, 64)}</span><span><b>${esc(a.title)}</b><small>${esc(a.requirement)}</small></span></a>`).join('')}</div>` : ''}
       <div class="btn-row center">
         ${toTopic
     ? `<button type="button" class="btn primary big go">Back to ${esc(unit.title)} →</button><button type="button" class="btn ghost stay">Stay and read the solution</button>`

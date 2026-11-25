@@ -8,263 +8,1238 @@
   "badges": {
     "skills_1": {
       "kind": "relic",
-      "subject": "A single glowing golden five-pointed star with a soft halo"
+      "subject": "A single glowing golden five-pointed star with a soft halo",
+      "accepted": {
+        "seed": 331469451,
+        "sha256": "7bab4a66e5dd43fe42ebc53411b5a15fe435287a587e7bd1d0af343c6dc0fc9d",
+        "request": {
+          "description": "A single glowing golden five-pointed star with a soft halo. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 331469451,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_5": {
       "kind": "relic",
-      "subject": "An open brass pocket compass with a red needle and a hinged lid"
+      "subject": "An open brass pocket compass with a red needle and a hinged lid",
+      "accepted": {
+        "seed": 395277834,
+        "sha256": "100fccb685cee3f45808a74bc3c321ac0323cb1ad56c83375c9f1467e85ff854",
+        "request": {
+          "description": "An open brass pocket compass with a red needle and a hinged lid. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 395277834,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_10": {
       "kind": "relic",
-      "subject": "A ten-sided crystal die made of glowing purple amethyst"
+      "subject": "A ten-sided crystal die made of glowing purple amethyst",
+      "accepted": {
+        "seed": 95861369,
+        "sha256": "85466bd27ae7b65f2afb363e1511f04c11d51b17e39de657a386aded188f101a",
+        "request": {
+          "description": "A ten-sided crystal die made of glowing purple amethyst. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 95861369,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_25": {
       "kind": "relic",
-      "subject": "A shining silver knight gauntlet clenched into a fist"
+      "subject": "A shining silver knight gauntlet clenched into a fist",
+      "accepted": {
+        "seed": 333354800,
+        "sha256": "4bc18f09d22cd2bd796ed12f1198c88820d081f1023b033f86bcc2bffbef8625",
+        "request": {
+          "description": "A shining silver knight gauntlet clenched into a fist. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 333354800,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_50": {
       "kind": "relic",
-      "subject": "A large ornate golden goblet trophy cup with two handles and a red gem"
+      "subject": "A large ornate golden goblet trophy cup with two handles and a red gem",
+      "accepted": {
+        "seed": 1059428406,
+        "sha256": "b549d0938f195f34eb92e8523d47a5c920ce1740df9f6addf307082ffea3cd76",
+        "request": {
+          "description": "A large ornate golden goblet trophy cup with two handles and a red gem. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1059428406,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_100": {
       "kind": "relic",
-      "subject": "A golden laurel wreath tied with a red ribbon"
+      "subject": "A golden laurel wreath tied with a red ribbon",
+      "accepted": {
+        "seed": 948673009,
+        "sha256": "489081bfc865aabf2c2392bb169ddc8b7333fde3e3514d1f5824252466caaff0",
+        "request": {
+          "description": "A golden laurel wreath tied with a red ribbon. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 948673009,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "skills_all": {
       "kind": "relic",
-      "subject": "A magnificent golden crown set with nine different coloured gems, with a glowing magical aura"
+      "subject": "A magnificent golden crown set with nine different coloured gems, with a glowing magical aura",
+      "accepted": {
+        "seed": 2098226000,
+        "sha256": "67ba19d1c3daeff94e2822c24939debc8d939222d4fe052769bd14bbf042800a",
+        "request": {
+          "description": "A magnificent golden crown set with nine different coloured gems, with a glowing magical aura. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 2098226000,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "top_grade": {
       "kind": "relic",
-      "subject": "A small snowy mountain peak with a red banner flag planted on the summit"
+      "subject": "A small snowy mountain peak with a red banner flag planted on the summit",
+      "accepted": {
+        "seed": 747565510,
+        "sha256": "945bc42649fab96dd343393b899b35c0db68dcfdd9553b89ab04ec6657649a19",
+        "request": {
+          "description": "A small snowy mountain peak with a red banner flag planted on the summit. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 747565510,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "foundations": {
       "kind": "relic",
-      "subject": "A carved grey stone cornerstone block with a glowing blue rune carved on its front"
+      "subject": "A carved grey stone cornerstone block with a glowing blue rune carved on its front",
+      "accepted": {
+        "seed": 1522250521,
+        "sha256": "e546ec6f156a9a4a2c175647361bf1360f90a473bb8a4c9e2222b65b767ff97d",
+        "request": {
+          "description": "A carved grey stone cornerstone block with a glowing blue rune carved on its front. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1522250521,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "all_grades": {
       "kind": "relic",
-      "subject": "A clear crystal prism splitting a beam of white light into a rainbow"
+      "subject": "A clear crystal prism splitting a beam of white light into a rainbow",
+      "accepted": {
+        "seed": 2129302377,
+        "sha256": "4986b6a1ed67aa3479bb810d27bb18b0d416c63f66a3107eb3a80a89ee484f2d",
+        "request": {
+          "description": "A clear crystal prism splitting a beam of white light into a rainbow. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 2129302377,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "higher_1": {
       "kind": "relic",
-      "subject": "A pair of brown leather boots with small white feathered wings on the heels"
+      "subject": "A pair of brown leather boots with small white feathered wings on the heels",
+      "accepted": {
+        "seed": 783273102,
+        "sha256": "e4fc8bb48923ddc5193b825eeb8bab844def5c4885bb3c687d92cd776b01145e",
+        "request": {
+          "description": "A pair of brown leather boots with small white feathered wings on the heels. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 783273102,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "flawless": {
       "kind": "relic",
-      "subject": "A perfect glowing white pearl sitting in an open pink clam shell"
+      "subject": "A perfect glowing white pearl sitting in an open pink clam shell",
+      "accepted": {
+        "seed": 1794278218,
+        "sha256": "04a64e8a50599d609e0bb0230c7d382cbd934ee8b426df0b32f126cc1cc8da84",
+        "request": {
+          "description": "A perfect glowing white pearl sitting in an open pink clam shell. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1794278218,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "comeback": {
       "kind": "relic",
-      "subject": "A broken blue ceramic bowl mended with shining gold seams along its cracks"
+      "subject": "A broken blue ceramic bowl mended with shining gold seams along its cracks",
+      "accepted": {
+        "seed": 1356472866,
+        "sha256": "482ab67ddebf4e17261376b34e7e38d3ea748749d3376cf36d65ff24bb8945f1",
+        "request": {
+          "description": "A broken blue ceramic bowl mended with shining gold seams along its cracks. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1356472866,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "every_area": {
       "kind": "relic",
-      "subject": "A golden amulet necklace with six different coloured round gems"
+      "subject": "A golden amulet necklace with six different coloured round gems",
+      "accepted": {
+        "seed": 357730912,
+        "sha256": "3894411a9bc6a922559db2d055369a40e3e4eb11655a20ff21b53c92295b509e",
+        "request": {
+          "description": "A golden amulet necklace with six different coloured round gems. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 357730912,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "hat_trick": {
       "kind": "relic",
-      "subject": "A leather quiver holding three golden arrows"
+      "subject": "A leather quiver holding three golden arrows",
+      "accepted": {
+        "seed": 758520337,
+        "sha256": "c1529ff7ddfa928ed168180e0af34eb7cc3c57a38b5ecc2019f87b5afdd87f5c",
+        "request": {
+          "description": "A leather quiver holding three golden arrows. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 758520337,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "weekend": {
       "kind": "relic",
-      "subject": "A steaming mug of hot chocolate topped with pink and white marshmallows"
+      "subject": "A steaming mug of hot chocolate topped with pink and white marshmallows",
+      "accepted": {
+        "seed": 367462208,
+        "sha256": "c09543fc80024542c30e707f3c1061d604f5c2dd142dac52a51fdd052310a7b8",
+        "request": {
+          "description": "A steaming mug of hot chocolate topped with pink and white marshmallows. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 367462208,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "streak_7": {
       "kind": "relic",
-      "subject": "An old iron lantern with a bright warm flame glowing inside"
+      "subject": "An old iron lantern with a bright warm flame glowing inside",
+      "accepted": {
+        "seed": 1556960661,
+        "sha256": "909997e9b1de721ec10c16be1be575374d192d6f5f32f4de5d1ce19289ba4484",
+        "request": {
+          "description": "An old iron lantern with a bright warm flame glowing inside. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1556960661,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "streak_30": {
       "kind": "relic",
-      "subject": "A burning torch with a big magical blue and gold flame"
+      "subject": "A burning torch with a big magical blue and gold flame",
+      "accepted": {
+        "seed": 1622744917,
+        "sha256": "beb159dc353162f26afccabcb5566b41d8bb637af7d3819d21f05aa80d12820a",
+        "request": {
+          "description": "A burning torch with a big magical blue and gold flame. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1622744917,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "questions_100": {
       "kind": "relic",
-      "subject": "A long rolled-out parchment scroll covered in tiny ink scribbles, with a red wax seal"
+      "subject": "A long rolled-out parchment scroll covered in tiny ink scribbles, with a red wax seal",
+      "accepted": {
+        "seed": 1130166520,
+        "sha256": "0765f1a510b1537a6997c8420f8ab12bf47b950d52c02d462f9e6b6407de659c",
+        "request": {
+          "description": "A long rolled-out parchment scroll covered in tiny ink scribbles, with a red wax seal. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1130166520,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "questions_1000": {
       "kind": "relic",
-      "subject": "A huge thick ancient spell book with a dark green leather cover, brass clasps and glowing pages"
+      "subject": "A huge thick ancient spell book with a dark green leather cover, brass clasps and glowing pages",
+      "accepted": {
+        "seed": 1633165485,
+        "sha256": "9b62d97dedac8704fe3432c5d41a018dddd2bb0a9bf7593ed3e1ca5fa54adb9d",
+        "request": {
+          "description": "A huge thick ancient spell book with a dark green leather cover, brass clasps and glowing pages. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1633165485,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "check_1": {
       "kind": "relic",
-      "subject": "A brass telescope spyglass, extended, with a leather grip"
+      "subject": "A brass telescope spyglass, extended, with a leather grip",
+      "accepted": {
+        "seed": 872750257,
+        "sha256": "e66bff92f557dc4318f9dec3a76d36f5a745cf0cd11478acc8d8c33309f5da21",
+        "request": {
+          "description": "A brass telescope spyglass, extended, with a leather grip. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 872750257,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "check_all": {
       "kind": "relic",
-      "subject": "An unrolled parchment map of a fantasy island with every region coloured in and tiny flags planted"
+      "subject": "An unrolled parchment map of a fantasy island with every region coloured in and tiny flags planted",
+      "accepted": {
+        "seed": 1981855170,
+        "sha256": "abecae5391f7789a47c7affe0123e3027e14b2cdb0b5f7b14d3c7122475d76f7",
+        "request": {
+          "description": "An unrolled parchment map of a fantasy island with every region coloured in and tiny flags planted. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1981855170,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "mock_1": {
       "kind": "relic",
-      "subject": "An ornate wooden hourglass with golden sand running through it"
+      "subject": "An ornate wooden hourglass with golden sand running through it",
+      "accepted": {
+        "seed": 1177940075,
+        "sha256": "c95fa51dfb7d7f10e1ef3a5a21fbc57a76c14e326c62f5e2c773bc5042a04932",
+        "request": {
+          "description": "An ornate wooden hourglass with golden sand running through it. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1177940075,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "mock_4": {
       "kind": "relic",
-      "subject": "A shiny silver medal with a blue ribbon"
+      "subject": "A shiny silver medal with a blue ribbon",
+      "accepted": {
+        "seed": 1378024618,
+        "sha256": "b8b3ba0d5a87078f2ec1c1e47681cdaf53bb5633c7216417946adc5323f7e714",
+        "request": {
+          "description": "A shiny silver medal with a blue ribbon. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1378024618,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "mock_7": {
       "kind": "relic",
-      "subject": "A shiny gold medal with a red ribbon and a star engraved in the centre"
+      "subject": "A shiny gold medal with a red ribbon and a star engraved in the centre",
+      "accepted": {
+        "seed": 39794668,
+        "sha256": "d8e2d63fe863ed3888ffb5948b041b253a04e43494ebc63c6d1bf969bc0e51e2",
+        "request": {
+          "description": "A shiny gold medal with a red ribbon and a star engraved in the centre. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 39794668,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "learn_10": {
       "kind": "relic",
-      "subject": "A lit white candle on a brass holder beside a small open book"
+      "subject": "A single lit white candle in an ornate brass candle holder, with melted wax drips and a warm glowing flame",
+      "accepted": {
+        "seed": 817517423,
+        "sha256": "c92a355b4896deb023a905974020ee113a14c9e543d16efa0ffdc68e47c4485f",
+        "request": {
+          "description": "A single lit white candle in an ornate brass candle holder, with melted wax drips and a warm glowing flame. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 817517423,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "learn_50": {
       "kind": "relic",
-      "subject": "An ornate golden key with a blue gem in its bow"
+      "subject": "An ornate golden key with a blue gem in its bow",
+      "accepted": {
+        "seed": 1972771005,
+        "sha256": "525fd28b19098db2be200ab4f0c01f438573edbf4778ea52d37cfb6765fa59d2",
+        "request": {
+          "description": "An ornate golden key with a blue gem in its bow. A single fantasy RPG treasure item sprite in 16-bit SNES-era pixel art, floating alone on transparency, centred and filling most of the canvas, bold saturated jewel colours with gold accents, crisp shading lit from the top left, a small white sparkle highlight. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1972771005,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-calc": {
       "kind": "beast",
-      "subject": "A regal green basilisk lizard monster wearing a small golden crown, standing on its hind legs with glaring yellow eyes and a spiky frill"
+      "subject": "A regal green basilisk lizard monster wearing a small golden crown, standing on its hind legs with glaring yellow eyes and a spiky frill",
+      "accepted": {
+        "seed": 342550862,
+        "sha256": "8fa9a992556a584365d1d089d65b14d7a6b2117a307c20a6828e5a870f4840ae",
+        "request": {
+          "description": "A regal green basilisk lizard monster wearing a small golden crown, standing on its hind legs with glaring yellow eyes and a spiky frill. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 342550862,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-factors": {
       "kind": "beast",
-      "subject": "A walking tree ent monster whose trunk splits into two branches, and each branch splits into two again, with round red berries at the branch tips and a friendly bark face"
+      "subject": "A walking tree ent monster whose trunk splits into two branches, and each branch splits into two again, with round red berries at the branch tips and a friendly bark face",
+      "accepted": {
+        "seed": 1059906747,
+        "sha256": "2af50ac555f46d3af703a1e2a60ce0299cb2c9c8b5d3a89c7f4ad8b5fb4cde0f",
+        "request": {
+          "description": "A walking tree ent monster whose trunk splits into two branches, and each branch splits into two again, with round red berries at the branch tips and a friendly bark face. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1059906747,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-fractions": {
       "kind": "beast",
-      "subject": "A round pepperoni pizza mimic monster with one slice missing, big eyes and a mouth full of sharp teeth in the gap"
+      "subject": "A round pepperoni pizza mimic monster with one slice missing, big eyes and a mouth full of sharp teeth in the gap",
+      "accepted": {
+        "seed": 1948309289,
+        "sha256": "cc181289c52d4b1f2c406cfb297280d64b8efa2d2c19da3359c705635d9717b1",
+        "request": {
+          "description": "A round pepperoni pizza mimic monster with one slice missing, big eyes and a mouth full of sharp teeth in the gap. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1948309289,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-fdp": {
       "kind": "beast",
-      "subject": "A chameleon lizard monster with a curled tail, its body in three bold colour bands: red at the head, green in the middle and blue at the tail"
+      "subject": "A chameleon lizard monster with a curled tail, its body in three bold colour bands: red at the head, green in the middle and blue at the tail",
+      "accepted": {
+        "seed": 1142154894,
+        "sha256": "d8eb81db5081d185afa28bfad5f3cbeef467729f6b3efef387c6fea7dc1b458d",
+        "request": {
+          "description": "A chameleon lizard monster with a curled tail, its body in three bold colour bands: red at the head, green in the middle and blue at the tail. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1142154894,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-powers": {
       "kind": "beast",
-      "subject": "A fluffy white rabbit monster with red eyes, with a smaller identical rabbit sitting on its head and an even tinier rabbit on top of that one"
+      "subject": "A fluffy white rabbit monster with red eyes, with a smaller identical rabbit sitting on its head and an even tinier rabbit on top of that one",
+      "accepted": {
+        "seed": 1418877453,
+        "sha256": "947bc3a72164926d85ed496bec025fe689a15448c975dd494880a85acbff2bdd",
+        "request": {
+          "description": "A fluffy white rabbit monster with red eyes, with a smaller identical rabbit sitting on its head and an even tinier rabbit on top of that one. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1418877453,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-rounding": {
       "kind": "beast",
-      "subject": "A big shaggy white yeti monster with a blue face, shrugging with a puzzled expression"
+      "subject": "A big shaggy white yeti monster with a blue face, shrugging with a puzzled expression",
+      "accepted": {
+        "seed": 1853988578,
+        "sha256": "4f6031a717cf6cac8b302ee9b53a5e9a47f51244ee65c117c9f12fcc73345166",
+        "request": {
+          "description": "A big shaggy white yeti monster with a blue face, shrugging with a puzzled expression. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1853988578,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_num-surds": {
       "kind": "beast",
-      "subject": "A screaming mandrake root monster just pulled out of the ground, a gnarled brown root body with tiny arms and a tuft of green leaves on its head"
+      "subject": "A screaming mandrake root monster just pulled out of the ground, a gnarled brown root body with tiny arms and a tuft of green leaves on its head",
+      "accepted": {
+        "seed": 366233535,
+        "sha256": "da665605306089c7e050ab643ed6a7ee70388feb94535b86010039d2fce416a8",
+        "request": {
+          "description": "A screaming mandrake root monster just pulled out of the ground, a gnarled brown root body with tiny arms and a tuft of green leaves on its head. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 366233535,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-expressions": {
       "kind": "beast",
-      "subject": "A bright red crab monster with two huge curved claws raised up and eyes on stalks"
+      "subject": "A bright red crab monster with two huge curved claws raised up and eyes on stalks",
+      "accepted": {
+        "seed": 617342690,
+        "sha256": "5e758feac4bf63bfec4038e97448657cc5e50855e126b9cb74deceb97db227cb",
+        "request": {
+          "description": "A bright red crab monster with two huge curved claws raised up and eyes on stalks. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 617342690,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-equations": {
       "kind": "beast",
-      "subject": "A brass clockwork golem holding a set of balance scales perfectly level in its outstretched arms"
+      "subject": "A brass clockwork golem holding a set of balance scales perfectly level in its outstretched arms",
+      "accepted": {
+        "seed": 1462653241,
+        "sha256": "e55c2e8defeb7bbf3212dc1597c8766dea5e31fed989e492726e7f4b3f1b3c8f",
+        "request": {
+          "description": "A brass clockwork golem holding a set of balance scales perfectly level in its outstretched arms. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1462653241,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-inequalities": {
       "kind": "beast",
-      "subject": "A green crocodile monster with its huge jaws wide open, showing rows of white teeth"
+      "subject": "A green crocodile monster with its huge jaws wide open, showing rows of white teeth",
+      "accepted": {
+        "seed": 1578762183,
+        "sha256": "a1f0ed15663150fec747f7bce8b0cc82de2bb6431ac2aba948bde004e2629f0d",
+        "request": {
+          "description": "A green crocodile monster with its huge jaws wide open, showing rows of white teeth. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1578762183,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-quadratics": {
       "kind": "beast",
-      "subject": "A purple two-headed snake monster with a head at each end of its body, its body curving down into a U shape"
+      "subject": "A purple two-headed snake monster with a head at each end of its body, its body curving down into a U shape",
+      "accepted": {
+        "seed": 1271624485,
+        "sha256": "5d094544bad220b7e9377d73bbfe4c005d2b85887b0fe3a0bf54564a3d13b52f",
+        "request": {
+          "description": "A purple two-headed snake monster with a head at each end of its body, its body curving down into a U shape. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1271624485,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-simultaneous": {
       "kind": "beast",
-      "subject": "Two wolves standing back to back, one jet black wolf and one snow white wolf, both howling"
+      "subject": "Two wolves standing back to back, one jet black wolf and one snow white wolf, both howling",
+      "accepted": {
+        "seed": 612666108,
+        "sha256": "db202b23f0fc77f75fda87711e5ecae451e664777f68ce2787342371d064681e",
+        "request": {
+          "description": "Two wolves standing back to back, one jet black wolf and one snow white wolf, both howling. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 612666108,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-formulae": {
       "kind": "beast",
-      "subject": "A fat green toad alchemist wearing a purple wizard robe, holding up a bubbling glass flask of pink potion"
+      "subject": "A fat green toad alchemist wearing a purple wizard robe, holding up a bubbling glass flask of pink potion",
+      "accepted": {
+        "seed": 1381045303,
+        "sha256": "a7aa251fb7835f9db9e297f79b04b1bd7acd9ae7a2bba6cc3125723421ec830b",
+        "request": {
+          "description": "A fat green toad alchemist wearing a purple wizard robe, holding up a bubbling glass flask of pink potion. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1381045303,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_alg-proof": {
       "kind": "beast",
-      "subject": "A white unicorn with a rainbow mane and a golden spiral horn, rearing up proudly"
+      "subject": "A white unicorn with a rainbow mane and a golden spiral horn, rearing up proudly",
+      "accepted": {
+        "seed": 89527860,
+        "sha256": "4cda7430e54ab7480737d16cfe93c39fc765c71b1388e73c5b7d693c50ad8e7a",
+        "request": {
+          "description": "A white unicorn with a rainbow mane and a golden spiral horn, rearing up proudly. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 89527860,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_gr-sequences": {
       "kind": "beast",
-      "subject": "A long orange centipede monster whose body segments get steadily bigger from its head to its tail"
+      "subject": "A long orange centipede monster whose body segments get steadily bigger from its head to its tail",
+      "accepted": {
+        "seed": 1892677425,
+        "sha256": "5f4712db3ffa0b3ed1327e159183eded8c26898cafc1ca7d4555d95f276839a2",
+        "request": {
+          "description": "A long orange centipede monster whose body segments get steadily bigger from its head to its tail. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1892677425,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_gr-linear": {
       "kind": "beast",
-      "subject": "A white mountain goat monster with big curled horns standing on a steep straight rocky slope"
+      "subject": "A white mountain goat monster with big curled horns standing on a steep straight rocky slope",
+      "accepted": {
+        "seed": 964144465,
+        "sha256": "89118ac0710faaca9a267acd22f220044f05c1225ff49fadea40b8e60a732bc7",
+        "request": {
+          "description": "A white mountain goat monster with big curled horns standing on a steep straight rocky slope. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 964144465,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_gr-nonlinear": {
       "kind": "beast",
-      "subject": "A teal sea serpent leviathan whose long body arches up and dips down through blue waves in smooth curves"
+      "subject": "A teal sea serpent leviathan whose long body arches up and dips down through blue waves in smooth curves",
+      "accepted": {
+        "seed": 1997968372,
+        "sha256": "be43164f3ca7452cf5fe3080fa9677706bdbaac43f804670b203b5703cb40cb4",
+        "request": {
+          "description": "A teal sea serpent leviathan whose long body arches up and dips down through blue waves in smooth curves. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1997968372,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_gr-reallife": {
       "kind": "beast",
-      "subject": "A spotted cheetah monster sprinting at full speed with motion lines behind it"
+      "subject": "A spotted cheetah monster sprinting at full speed with motion lines behind it",
+      "accepted": {
+        "seed": 743214092,
+        "sha256": "d1f88636880ad6f8e86f0ebf5ed0af3efc1f95c97f02e20725e627b3dd52f213",
+        "request": {
+          "description": "A spotted cheetah monster sprinting at full speed with motion lines behind it. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 743214092,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_gr-functions": {
       "kind": "beast",
-      "subject": "A clockwork robot golem with a big funnel hopper on top of its head and a delivery chute in its belly"
+      "subject": "A clockwork robot golem with a big funnel hopper on top of its head and a delivery chute in its belly",
+      "accepted": {
+        "seed": 1939461216,
+        "sha256": "c35afbf6b14179737acedc1fce9c101f78ed9247aa1fa81af6d0e81a1f825f13",
+        "request": {
+          "description": "A clockwork robot golem with a big funnel hopper on top of its head and a delivery chute in its belly. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1939461216,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_rat-ratio": {
       "kind": "beast",
-      "subject": "A two-headed green ogre monster, one head grinning and the other head grumpy, holding a meat drumstick"
+      "subject": "A two-headed green ogre monster, one head grinning and the other head grumpy, holding a meat drumstick",
+      "accepted": {
+        "seed": 513218773,
+        "sha256": "10a50e2d2201de183e8765ddc313efce57acb3fe6698081d31682096fefe74b5",
+        "request": {
+          "description": "A two-headed green ogre monster, one head grinning and the other head grumpy, holding a meat drumstick. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 513218773,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_rat-percent": {
       "kind": "beast",
-      "subject": "A red dragon curled up asleep on a big pile of shining gold coins"
+      "subject": "A red dragon curled up asleep on a big pile of shining gold coins",
+      "accepted": {
+        "seed": 1775968461,
+        "sha256": "c7cd21e458a0f23213d9602ac694a8b0140cca0fd4c7d45d895318f0fe66c591",
+        "request": {
+          "description": "A red dragon curled up asleep on a big pile of shining gold coins. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1775968461,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_rat-proportion": {
       "kind": "beast",
-      "subject": "A big red soldier ant queen monster wearing a tiny crown, with strong mandibles"
+      "subject": "A big red soldier ant queen monster wearing a tiny crown, with strong mandibles",
+      "accepted": {
+        "seed": 762201516,
+        "sha256": "e9b4e9b27975c1721ba980a59a9d7d4d0be4037108aa54b91514819dfc2bd3ee",
+        "request": {
+          "description": "A big red soldier ant queen monster wearing a tiny crown, with strong mandibles. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 762201516,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_rat-measures": {
       "kind": "beast",
-      "subject": "A white winged pegasus horse galloping through the air with feathered wings spread wide"
+      "subject": "A white winged horse with a flowing golden mane and no horn, galloping through the air with large feathered wings spread wide",
+      "accepted": {
+        "seed": 99487320,
+        "sha256": "a9da3a5eef6a5c1c4e7c3471b6031ff6af8d6596c623f58ca655e6e1388b3d9b",
+        "request": {
+          "description": "A white winged horse with a flowing golden mane and no horn, galloping through the air with large feathered wings spread wide. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 99487320,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_geo-angles": {
       "kind": "beast",
-      "subject": "A purple bat monster with its leathery wings spread wide open, big pointed ears and tiny fangs"
+      "subject": "A purple bat monster with its leathery wings spread wide open, big pointed ears and tiny fangs",
+      "accepted": {
+        "seed": 882622370,
+        "sha256": "10f8f6a6658c3daecc1c8d396d69ea1a590d1e9144211780bf2df9561468077c",
+        "request": {
+          "description": "A purple bat monster with its leathery wings spread wide open, big pointed ears and tiny fangs. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 882622370,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_geo-shapes": {
       "kind": "beast",
-      "subject": "A beetle monster with a shiny shell made of turquoise hexagon plates like a honeycomb"
+      "subject": "A beetle monster with a shiny shell made of turquoise hexagon plates like a honeycomb",
+      "accepted": {
+        "seed": 214481757,
+        "sha256": "cf7de4c799d541b8f47187b1d6c38089e28fd9700fd4859db847c037d4183d66",
+        "request": {
+          "description": "A beetle monster with a shiny shell made of turquoise hexagon plates like a honeycomb. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 214481757,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_geo-area": {
       "kind": "beast",
-      "subject": "A tortoise monster whose shell is a neat grid of square tiles in alternating cream and brown like a chessboard"
+      "subject": "A tortoise monster whose shell is a neat grid of square tiles in alternating cream and brown like a chessboard",
+      "accepted": {
+        "seed": 1478874552,
+        "sha256": "d01f1a91af684be5e7a8254f6f19ea14ebcf5493fd00907f802d234412ca5f81",
+        "request": {
+          "description": "A tortoise monster whose shell is a neat grid of square tiles in alternating cream and brown like a chessboard. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1478874552,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_geo-volume": {
       "kind": "beast",
-      "subject": "A translucent green slime monster shaped like a perfect cuboid box, with a sword and a bone floating inside it"
+      "subject": "A translucent green slime monster shaped like a perfect cuboid box, with a sword and a bone floating inside it",
+      "accepted": {
+        "seed": 1471487091,
+        "sha256": "3a2292c773d4b8aaa25c9c6f6a67361d71914516a6225aa05b1fae506e79943c",
+        "request": {
+          "description": "A translucent green slime monster shaped like a perfect cuboid box, with a sword and a bone floating inside it. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1471487091,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_geo-transform": {
       "kind": "beast",
-      "subject": "A friendly white ghost monster facing its own mirror image, a second pale blue ghost, as if reflected in a mirror"
+      "subject": "A friendly white ghost monster facing its own mirror image, a second pale blue ghost, as if reflected in a mirror",
+      "accepted": {
+        "seed": 1283539784,
+        "sha256": "07828ddaf56a8c04e375b0f3bd1d64cdd026f27193de73604f56a83abeaa8b17",
+        "request": {
+          "description": "A friendly white ghost monster facing its own mirror image, a second pale blue ghost, as if reflected in a mirror. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1283539784,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_trig-pythagoras": {
       "kind": "beast",
-      "subject": "A golden scarab beetle monster with triangular emerald green wings spread open"
+      "subject": "A golden scarab beetle monster with triangular emerald green wings spread open",
+      "accepted": {
+        "seed": 1990193108,
+        "sha256": "6e5aa6ad21422c149c24566256966f46a54c4cc9af31bce64abba85514d4f080",
+        "request": {
+          "description": "A golden scarab beetle monster with triangular emerald green wings spread open. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1990193108,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_trig-trig": {
       "kind": "beast",
-      "subject": "A blue wyvern dragon with large triangular wings, perched with its tail curled"
+      "subject": "A blue wyvern dragon with large triangular wings, perched with its tail curled",
+      "accepted": {
+        "seed": 1257388394,
+        "sha256": "01e179bca8d4506368ca2eb7338b345189502b76bf45696d95bdc0916baf4b3d",
+        "request": {
+          "description": "A blue wyvern dragon with large triangular wings, perched with its tail curled. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1257388394,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_trig-similarity": {
       "kind": "beast",
-      "subject": "A big orange tabby cat monster sitting next to a tiny identical kitten copy of itself"
+      "subject": "A big orange tabby cat monster sitting next to a tiny identical kitten copy of itself",
+      "accepted": {
+        "seed": 1795770500,
+        "sha256": "daab6b6a90e7da511669a3c20865366db31587be430884e824888046afa13f62",
+        "request": {
+          "description": "A big orange tabby cat monster sitting next to a tiny identical kitten copy of itself. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1795770500,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_trig-circles": {
       "kind": "beast",
-      "subject": "A green serpent curled into a perfect circle, biting its own tail"
+      "subject": "A green serpent curled into a perfect circle, biting its own tail",
+      "accepted": {
+        "seed": 422265847,
+        "sha256": "45a7597683ec1b5dfefbc98893c88c922d5a7b17afb4219a994955d9f84b15d2",
+        "request": {
+          "description": "A green serpent curled into a perfect circle, biting its own tail. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 422265847,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_trig-vectors": {
       "kind": "beast",
-      "subject": "A brown falcon diving steeply with its wings swept back like an arrowhead"
+      "subject": "A brown falcon diving steeply with its wings swept back like an arrowhead",
+      "accepted": {
+        "seed": 2101223135,
+        "sha256": "0a49bd629af9c2500ebec2f2ebda87aca1cd95b58cdfb018c2fd178d7f911dc3",
+        "request": {
+          "description": "A brown falcon diving steeply with its wings swept back like an arrowhead. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 2101223135,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_prob-basics": {
       "kind": "beast",
-      "subject": "A mischievous green goblin flipping a shiny gold coin into the air with its thumb"
+      "subject": "A mischievous green goblin flipping a shiny gold coin into the air with its thumb",
+      "accepted": {
+        "seed": 796709485,
+        "sha256": "2ea9d1ebd71286810836c69289139bc9f82acdf37ec94a9dd43bf4eea7bef14b",
+        "request": {
+          "description": "A mischievous green goblin flipping a shiny gold coin into the air with its thumb. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 796709485,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_prob-combined": {
       "kind": "beast",
-      "subject": "A grey shark monster standing upright on its tail, wearing sunglasses and holding a fan of playing cards"
+      "subject": "A grey shark monster standing upright on its tail, wearing sunglasses and holding a fan of playing cards",
+      "accepted": {
+        "seed": 831988419,
+        "sha256": "5a5963e02c74158b7156012fa166c54c645910c41db8849a4f51ea5e9ebd1152",
+        "request": {
+          "description": "A grey shark monster standing upright on its tail, wearing sunglasses and holding a fan of playing cards. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 831988419,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_stat-averages": {
       "kind": "beast",
-      "subject": "A three-headed brown dog monster, the left head smiling, the middle head calm and the right head grumpy"
+      "subject": "A three-headed brown dog monster, the left head smiling, the middle head calm and the right head grumpy",
+      "accepted": {
+        "seed": 327984779,
+        "sha256": "fe2d2d8242cd81faa5bccee9cdc925228ab9b22bd41001e3dacea7f20bfecc0c",
+        "request": {
+          "description": "A three-headed brown dog monster, the left head smiling, the middle head calm and the right head grumpy. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 327984779,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_stat-charts": {
       "kind": "beast",
-      "subject": "A golem monster built from stacked rectangular blocks of different heights in red, blue, green and yellow"
+      "subject": "A golem monster built from stacked rectangular blocks of different heights in red, blue, green and yellow",
+      "accepted": {
+        "seed": 1334542824,
+        "sha256": "9b603d4eb8d2d48efaf70b771967d5a5270186414776e6a4dbc3b6b5b30a831f",
+        "request": {
+          "description": "A golem monster built from stacked rectangular blocks of different heights in red, blue, green and yellow. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1334542824,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     },
     "unit_stat-higher": {
       "kind": "beast",
-      "subject": "A ginger cat monster sitting inside a cardboard box, with very long white whiskers sticking out sideways"
+      "subject": "A ginger cat monster sitting inside a cardboard box, with very long white whiskers sticking out sideways",
+      "accepted": {
+        "seed": 1529036407,
+        "sha256": "2d704b8946fc00e2287d67f5562efc9c240204a3036d84c1062fce389c5b4e63",
+        "request": {
+          "description": "A ginger cat monster sitting inside a cardboard box, with very long white whiskers sticking out sideways. A single cute but fierce fantasy RPG monster sprite in 16-bit SNES-era pixel art, full body, floating alone on transparency, centred and filling most of the canvas, bold saturated colours, crisp shading lit from the top left, big readable silhouette, expressive eyes. Must not include: round frame, badge border, coloured background, ground plate, cast shadow, watermark, words",
+          "image_size": {
+            "width": 64,
+            "height": 64
+          },
+          "no_background": true,
+          "seed": 1529036407,
+          "outline": "single color black outline",
+          "detail": "medium detail"
+        }
+      }
     }
   }
 }

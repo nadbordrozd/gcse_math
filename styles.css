@@ -429,11 +429,11 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
 .ach-total b { font-size: 2rem; white-space: nowrap; }
 .ach-total b small { font-size: 1rem; color: var(--muted); font-weight: 500; }
 .ach-total .bar { flex: 1; }
-.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
 .achievements .area-mini { margin-top: 1.4rem; }
-.plinth { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 14px; flex: none;
+.plinth { display: grid; place-items: center; width: 136px; height: 136px; border-radius: 14px; flex: none;
   background: radial-gradient(circle at 50% 55%, #2d2656 0 40%, #1a1533 72%); }
-.plinth.small { width: 64px; height: 64px; border-radius: 10px; }
+.plinth.small { width: 72px; height: 72px; border-radius: 10px; }
 .badge-img { image-rendering: pixelated; display: block; }
 .badge-emoji { line-height: 1; display: block; }
 .ach-card { display: flex; gap: 1rem; align-items: center; padding: .8rem; border: 2px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -484,8 +484,8 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
 
 @media (max-width: 640px) {
   .ach-grid { grid-template-columns: 1fr; }
-  .plinth { width: 84px; height: 84px; }
-  .plinth .badge-img { width: 80px; height: 80px; }
+  .plinth { width: 100px; height: 100px; }
+  .plinth .badge-img { width: 96px; height: 96px; }
   .nav-ach .ach-count { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -493,3 +493,6 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
   .celebrate-card { transition: none; }
 }
 details.unit { scroll-margin-top: 72px; }
+.projects-link { color: var(--muted); font-size: .82rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.projects-link:hover, .projects-link:focus-visible { color: var(--brand); }
+@media (max-width: 640px) { .projects-link { font-size: .75rem; } }
