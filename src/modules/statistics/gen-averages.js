@@ -455,12 +455,12 @@ export const avgAlgebra = sgen('stat-avg-algebra', 'stat-averages-problems', (rn
     solution: [
       `Let ${A}'s ${ctx.kind === 'age' ? 'age' : ctx.kind === 'money' ? 'amount' : `number of ${ctx.noun}`} be $x$. Then ${Object.keys(exprs).filter((p) => p !== A).map((p) => `${p} = $${exprs[p]}$`).join(', ')}.`,
       `The total is mean × ${people} $= ${m} \\times ${people} = ${total}$`,
-      `So $${coef}x ${cst >= 0 ? '+' : '-'} ${Math.abs(cst)} = ${total}$, giving $${coef}x = ${total - cst}$ and $x = ${x}$.`,
+      `[[alg-solve-one-two-step|Solve the equation]]: $${coef}x ${cst >= 0 ? '+' : '-'} ${Math.abs(cst)} = ${total}$, giving $${coef}x = ${total - cst}$ and $x = ${x}$.`,
       `So ${askP} $= ${subst[askP]} = ${ans}$`,
       `Answer: ${f(ans)}`,
     ],
   };
-}, { title: 'Mean problems with algebra', word: true });
+}, { title: 'Mean problems with algebra', word: true, learn: ['stat-averages-problems', 'alg-solve-one-two-step'] });
 
 export const avgRange = sgen('stat-avg-range-problems', 'stat-averages-problems', (rng, d) => {
   if (d === 'hard') {
@@ -790,7 +790,7 @@ export const freqMissing = sgen('stat-freq-missing', 'stat-frequency-table', (rn
       `Answer: $x = ${xAns}$`,
     ],
   };
-}, { title: 'Missing frequency from the total or mean' });
+}, { title: 'Missing frequency from the total or mean', learn: ['stat-frequency-table', 'alg-solve-one-two-step'] });
 
 /* ------------------------------------------------------------------ */
 /* Grouped data                                                         */
@@ -1073,7 +1073,7 @@ export const compareClaim = sgen('stat-compare-claim', 'stat-compare', (rng, d) 
       `("At least ${C}" includes ${C} itself.) Answer: ${ans}`,
     ],
   };
-}, { title: 'Test a claim using medians' });
+}, { title: 'Test a claim using medians', learn: ['stat-compare', 'stat-averages-list'] });
 
 const AVG_CHOICE = [
   { kind: 'outlier', make: (rng) => { const v = randInts(rng, 6, 18, 32).map((x) => x * 1000); const big = int(rng, 9, 15) * 10000; return { data: [...v, big].map((x) => money(x)), big: money(big), intro: 'The salaries of the seven people working at a small company are:', what: 'a typical salary' }; } },

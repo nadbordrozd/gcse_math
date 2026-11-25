@@ -310,7 +310,7 @@ export const boxCompare = sgen('stat-box-compare', 'stat-box-plots', (rng, d) =>
     count: 4,
     solution: [...working, 'The range and the highest value are affected by single extreme values, so they are not good for comparing.', `Answer: ${correct}`],
   };
-}, { title: 'Compare two box plots' });
+}, { title: 'Compare two box plots', learn: ['stat-box-plots', 'stat-compare'] });
 
 export const boxSummaryQ = sgen('stat-box-summary', 'stat-box-plots', (rng, d) => {
   const ctx = pick(rng, BOX_CTX);

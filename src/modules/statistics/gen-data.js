@@ -825,7 +825,7 @@ export const polyCompare = sgen('stat-freqpoly-compare', 'stat-frequency-polygon
     typed: { kind: 'number', value: ans },
     solution: [`The class ${classTex(P.ctx, P.classes[i])} is plotted at its midpoint, ${num(P.classes[i].mid)}.`, `${groups[0]}: ${a}; ${groups[1]}: ${b} (use the key).`, `Difference: $${Math.max(a, b)} - ${Math.min(a, b)} = ${ans}$`, `Answer: ${ans}`],
   };
-}, { title: 'Compare two frequency polygons' });
+}, { title: 'Compare two frequency polygons', learn: ['stat-frequency-polygon', 'stat-grouped-estimate'] });
 
 /* ------------------------------------------------------------------ */
 /* Capture–recapture                                                    */
@@ -901,7 +901,7 @@ export const captureReverse = sgen('stat-capture-reverse', 'stat-capture-recaptu
     calculator: d !== 'easy',
     solution: [`The fraction of the population that is marked is $\\frac{${M}}{${N}}$.`, `Expect the same fraction of the ${n} in the sample: $\\frac{${M}}{${N}} \\times ${n} = ${m}$`, `Answer: ${m}`],
   };
-}, { title: 'Capture–recapture working backwards', word: true });
+}, { title: 'Capture–recapture working backwards', word: true, learn: ['stat-capture-recapture', 'rat-direct-proportion'] });
 
 const CAP_EFFECT = [
   { s: 'Some of the marks wash off before the second sample is taken.', a: 'Too high', why: 'Fewer marked animals are recognised in the second sample, so $m$ is too small and $N = \\frac{Mn}{m}$ is too big.' },
