@@ -208,7 +208,7 @@ const LIST_SCENES = [
       events: [
         { txt: `${cols[0]} and an even number`, f: (o) => o.startsWith(cols[0]) && Number(o.slice(-1)) % 2 === 0, wrong: frac(2, 7) },
         { txt: `${cols[1]} and a 4`, f: (o) => o === `${cols[1]} 4`, wrong: frac(1, 7) },
-        { txt: `not ${cols[2]}, and a number less than 3`, f: (o) => !o.startsWith(cols[2]) && Number(o.slice(-1)) < 3, wrong: frac(4, 7) },
+        { txt: `a colour other than ${cols[2]} and a number less than 3`, f: (o) => !o.startsWith(cols[2]) && Number(o.slice(-1)) < 3, wrong: frac(4, 7) },
       ],
     };
   },
@@ -231,19 +231,21 @@ const LIST_SCENES = [
 ];
 
 export const ssListing = gen('prob-ss-listing', 'prob-sample-space', (rng, d) => {
-  const scene = pick(rng, LIST_SCENES.slice(...size(d, [0, 4], [0, 7], [1, 7])))(rng);
-  const ev = pick(rng, scene.events);
+  const scenes = size(d, LIST_SCENES.slice(0, 4), LIST_SCENES.slice(0, 7), [1, 4, 5, 6].map((i) => LIST_SCENES[i]));
+  const scene = pick(rng, scenes)(rng);
+  const ev = pick(rng, scene.events.filter((e, i) => d !== 'hard' || scene.events.length < 3 || i > 0));
+  const clause = /^(the |song )/.test(ev.txt);
   const fav = scene.outcomes.filter(ev.f);
   const N = scene.outcomes.length;
   const p = frac(fav.length, N);
   return {
-    prompt: `${scene.intro}<br>What is the probability of ${ev.txt}?`,
+    prompt: `${scene.intro}<br>What is the probability ${clause ? 'that' : 'of getting'} ${ev.txt}?`,
     answer: ft(p),
     distractors: probOpts(p, [ev.wrong, frac(1, N), frac(fav.length, N - fav.length), frac(N - fav.length, N), frac(fav.length + 1, N), frac(fav.length, N + 1), frac(fav.length, N * 2)]),
     typed: typedP(p),
     solution: [
       `List every outcome systematically: ${scene.outcomes.join(', ')} – that is ${num(N)} equally likely outcomes.`,
-      `Outcomes with ${ev.txt}: ${fav.join(', ')} (${num(fav.length)}).${ev.why ? ` Remember ${ev.why}.` : ''}`,
+      `Outcomes where ${clause ? ev.txt : `you get ${ev.txt}`}: ${fav.join(', ')} (${num(fav.length)}).${ev.why ? ` Remember ${ev.why}.` : ''}`,
       `$P = \\frac{${fav.length}}{${N}}${p.d !== N ? ` = ${p.tex()}` : ''}$`,
       `Answer: ${ft(p)}`,
     ],
@@ -463,10 +465,10 @@ const RF_EXPERIMENTS = [
   { intro: (n) => `A spinner is spun ${n} times.`, outs: ['Red', 'Blue', 'Green'] },
   { intro: (n) => `Rosie makes ${n} sales calls and records what happens on each call.`, outs: ['Not answered', 'Answered, no sale', 'Answered, sale made'] },
   { intro: (n) => `A dice is rolled ${n} times.`, outs: ['1', '2', '3', '4', '5', '6'] },
-  { intro: (n) => `A basketball player takes ${n} shots at the hoop.`, outs: ['Scores', 'Misses'], one: (o, k) => `She ${o === 'Scores' ? 'scores' : 'misses'} ${k} times.` },
+  { intro: (n) => `A basketball player takes ${n} shots at the hoop.`, outs: ['Scores', 'Misses'], one: (o, k) => `She ${o === 'Scores' ? 'scores' : 'misses'} ${k} times.`, of: (o) => (o === 'Scores' ? 'scoring' : 'missing') },
   { intro: (n) => `${n} customers at a sandwich shop choose their bread.`, outs: ['White', 'Brown', 'Seeded'] },
-  { intro: (n) => `The speeds of ${n} cars passing a school are checked.`, outs: ['Under 20 mph', 'Over 20 mph'], one: (o, k) => `${k} of the cars are ${o.toLowerCase()}.` },
-  { intro: (n) => `A machine tests ${n} batteries.`, outs: ['Pass', 'Fail'], one: (o, k) => `${k} batteries ${o === 'Pass' ? 'pass' : 'fail'}.` },
+  { intro: (n) => `The speeds of ${n} cars passing a school are checked.`, outs: ['Under 20 mph', 'Over 20 mph'], desc: true, one: (o, k) => `${k} of the cars are ${o.toLowerCase()}.`, of: (o) => `cars going ${o.toLowerCase()}` },
+  { intro: (n) => `A machine tests ${n} batteries.`, outs: ['Pass', 'Fail'], desc: true, one: (o, k) => `${k} batteries ${o === 'Pass' ? 'pass' : 'fail'}.`, of: (o) => `batteries that ${o === 'Pass' ? 'pass' : 'fail'}` },
 ];
 
 export const efRelFreq = gen('prob-ef-rel-freq', 'prob-expected-frequency', (rng, d) => {
@@ -477,6 +479,7 @@ export const efRelFreq = gen('prob-ef-rel-freq', 'prob-expected-frequency', (rng
   const cuts = sample(rng, range(1, total - 1), k - 1).sort((a, b) => a - b);
   const freqs = [cuts[0], ...cuts.slice(1).map((c, i) => c - cuts[i]), total - cuts[cuts.length - 1]];
   if (freqs.some((f) => f < 2)) throw new Error('tiny');
+  if (ex.desc) freqs.sort((x, y) => y - x);
   const i = int(rng, 0, k - 1);
   const form = (100 * 1000) % total === 0 && pick(rng, [true, false, d !== 'hard']) ? 'dec' : 'frac';
   const p = frac(freqs[i], total);
@@ -484,7 +487,7 @@ export const efRelFreq = gen('prob-ef-rel-freq', 'prob-expected-frequency', (rng
   const asTable = !ex.one || rng() < 0.4;
   const prompt = asTable
     ? `${ex.intro(total)} The results are shown.${table([['Outcome', 'Frequency'], ...ex.outs.map((o, t) => [o, String(freqs[t])])])}Work out the relative frequency of <b>${ex.outs[i]}</b>${form === 'dec' ? ' as a decimal' : ''}.`
-    : `${ex.intro(total)} ${ex.one(ex.outs[i], freqs[i])}<br>Write down the relative frequency of <b>${ex.outs[i].toLowerCase()}</b>${form === 'dec' ? ' as a decimal' : ''}.`;
+    : `${ex.intro(total)} ${ex.one(ex.outs[i], freqs[i])}<br>Write down the relative frequency of <b>${ex.of ? ex.of(ex.outs[i]) : ex.outs[i].toLowerCase()}</b>${form === 'dec' ? ' as a decimal' : ''}.`;
   return {
     prompt,
     answer: pf(p, form),
@@ -499,26 +502,19 @@ export const efRelFreq = gen('prob-ef-rel-freq', 'prob-expected-frequency', (rng
 }, { title: 'Work out a relative frequency' });
 
 export const efFair = gen('prob-ef-fair', 'prob-expected-frequency', (rng, d) => {
-  const N = pick(rng, size(d, [60, 120, 300], [300, 600, 240], [600, 900, 1200]));
+  const N = pick(rng, size(d, [120, 300], [300, 600], [600, 900, 1200]));
   const e = N / 6;
   const biased = rng() < 0.7;
   const target = int(rng, 1, 6);
-  const freqs = range(1, 6).map(() => e);
-  // jitter
-  const wiggle = Math.max(2, Math.round(e * 0.08));
-  for (let t = 0; t < 6; t += 1) {
-    const j = int(rng, 0, 5); const k = (j + 1 + int(rng, 0, 4)) % 6; const w = int(rng, 0, wiggle);
-    freqs[j] += w; freqs[k] -= w;
-  }
-  let dir = 0;
-  if (biased) {
-    dir = pick(rng, [1, 1, -1]);
-    const shift = Math.round(e * (dir > 0 ? pick(rng, [0.6, 0.8, 1]) : 0.6));
-    freqs[target - 1] += dir * shift;
-    // take/give it evenly from others
-    for (let t = 0; t < shift; t += 1) { const o = (target + (t % 5)) % 6; freqs[o] -= dir; }
-  }
-  if (freqs.some((f) => f <= 0) || freqs.reduce((a, b) => a + b, 0) !== N) throw new Error('freq');
+  const dir = biased ? pick(rng, [1, 1, -1]) : 0;
+  const big = biased ? Math.round(e * (dir > 0 ? pick(rng, [1.4, 1.5]) : 0.5)) : e;
+  // The other five faces share the rest evenly, each within about 5% of their mean.
+  const base = (N - big) / 5;
+  const spread = Math.max(1, Math.round(base * 0.05));
+  const freqs = range(1, 6).map((s) => (s === target ? big : Math.round(base + int(rng, -spread, spread))));
+  const fixIdx = range(1, 6).find((s) => s !== target) - 1;
+  freqs[fixIdx] += N - sum6(freqs);
+  if (freqs.some((f, i) => i !== target - 1 && Math.abs(f - base) > base * 0.08 + 1)) throw new Error('uneven');
   const tbl = table([['Score', ...range(1, 6).map(String)], ['Frequency', ...freqs.map(String)]], { firstColHeader: true });
   if (d === 'easy' && rng() < 0.5) {
     return {
@@ -539,62 +535,75 @@ export const efFair = gen('prob-ef-fair', 'prob-expected-frequency', (rng, d) =>
   const others = range(1, 6).filter((s) => s !== target);
   const maxOther = others.reduce((a, s) => (freqs[s - 1] > freqs[a - 1] ? s : a), others[0]);
   const minOther = others.reduce((a, s) => (freqs[s - 1] < freqs[a - 1] ? s : a), others[0]);
+  const lo = Math.min(...others.map((s) => freqs[s - 1])); const hi = Math.max(...others.map((s) => freqs[s - 1]));
   return {
     prompt: `Ali wants to know if his dice is fair. He rolls it ${N} times.${tbl}Which conclusion is best?`,
     answer,
     distractors: [
-      ...(biased ? [fairOpt] : []), opt(maxOther, true), opt(minOther, false), biased ? opt(target, dir < 0) : opt(target, freqs[target - 1] >= e),
+      ...(biased ? [fairOpt] : []), opt(maxOther, freqs[maxOther - 1] >= e), opt(minOther, freqs[minOther - 1] >= e), biased ? opt(target, dir < 0) : opt(target, freqs[target - 1] >= e),
       'You cannot tell anything, because the frequencies are not all exactly equal.',
     ],
     count: 5,
     solution: [
       `For a fair dice, each score is expected $\\frac{1}{6} \\times ${N} = ${e}$ times.`,
       'Small differences from the expected number are normal; a very big difference suggests bias.',
-      biased ? `Score ${target} came up ${freqs[target - 1]} times – far ${dir > 0 ? 'more' : 'fewer'} than ${e}. The other scores are all close to ${e}.` : `Every score is within about ${wiggle * 2} of ${e} – that is normal variation for ${N} rolls.`,
+      biased ? `Score ${target} came up ${freqs[target - 1]} times – far ${dir > 0 ? 'more' : 'fewer'} than ${e}. The other scores are all between ${lo} and ${hi}, close to each other, so only ${target} stands out.`
+        : `Every score is between ${Math.min(...freqs)} and ${Math.max(...freqs)} – close to ${e}. That is normal variation for ${N} rolls.`,
       `Answer: ${answer}`,
     ],
   };
 }, { title: 'Is the dice fair? Compare with expected frequencies' });
 
+function sum6(xs) { return xs.reduce((a, b) => a + b, 0); }
+
 export const efBestEstimate = gen('prob-ef-best-estimate', 'prob-expected-frequency', (rng, d) => {
   const mode = pick(rng, size(d, ['people', 'cumulative'], ['people', 'cumulative'], ['people', 'people', 'cumulative']));
-  const thing = pick(rng, [
-    { act: 'throws a drawing pin', ev: 'it lands point up', short: 'Point up' },
-    { act: 'spins a biased spinner', ev: 'it lands on red', short: 'Red' },
-    { act: 'throws a biased coin', ev: 'it lands on heads', short: 'Heads' },
-    { act: 'takes a penalty', ev: 'they score', short: 'Goals' },
-    { act: 'rolls a biased dice', ev: 'it lands on 6', short: 'Sixes' },
-    { act: 'drops a slice of toast', ev: 'it lands butter side down', short: 'Butter down' },
-  ]);
   if (mode === 'cumulative') {
-    const N = pick(rng, [50, 40, 100]);
-    const steps = 5;
+    const thing = pick(rng, [
+      { act: 'throws a drawing pin', ev: 'it lands point up' },
+      { act: 'spins a biased spinner', ev: 'it lands on red' },
+      { act: 'throws a biased coin', ev: 'it lands on heads' },
+      { act: 'takes a penalty', ev: 'they score' },
+      { act: 'rolls a biased dice', ev: 'it lands on 6' },
+      { act: 'drops a slice of toast', ev: 'it lands butter side down' },
+    ]);
+    const checks = pick(rng, [[20, 50, 100, 200, 500], [25, 50, 100, 200, 250], [10, 40, 100, 200, 400], [20, 40, 100, 250, 500]]);
     const trueP = pick(rng, [0.3, 0.35, 0.4, 0.45, 0.6, 0.65, 0.7]);
-    const rf = [];
-    let succ = 0;
-    for (let s = 1; s <= steps; s += 1) {
-      const target = Math.round(trueP * N * s + (rng() - 0.5) * N * 0.6 / Math.sqrt(s));
-      succ = Math.max(succ, Math.min(target, N * s));
-      rf.push(frac(succ, N * s));
-    }
-    if (!rf.every(shortDecimal3)) throw new Error('dp');
+    // Simulate each block of new trials and add it on: successes ≈ trueP × trials ± sampling noise.
+    let succ = 0; let prev = 0;
+    const rf = checks.map((c) => {
+      const len = c - prev; prev = c;
+      const sd = Math.sqrt(len * trueP * (1 - trueP));
+      const got = Math.max(0, Math.min(len, Math.round(trueP * len + (rng() + rng() + rng() - 1.5) * 1.6 * sd)));
+      succ += got;
+      return frac(succ, c);
+    });
     const shown = rf.map((r) => roundTo(r.value(), 3));
-    if (new Set(shown).size < 5) throw new Error('rf');
-    const mean = roundTo(shown.reduce((a, b) => a + b, 0) / steps, 3);
+    if (new Set(shown).size < 4) throw new Error('rf');
+    const last = shown[shown.length - 1];
+    const mean = roundTo(shown.reduce((a, b) => a + b, 0) / shown.length, 3);
+    const total = checks[checks.length - 1];
     return {
-      prompt: `${pick(rng, names(rng, 4))} ${thing.act} ${N * steps} times. After every ${N} trials, the relative frequency that ${thing.ev} is worked out.${table([['Number of trials', ...range(1, steps).map((s) => String(s * N))], ['Relative frequency', ...shown.map((v) => tnum(v))]], { firstColHeader: true })}What is the best estimate of the probability that ${thing.ev}?`,
-      answer: `$${tnum(shown[steps - 1])}$`,
+      prompt: `${pick(rng, names(rng, 4))} ${thing.act} ${total} times. The relative frequency that ${thing.ev} is worked out after different numbers of trials.${table([['Number of trials', ...checks.map(String)], ['Relative frequency', ...shown.map((v) => tnum(v))]], { firstColHeader: true })}What is the best estimate of the probability that ${thing.ev}?`,
+      answer: `$${tnum(last)}$`,
       distractors: [`$${tnum(shown[0])}$`, `$${tnum(Math.max(...shown))}$`, `$${tnum(mean)}$`, `$${tnum(Math.min(...shown))}$`, ...shown.slice(1, -1).map((v) => `$${tnum(v)}$`), '$0.5$'],
       count: 4,
       solution: [
         'The more trials, the more reliable the relative frequency.',
-        `The last value uses all ${N * steps} trials, so it is the best estimate.`,
-        `Answer: $${tnum(shown[steps - 1])}$`,
+        `The last value uses all ${total} trials, so it is the best estimate.`,
+        `Answer: $${tnum(last)}$`,
       ],
     };
   }
+  const thing = pick(rng, [
+    { act: 'throw the same drawing pin', ev: 'it lands point up', short: 'Point up' },
+    { act: 'spin the same biased spinner', ev: 'it lands on red', short: 'Red' },
+    { act: 'throw the same biased coin', ev: 'it lands on heads', short: 'Heads' },
+    { act: 'roll the same biased dice', ev: 'it lands on 6', short: 'Sixes' },
+    { act: 'take turns to drop the same slice of toast', ev: 'it lands butter side down', short: 'Butter down' },
+  ]);
   const people = names(rng, 3);
-  const T0 = pick(rng, size(d, [100, 200], [100, 200, 250, 400], [200, 250, 400, 500]));
+  const T0 = pick(rng, size(d, [100, 200], [100, 200, 250, 500], [200, 250, 500]));
   const unitT = T0 >= 250 ? 25 : 10;
   const c1 = int(rng, 1, T0 / unitT - 2); const c2 = int(rng, 1, T0 / unitT - 1 - c1);
   const trials = [c1, c2, T0 / unitT - c1 - c2].map((x) => x * unitT);
@@ -607,9 +616,10 @@ export const efBestEstimate = gen('prob-ef-best-estimate', 'prob-expected-freque
   const rfs = trials.map((t, i) => frac(succ[i], t));
   const meanRF = rfs.reduce((a, b) => a.add(b), frac(0)).div(3);
   const tbl = table([['', 'Number of trials', thing.short], ...people.map((n, i) => [n, String(trials[i]), String(succ[i])])], { firstColHeader: true });
+  const intro = `Three friends ${thing.act} several times and record how often ${thing.ev}.${tbl}`;
   if (d === 'easy') {
     return {
-      prompt: `Three friends each ${thing.act.replace(/s /, ' ')} several times and record how often ${thing.ev}.${tbl}Whose results give the most reliable estimate of the probability that ${thing.ev}?`,
+      prompt: `${intro}Whose results give the most reliable estimate of the probability that ${thing.ev}?`,
       answer: `${people[big]}, because they did the most trials`,
       distractors: [
         `${people[succ.indexOf(Math.max(...succ))] === people[big] ? people[(big + 1) % 3] : people[succ.indexOf(Math.max(...succ))]}, because they got the most ${thing.short.toLowerCase()}`,
@@ -621,20 +631,30 @@ export const efBestEstimate = gen('prob-ef-best-estimate', 'prob-expected-freque
       solution: ['More trials give a more reliable relative frequency.', `${people[big]} did ${trials[big]} trials – the most.`, `Answer: ${people[big]}`],
     };
   }
-  const form = shortDecimal3(p) ? 'dec' : 'frac';
+  // All options are written to 3 decimal places so the answer's format gives nothing away.
+  const f3 = (f) => `$${tnum(f.value(), 3)}$`;
+  const cands = [meanRF, rfs[big], rfs[0], rfs[1], rfs[2], frac(S, T + trials[0]), frac(succ[big], T), p.add(frac(1, 100)), p.sub(frac(1, 100)), p.add(frac(1, 20))];
+  const seen = new Set([p.value().toFixed(3)]);
+  const distractors = [];
+  cands.forEach((c) => {
+    if (c.value() <= 0 || c.value() >= 1 || !shortDecimal3(c)) return;
+    const k = c.value().toFixed(3);
+    if (!seen.has(k)) { seen.add(k); distractors.push(f3(c)); }
+  });
   return {
-    prompt: `Three friends each ${thing.act.replace(/s /, ' ')} several times and record how often ${thing.ev}.${tbl}Use <b>all</b> the results to work out the best estimate of the probability that ${thing.ev}.`,
-    answer: pf(p, form),
-    distractors: probOpts(p, [meanRF, rfs[big], rfs[0], rfs[1], rfs[2], frac(S, T + trials[0]), frac(succ[big], T)], form),
-    typed: typedP(p, form),
+    prompt: `${intro}Use <b>all</b> the results to work out the best estimate of the probability that ${thing.ev}.`,
+    answer: f3(p),
+    distractors,
+    typed: { kind: 'number', value: p },
     solution: [
       'Combine all the trials – a bigger sample gives a better estimate. (Don\'t average the three relative frequencies: the groups are different sizes.)',
       `Total trials: $${trials.join(' + ')} = ${T}$. Total ${thing.short.toLowerCase()}: $${succ.join(' + ')} = ${S}$.`,
-      `Estimate $= \\frac{${S}}{${T}}${form === 'dec' ? ` = ${tnum(p.value())}` : p.d !== T ? ` = ${p.tex()}` : ''}$`,
-      `Answer: ${pf(p, form)}`,
+      `Estimate $= \\frac{${S}}{${T}} = ${tnum(p.value())}$`,
+      `Answer: ${f3(p)}`,
     ],
   };
 }, { title: 'Best estimate of a probability from experiments' });
+
 
 function shortDecimal3(f) { const x = f.value() * 1000; return Math.abs(x - Math.round(x)) < 1e-9; }
 
@@ -645,7 +665,7 @@ export const efReverse = gen('prob-ef-reverse', 'prob-expected-frequency', (rng,
     const rf = frac(int(rng, 1, 19) * 5, 100);
     const n = rf.d * int(rng, 2, 20);
     const ans = rf.mul(n).value();
-    const obj = pick(rng, [['spins a spinner', 'lands on red'], ['throws a coin', 'lands on heads'], ['rolls a dice', 'lands on 6'], ['drops a drawing pin', 'lands point up']]);
+    const obj = pick(rng, [['spins a biased spinner', 'lands on red'], ['throws a biased coin', 'lands on heads'], ['rolls a biased dice', 'lands on 6'], ['drops a drawing pin', 'lands point up']]);
     return {
       prompt: `${who} ${obj[0]} ${n} times. The relative frequency that it ${obj[1]} is $${tnum(rf.value())}$.<br>How many times did it ${obj[1].replace(/^lands/, 'land')}?`,
       answer: num(ans), distractors: countOpts(ans, [n - ans, Math.round(n / rf.value()), Math.round(rf.value() * 100), Math.round(n / 10)]),

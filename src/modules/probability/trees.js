@@ -2,7 +2,7 @@
 import {
   pick, int, sample, shuffle, size, frac, Frac, num, tnum, names, cap, table, gcd,
 } from '../../core.js';
-import { treeDiagram, venn2, discs, sampleGrid } from './diagrams.js';
+import { treeDiagram, venn2, discs, cards, sampleGrid, rawFrac } from './diagrams.js';
 import {
   pgen as gen, pf, pt, typedP, probOpts, countOpts, listAnd, shortDecimal,
 } from './util.js';
@@ -18,8 +18,8 @@ const lab = (f, form) => (form === 'dec' ? f.value() : f);
 
 // Two independent events. same: both stages use the same probability.
 const IND_CTX = [
-  { intro: (a, b) => `The probability that Jose passes his driving theory test is ${a}. The probability that Maria passes hers is ${b}.`, heads: ['Jose', 'Maria'], L: [['pass', 'not pass'], ['pass', 'not pass']], both: 'they both pass', neither: 'neither of them passes', exactly: 'exactly one of them passes', atleast: 'at least one of them passes', aNotB: 'Jose passes and Maria does not' },
-  { same: true, intro: (a) => `The probability that the school bus is late on any day is ${a}. Whether it is late on one day does not affect any other day.`, heads: ['Monday', 'Tuesday'], L: [['late', 'not late'], ['late', 'not late']], both: 'the bus is late on both Monday and Tuesday', neither: 'the bus is late on neither day', exactly: 'the bus is late on exactly one of the two days', atleast: 'the bus is late on at least one of the two days', aNotB: 'the bus is late on Monday but not on Tuesday' },
+  { intro: (a, b) => `The probability that Jose passes his driving theory test is ${a}. The probability that Maria passes hers is ${b}.`, heads: ['Jose', 'Maria'], L: [['pass', 'fail'], ['pass', 'fail']], both: 'they both pass', neither: 'neither of them passes', exactly: 'exactly one of them passes', atleast: 'at least one of them passes', aNotB: 'Jose passes and Maria does not' },
+  { same: true, intro: (a) => `The probability that the school bus is late on any day is ${a}. Whether it is late on one day does not affect any other day.`, heads: ['Monday', 'Tuesday'], L: [['late', 'on time'], ['late', 'on time']], both: 'the bus is late on both Monday and Tuesday', neither: 'the bus is late on neither day', exactly: 'the bus is late on exactly one of the two days', atleast: 'the bus is late on at least one of the two days', aNotB: 'the bus is late on Monday but not on Tuesday' },
   { same: true, intro: (a) => `A biased spinner lands on red with probability ${a}. It is spun twice.`, heads: ['1st spin', '2nd spin'], L: [['red', 'not red'], ['red', 'not red']], both: 'it lands on red both times', neither: 'it does not land on red either time', exactly: 'it lands on red exactly once', atleast: 'it lands on red at least once', aNotB: 'it lands on red on the first spin only' },
   { same: true, intro: (a) => `Femi scores a penalty with probability ${a}. He takes two penalties.`, heads: ['1st penalty', '2nd penalty'], L: [['score', 'miss'], ['score', 'miss']], both: 'he scores both penalties', neither: 'he misses both penalties', exactly: 'he scores exactly one penalty', atleast: 'he scores at least one penalty', aNotB: 'he scores the first and misses the second' },
   { intro: (a, b) => `On her way to work, Isla goes through two sets of traffic lights. The probability that the first set is red is ${a}. The probability that the second set is red is ${b}. The two sets work independently.`, heads: ['1st lights', '2nd lights'], L: [['red', 'not red'], ['red', 'not red']], both: 'both sets are red', neither: 'neither set is red', exactly: 'exactly one set is red', atleast: 'at least one set is red', aNotB: 'the first set is red and the second is not' },
@@ -34,16 +34,34 @@ const IND_CTX = [
   { intro: (a, b) => `Chen has two alarm clocks. The probability that the first one fails to ring is ${a}. The probability that the second one fails is ${b}, independently.`, heads: ['1st alarm', '2nd alarm'], L: [['fails', 'rings'], ['fails', 'rings']], both: 'both alarms fail', neither: 'neither alarm fails', exactly: 'exactly one alarm fails', atleast: 'at least one alarm fails', aNotB: 'the first alarm fails and the second rings' },
 ];
 
+const IND_RANGE = {
+  Jose: [0.5, 0.95], Monday: [0.05, 0.3], '1st spin': [0.1, 0.9], '1st penalty': [0.6, 0.9], '1st lights': [0.2, 0.6],
+  'Machine A': [0.05, 0.3], Kai: [0.3, 0.9], '1st seed': [0.6, 0.95], Saturday: [0.1, 0.8], Ravi: [0.5, 0.95],
+  'Flight out': [0.05, 0.4], '1st dart': [0.1, 0.4], United: [0.2, 0.7], '1st alarm': [0.05, 0.3],
+};
+const rangeOf = (ctx) => IND_RANGE[ctx.heads[0]] || [0.1, 0.9];
+/** A probability inside [lo, hi]: tenths, a multiple of 0.05, or a fraction with one of the given denominators. */
+function ranged(rng, [lo, hi], kind, dens = [2, 3, 4, 5]) {
+  if (kind === 'dec') return frac(int(rng, Math.ceil(lo * 10 - 1e-9), Math.floor(hi * 10 + 1e-9)), 10);
+  if (kind === 'dec2') return frac(int(rng, Math.ceil(lo * 20 - 1e-9), Math.floor(hi * 20 + 1e-9)) * 5, 100);
+  for (let t = 0; t < 30; t += 1) {
+    const den = pick(rng, dens);
+    const nlo = Math.max(1, Math.ceil(lo * den - 1e-9)); const nhi = Math.min(den - 1, Math.floor(hi * den + 1e-9));
+    if (nlo <= nhi) return frac(int(rng, nlo, nhi), den);
+  }
+  throw new Error('no fraction in range');
+}
+
 /** Random probability pair. */
-function probPair(rng, d, same) {
+function probPair(rng, d, ctx) {
+  const { same } = ctx;
+  const R = rangeOf(ctx);
   const form = pick(rng, size(d, ['dec', 'dec', 'frac'], ['dec', 'frac'], ['frac', 'dec']));
-  const mk = () => (form === 'dec'
-    ? frac(int(rng, 1, 9), 10)
-    : (() => { const den = pick(rng, size(d, [2, 3, 4, 5], [3, 4, 5, 6, 7, 8], [5, 6, 7, 8, 9, 10])); return frac(int(rng, 1, den - 1), den); })());
+  const mk = () => (form === 'dec' ? ranged(rng, R, 'dec') : ranged(rng, R, 'frac', size(d, [2, 3, 4, 5], [3, 4, 5, 6, 7, 8], [5, 6, 7, 8, 9, 10])));
   const a = mk(); const b = same ? a : mk();
   if (d === 'hard' && form === 'dec' && !same && rng() < 0.6) {
     // one probability to 2 dp (a multiple of 0.05) keeps every answer to at most 3 dp
-    const a2 = frac(int(rng, 1, 19) * 5, 100);
+    const a2 = ranged(rng, R, 'dec2');
     return rng() < 0.5 ? { a: a2, b, form } : { a, b: a2, form };
   }
   return { a, b, form };
@@ -58,7 +76,7 @@ const EVENTS = {
 };
 const ev2 = (k, a, b) => EVENTS[k](a, b);
 
-function indWorking(k, a, b, form) {
+function indWorking(k, a, b, form, ctx) {
   const A = pt(a, form); const B = pt(b, form); const nA = pt(one.sub(a), form); const nB = pt(one.sub(b), form);
   const r = (f) => pt(f, form);
   switch (k) {
@@ -66,7 +84,7 @@ function indWorking(k, a, b, form) {
     case 'neither': return [`"Neither" is the bottom path: $${nA} \\times ${nB} = ${r(one.sub(a).mul(one.sub(b)))}$`];
     case 'aNotB': return [`Multiply along the path: $${A} \\times ${nB} = ${r(a.mul(one.sub(b)))}$`];
     case 'exactly': return [
-      `Two paths give exactly one: (yes, no) and (no, yes).`,
+      `Two paths give exactly one: (${ctx.L[0][0]}, ${ctx.L[1][1]}) and (${ctx.L[0][1]}, ${ctx.L[1][0]}).`,
       `$${A} \\times ${nB} = ${r(a.mul(one.sub(b)))}$ and $${nA} \\times ${B} = ${r(one.sub(a).mul(b))}$`,
       `Add the paths: $${r(a.mul(one.sub(b)))} + ${r(one.sub(a).mul(b))} = ${r(ev2(k, a, b))}$`,
     ];
@@ -100,7 +118,7 @@ function indTree(ctx, a, b, form, hide = []) {
 
 export const indRead = gen('prob-tree-ind-read', 'prob-tree-independent', (rng, d) => {
   const ctx = pick(rng, IND_CTX);
-  const { a, b, form } = probPair(rng, d, ctx.same);
+  const { a, b, form } = probPair(rng, d, ctx);
   const k = pick(rng, size(d, ['both', 'neither', 'aNotB'], ['both', 'neither', 'exactly', 'aNotB'], ['exactly', 'atleast', 'neither']));
   const ans = ev2(k, a, b);
   if (form === 'dec' && !shortDecimal(ans, 3)) throw new Error('dp');
@@ -112,7 +130,7 @@ export const indRead = gen('prob-tree-ind-read', 'prob-tree-independent', (rng, 
     typed: typedP(ans, form),
     solution: [
       'For one path through the tree, <b>multiply</b> the probabilities along the branches. For several paths, <b>add</b> their results.',
-      ...indWorking(k, a, b, form),
+      ...indWorking(k, a, b, form, ctx),
       `Answer: ${pf(ans, form)}`,
     ],
   };
@@ -120,7 +138,7 @@ export const indRead = gen('prob-tree-ind-read', 'prob-tree-independent', (rng, 
 
 export const indMissing = gen('prob-tree-ind-missing', 'prob-tree-independent', (rng, d) => {
   const ctx = pick(rng, IND_CTX);
-  const { a, b, form } = probPair(rng, d, ctx.same);
+  const { a, b, form } = probPair(rng, d, ctx);
   if (d === 'easy') {
     // What goes in the box?
     const which = pick(rng, ['na', 'nb0', 'nb1', 'b1']);
@@ -153,7 +171,7 @@ export const indMissing = gen('prob-tree-ind-missing', 'prob-tree-independent', 
     typed: typedP(ans, form),
     solution: [
       `Fill in the missing branches first: each pair adds up to $1$, so the "${ctx.L[0][1]}" branch is $1 - ${pt(a, form)} = ${pt(one.sub(a), form)}$ and the second "${ctx.L[1][1]}" branches are $1 - ${pt(b, form)} = ${pt(one.sub(b), form)}$.`,
-      ...indWorking(k, a, b, form),
+      ...indWorking(k, a, b, form, ctx),
       `Answer: ${pf(ans, form)}`,
     ],
   };
@@ -161,7 +179,7 @@ export const indMissing = gen('prob-tree-ind-missing', 'prob-tree-independent', 
 
 export const indWord = gen('prob-tree-ind-word', 'prob-tree-independent', (rng, d) => {
   const ctx = pick(rng, IND_CTX);
-  const { a, b, form } = probPair(rng, d, ctx.same);
+  const { a, b, form } = probPair(rng, d, ctx);
   const k = pick(rng, size(d, ['both', 'neither', 'aNotB'], ['both', 'neither', 'exactly', 'atleast'], ['exactly', 'atleast', 'atleast', 'neither']));
   const ans = ev2(k, a, b);
   if (form === 'dec' && !shortDecimal(ans, 3)) throw new Error('dp');
@@ -172,7 +190,7 @@ export const indWord = gen('prob-tree-ind-word', 'prob-tree-independent', (rng, 
     typed: typedP(ans, form),
     solution: [
       `The events are independent, so P(this and that) = P(this) × P(that). A quick tree diagram helps: first branches for ${ctx.heads[0]}, then for ${ctx.heads[1]}.`,
-      ...indWorking(k, a, b, form),
+      ...indWorking(k, a, b, form, ctx),
       `Answer: ${pf(ans, form)}`,
     ],
     hint: 'Sketch a tree diagram with two sets of branches.',
@@ -245,7 +263,7 @@ export const indAndRule = gen('prob-tree-ind-and-rule', 'prob-tree-independent',
     };
   }
   if (kind === 'three') {
-    const ps = [frac(int(rng, 1, 9), 10), frac(int(rng, 1, 9), 10), frac(int(rng, 1, 9), 10)];
+    const ps = [frac(int(rng, 1, 3), 10), frac(int(rng, 1, 3), 10), frac(int(rng, 1, 3), 10)];
     const who = names(rng, 3);
     const ans = ps.reduce((acc, p) => acc.mul(one.sub(p)), one);
     return {
@@ -340,26 +358,26 @@ export const indReverse = gen('prob-tree-ind-reverse', 'prob-tree-independent', 
   const ctx = pick(rng, IND_CTX.filter((c) => (d === 'hard' ? true : !c.same)));
   const kind = ctx.same ? 'same' : pick(rng, size(d, ['both'], ['both', 'aNotB'], ['aNotB', 'neither', 'both']));
   if (kind === 'same') {
-    const a = frac(int(rng, 1, 9), 10);
+    const a = ranged(rng, rangeOf(ctx), 'dec');
     const both = a.mul(a);
     return {
       prompt: `${ctx.intro('$p$', '$p$')}<br>The probability that ${ctx.both} is $${tnum(both.value())}$.<br>Work out the value of $p$.`,
       answer: pf(a, 'dec'),
-      distractors: probOpts(a, [both.div(2), one.sub(both), both.mul(2), frac(Math.round(Math.sqrt(both.value() * 10) * 1000), 1000), one.sub(a)], 'dec'),
+      distractors: probOpts(a, [both, both.div(2), one.sub(a), one.sub(both), a.add(frac(1, 10)), a.sub(frac(1, 10)), both.mul(2)], 'dec'),
       typed: typedP(a, 'dec'),
       solution: [`$p \\times p = p^2 = ${tnum(both.value())}$`, `$p = \\sqrt{${tnum(both.value())}} = ${tnum(a.value())}$`, `Answer: $${tnum(a.value())}$`],
     };
   }
-  const a = frac(int(rng, 2, 9), 10); const b = frac(int(rng, 1, 9), 10);
+  const a = ranged(rng, rangeOf(ctx), 'dec'); const b = ranged(rng, rangeOf(ctx), 'dec');
   const given = ev2(kind, a, b);
   const ans = b;
-  const working = kind === 'both' ? [`$${tnum(a.value())} \\times P = ${tnum(given.value())}$`, `$P = ${tnum(given.value())} \\div ${tnum(a.value())} = ${tnum(b.value())}$`]
-    : kind === 'aNotB' ? [`$${tnum(a.value())} \\times (1 - P) = ${tnum(given.value())}$, so $1 - P = ${tnum(given.value())} \\div ${tnum(a.value())} = ${tnum(one.sub(b).value())}$`, `$P = 1 - ${tnum(one.sub(b).value())} = ${tnum(b.value())}$`]
-      : [`$(1 - ${tnum(a.value())}) \\times (1 - P) = ${tnum(given.value())}$, so $1 - P = ${tnum(given.value())} \\div ${tnum(one.sub(a).value())} = ${tnum(one.sub(b).value())}$`, `$P = 1 - ${tnum(one.sub(b).value())} = ${tnum(b.value())}$`];
+  const working = kind === 'both' ? [`$${tnum(a.value())} \\times p = ${tnum(given.value())}$`, `$p = ${tnum(given.value())} \\div ${tnum(a.value())} = ${tnum(b.value())}$`]
+    : kind === 'aNotB' ? [`$${tnum(a.value())} \\times (1 - p) = ${tnum(given.value())}$, so $1 - p = ${tnum(given.value())} \\div ${tnum(a.value())} = ${tnum(one.sub(b).value())}$`, `$p = 1 - ${tnum(one.sub(b).value())} = ${tnum(b.value())}$`]
+      : [`$(1 - ${tnum(a.value())}) \\times (1 - p) = ${tnum(given.value())}$, so $1 - p = ${tnum(given.value())} \\div ${tnum(one.sub(a).value())} = ${tnum(one.sub(b).value())}$`, `$p = 1 - ${tnum(one.sub(b).value())} = ${tnum(b.value())}$`];
   return {
-    prompt: `${ctx.intro(`$${tnum(a.value())}$`, '$P$')}<br>The probability that ${ctx[kind]} is $${tnum(given.value())}$.<br>Work out the value of $P$.`,
+    prompt: `${ctx.intro(`$${tnum(a.value())}$`, '$p$')}<br>The probability that ${ctx[kind]} is $${tnum(given.value())}$.<br>Work out the value of $p$.`,
     answer: pf(ans, 'dec'),
-    distractors: probOpts(ans, [given.mul(a), one.sub(b), given.add(a), a.sub(given), given.div(one.sub(a)), given], 'dec'),
+    distractors: probOpts(ans, [one.sub(b), given, given.add(a), a.sub(given), a, one.sub(a)], 'dec'),
     typed: typedP(ans, 'dec'),
     solution: ['The events are independent, so the probability of a path is the product of its branches. Write an equation.', ...working, `Answer: $${tnum(ans.value())}$`],
   };
@@ -406,7 +424,8 @@ export const depBagTwo = gen('prob-dep-bag-two', 'prob-tree-dependent', (rng, d)
   const modes = size(d, ['both0', 'both1'], ['both0', 'same', 'diff01'], nk === 3 ? ['same', 'diff', 'atleast0'] : ['same', 'diff01', 'atleast0']);
   const mode = pick(rng, modes);
   let ans; let txt; let steps; const wrong = [];
-  const w0 = kindWord(ctx, K0); const w1 = kindWord(ctx, K1);
+  const art = (w) => (ctx.person || ctx.nounKinds ? `${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w}` : w);
+  const w0 = art(kindWord(ctx, K0)); const w1 = art(kindWord(ctx, K1));
   if (mode === 'both0' || mode === 'both1') {
     const [K, c] = mode === 'both0' ? [K0, c0] : [K1, c1];
     ans = P2(c, c - 1); txt = `both ${ctx.item === 'piece of fruit' ? 'pieces of fruit' : `${ctx.item.replace(/y$/, 'ie')}s`} are ${kindWord(ctx, K)}${ctx.nounKinds ? 's' : ''}`.replace('both players are girl', 'both players are girls').replace('both players are boy', 'both players are boys').replace('both students are girl', 'both students are girls').replace('both students are boy', 'both students are boys');
@@ -421,12 +440,12 @@ export const depBagTwo = gen('prob-dep-bag-two', 'prob-tree-dependent', (rng, d)
     if (mode === 'diff') { ans = one.sub(sameAll); txt = `the two ${ctx.item === 'piece of fruit' ? 'pieces of fruit' : `${ctx.item.replace(/y$/, 'ie')}s`} are different ${attr(ctx, true)}`; steps = [`It is easier to use $1 - P(\\text{same})$.`, `$P(\\text{same}) = ${counts.map((c) => `\\frac{${c}}{${n}} \\times \\frac{${c - 1}}{${n - 1}}`).join(' + ')} = ${sameAll.tex()}$`, `$1 - ${sameAll.tex()} = ${ans.tex()}$`]; wrong.push(sameAll, one.sub(counts.reduce((acc, c) => acc.add(frac(c * c, n * n)), frac(0)))); }
     else {
       ans = P2(c0, c1).mul(2); txt = `one is ${w0} and one is ${w1}`;
-      steps = [`Two orders: ${w0} then ${w1}, or ${w1} then ${w0}.`, `$\\frac{${c0}}{${n}} \\times \\frac{${c1}}{${n - 1}} + \\frac{${c1}}{${n}} \\times \\frac{${c0}}{${n - 1}} = \\frac{${2 * c0 * c1}}{${n * (n - 1)}}${ans.n !== 2 * c0 * c1 ? ` = ${ans.tex()}` : ''}$`];
+      steps = [`Two orders: ${kindWord(ctx, K0)} then ${kindWord(ctx, K1)}, or ${kindWord(ctx, K1)} then ${kindWord(ctx, K0)}.`, `$\\frac{${c0}}{${n}} \\times \\frac{${c1}}{${n - 1}} + \\frac{${c1}}{${n}} \\times \\frac{${c0}}{${n - 1}} = \\frac{${2 * c0 * c1}}{${n * (n - 1)}}${ans.n !== 2 * c0 * c1 ? ` = ${ans.tex()}` : ''}$`];
       wrong.push(P2(c0, c1), frac(2 * c0 * c1, n * n), frac(c0 * c1, n * n), frac(c0, n).add(frac(c1, n - 1)));
     }
   } else {
     ans = one.sub(P2(n - c0, n - c0 - 1)); txt = `at least one is ${w0}`;
-    steps = [`At least one ${w0} $= 1 - P(\\text{no ${w0}})$.`, `$P(\\text{no ${w0}}) = \\frac{${n - c0}}{${n}} \\times \\frac{${n - c0 - 1}}{${n - 1}} = ${P2(n - c0, n - c0 - 1).tex()}$`, `$1 - ${P2(n - c0, n - c0 - 1).tex()} = ${ans.tex()}$`];
+    steps = [`At least one ${kindWord(ctx, K0)} $= 1 - P(\\text{no ${kindWord(ctx, K0)}})$.`, `$P(\\text{no ${kindWord(ctx, K0)}}) = \\frac{${n - c0}}{${n}} \\times \\frac{${n - c0 - 1}}{${n - 1}} = ${P2(n - c0, n - c0 - 1).tex()}$`, `$1 - ${P2(n - c0, n - c0 - 1).tex()} = ${ans.tex()}$`];
     wrong.push(one.sub(frac((n - c0) ** 2, n * n)), P2(c0, c0 - 1), frac(c0, n).mul(2), P2(n - c0, n - c0 - 1));
   }
   const list = listAnd(kinds.map((k, i) => ctx.noun(k, counts[i])));
@@ -453,6 +472,7 @@ export const depTreeMissing = gen('prob-dep-tree-missing', 'prob-tree-dependent'
   const w = kinds.map((k) => cap(kindWord(ctx, k)));
   // second-stage probabilities as unsimplified n-1 fractions (as students write them)
   const second = [[frac(c0 - 1, n - 1), frac(c1, n - 1)], [frac(c0, n - 1), frac(c1 - 1, n - 1)]];
+  const secondRaw = [[rawFrac(c0 - 1, n - 1), rawFrac(c1, n - 1)], [rawFrac(c0, n - 1), rawFrac(c1 - 1, n - 1)]];
   const boxI = int(rng, 0, 1); const boxJ = int(rng, 0, 1);
   const ask = d === 'easy' ? 'box' : 'path';
   const list = listAnd(kinds.map((k, i) => ctx.noun(k, counts[i])));
@@ -460,8 +480,8 @@ export const depTreeMissing = gen('prob-dep-tree-missing', 'prob-tree-dependent'
     const ans = second[boxI][boxJ];
     const visual = treeDiagram({
       headings: ['1st', '2nd'],
-      first: [{ label: w[0], p: frac(c0, n) }, { label: w[1], p: frac(c1, n) }],
-      second: [0, 1].map((i) => [0, 1].map((j) => ({ label: w[j], p: i === boxI && j === boxJ ? null : second[i][j] }))),
+      first: [{ label: w[0], p: rawFrac(c0, n) }, { label: w[1], p: rawFrac(c1, n) }],
+      second: [0, 1].map((i) => [0, 1].map((j) => ({ label: w[j], p: i === boxI && j === boxJ ? null : secondRaw[i][j] }))),
     });
     return {
       prompt: `${ctx.intro(list)}<br>Here is a tree diagram. What probability goes in the empty box?`,
@@ -482,7 +502,7 @@ export const depTreeMissing = gen('prob-dep-tree-missing', 'prob-tree-dependent'
   const pathP = frac(counts[i], n).mul(second[i][j]);
   const visual = treeDiagram({
     headings: ['1st', '2nd'],
-    first: [{ label: w[0], p: frac(c0, n) }, { label: w[1], p: null }],
+    first: [{ label: w[0], p: rawFrac(c0, n) }, { label: w[1], p: null }],
     second: [0, 1].map(() => [0, 1].map((jj) => ({ label: w[jj], p: null }))),
   });
   const ans = d === 'hard' ? pathP.mul(2) : pathP;
@@ -584,15 +604,19 @@ export const depNumbers = gen('prob-dep-numbers', 'prob-tree-dependent', (rng, d
   const p = frac(fav, n * (n - 1));
   if (p.n === 0 || p.eq(one)) throw new Error('trivial');
   const pWith = frac(favWith, n * n);
+  // a pair of values that satisfies the event, for the worked example
+  let ex = null;
+  vals.forEach((va, ia) => vals.forEach((vb, ib) => { if (!ex && ev.f(va, vb) && (ia !== ib || counts[ia] > 1)) ex = [ia, ib]; }));
+  const exTxt = ex ? `e.g. P(first is ${vals[ex[0]]}, second is ${vals[ex[1]]}) $= \\frac{${counts[ex[0]]}}{${n}} \\times \\frac{${counts[ex[1]] - (ex[0] === ex[1] ? 1 : 0)}}{${n - 1}}$` : '';
   return {
     prompt: `These ${n} ${kind === 'discs' ? 'discs' : 'cards'} are in a bag. Two are taken at random, one after the other, without replacement.<br>Work out the probability that ${ev.txt}.`,
-    visual: kind === 'discs' ? discs(vals.map((v, i) => Array(counts[i]).fill(String(v)))) : discs(items.map(String), { perRow: 10 }),
+    visual: kind === 'discs' ? discs(vals.map((v, i) => Array(counts[i]).fill(String(v)))) : cards(items.map(String)),
     answer: pf(p),
     distractors: probOpts(p, [pWith, frac(fav, n * n), frac(fav / 2, n * (n - 1) / 2).mul(1).add(frac(0)), p.mul(2), p.div(2), one.sub(p)]),
     typed: typedP(p),
     solution: [
       `There are $${n} \\times ${n - 1} = ${n * (n - 1)}$ equally likely ordered pairs (the second item cannot be the same disc or card as the first).`,
-      kind === 'discs' ? `Group by value: e.g. P(first is ${vals[0]}, second is ${vals[1]}) $= \\frac{${counts[0]}}{${n}} \\times \\frac{${counts[1]}}{${n - 1}}$. Add up all the pairs of values that work.` : 'List or count the ordered pairs that work.',
+      kind === 'discs' ? `Group by value and multiply along each path, ${exTxt}. Add up all the pairs of values that work.` : 'List or count the ordered pairs that work.',
       `Pairs that work: ${fav} out of ${n * (n - 1)}, so $P = \\frac{${fav}}{${n * (n - 1)}}${p.d !== n * (n - 1) ? ` = ${p.tex()}` : ''}$`,
       `Answer: ${pf(p)}`,
     ],
@@ -775,29 +799,37 @@ export const condVenn = gen('prob-cond-venn', 'prob-conditional', (rng, d) => {
 }, { title: 'Conditional probability from a Venn diagram' });
 
 export const condTreeReverse = gen('prob-cond-tree-reverse', 'prob-conditional', (rng, d) => {
-  const kind = pick(rng, size(d, ['bag', 'cond'], ['bag', 'cond'], ['cond', 'bag', 'atleast']));
-  if (kind === 'bag' || kind === 'atleast') {
+  const kind = pick(rng, size(d, ['same', 'cond'], ['atleastFirst', 'same', 'cond'], ['cond', 'atleast', 'atleastFirst']));
+  if (kind !== 'cond') {
     const r = int(rng, 3, 8); const b = int(rng, 2, 7); const n = r + b;
     const col = pick(rng, [['red', 'blue'], ['green', 'yellow'], ['black', 'white']]);
-    const RR = frac(r * (r - 1), n * (n - 1)); const RB = frac(r * b, n * (n - 1)); const BR = RB; const BB = frac(b * (b - 1), n * (n - 1));
+    const [R, B] = col.map((c) => c[0].toUpperCase());
+    const RR = frac(r * (r - 1), n * (n - 1)); const BB = frac(b * (b - 1), n * (n - 1));
+    const atl = one.sub(BB);
     let p; let txt; let steps; const wrong = [];
-    if (kind === 'bag') {
-      // Given second is red, P(first red)
-      const second = RR.add(BR);
-      p = RR.div(second);
-      txt = `Given that the <b>second</b> counter is ${col[0]}, what is the probability that the first counter was also ${col[0]}?`;
-      steps = [`$P(\\text{2nd ${col[0]}}) = P(${col[0][0].toUpperCase()}${col[0][0].toUpperCase()}) + P(${col[1][0].toUpperCase()}${col[0][0].toUpperCase()}) = ${RR.tex()} + ${BR.tex()} = ${second.tex()}$`, `$P(\\text{1st ${col[0]}} \\mid \\text{2nd ${col[0]}}) = \\dfrac{P(${col[0][0].toUpperCase()}${col[0][0].toUpperCase()})}{P(\\text{2nd ${col[0]}})} = ${RR.tex()} \\div ${second.tex()} = ${p.tex()}$`];
-      wrong.push(RR, frac(r, n), second, frac(r - 1, n - 1).add(frac(0)), RR.div(frac(r, n)).add(frac(0)), frac(r, n - 1));
+    // Conditions are chosen so the answer is never simply a branch of the tree.
+    if (kind === 'same') {
+      const S = RR.add(BB);
+      p = RR.div(S);
+      txt = `Given that the two counters are the <b>same colour</b>, what is the probability that they are both ${col[0]}?`;
+      steps = [`$P(\\text{same colour}) = P(${R}${R}) + P(${B}${B}) = ${RR.tex()} + ${BB.tex()} = ${S.tex()}$`, `$P(\\text{both ${col[0]}} \\mid \\text{same}) = ${RR.tex()} \\div ${S.tex()} = ${p.tex()}$`];
+      wrong.push(RR, frac(r, n), frac(r - 1, n - 1), S, frac(r, r + b + 1), RR.div(frac(r, n)));
+    } else if (kind === 'atleastFirst') {
+      p = frac(r, n).div(atl);
+      txt = `Given that <b>at least one</b> of the counters is ${col[0]}, what is the probability that the <b>first</b> counter is ${col[0]}?`;
+      steps = [`$P(\\text{at least one ${col[0]}}) = 1 - P(${B}${B}) = 1 - ${BB.tex()} = ${atl.tex()}$`, `If the first is ${col[0]} there is certainly at least one ${col[0]}, so $P(\\text{1st ${col[0]}} \\text{ and at least one}) = P(\\text{1st ${col[0]}}) = \\frac{${r}}{${n}}$.`, `$\\frac{${r}}{${n}} \\div ${atl.tex()} = ${p.tex()}$`];
+      wrong.push(frac(r, n), frac(r - 1, n - 1), RR.div(atl), atl, frac(r, n).mul(atl));
     } else {
-      const atl = one.sub(BB);
       p = RR.div(atl);
       txt = `Given that <b>at least one</b> of the counters is ${col[0]}, what is the probability that both are ${col[0]}?`;
-      steps = [`$P(\\text{at least one ${col[0]}}) = 1 - P(\\text{both ${col[1]}}) = 1 - ${BB.tex()} = ${atl.tex()}$`, `$P(\\text{both ${col[0]}} \\mid \\text{at least one}) = ${RR.tex()} \\div ${atl.tex()} = ${p.tex()}$`];
+      steps = [`$P(\\text{at least one ${col[0]}}) = 1 - P(${B}${B}) = 1 - ${BB.tex()} = ${atl.tex()}$`, `$P(\\text{both ${col[0]}} \\mid \\text{at least one}) = ${RR.tex()} \\div ${atl.tex()} = ${p.tex()}$`];
       wrong.push(RR, frac(r - 1, n - 1), RR.div(frac(r, n)), atl, frac(r * (r - 1), r * (r - 1) + r * b));
     }
+    const branches = [frac(r, n), frac(b, n), frac(r - 1, n - 1), frac(r, n - 1), frac(b, n - 1), frac(b - 1, n - 1)];
+    if (branches.some((f) => f.eq(p))) throw new Error('answer would be readable from the tree');
     return {
       prompt: `A bag contains ${r} ${col[0]} counters and ${b} ${col[1]} counters. Two counters are taken at random without replacement.<br>${txt}`,
-      visual: d === 'hard' ? undefined : treeDiagram({ headings: ['1st', '2nd'], first: [{ label: cap(col[0]), p: frac(r, n) }, { label: cap(col[1]), p: frac(b, n) }], second: [[{ label: cap(col[0]), p: frac(r - 1, n - 1) }, { label: cap(col[1]), p: frac(b, n - 1) }], [{ label: cap(col[0]), p: frac(r, n - 1) }, { label: cap(col[1]), p: frac(b - 1, n - 1) }]] }),
+      visual: d === 'hard' ? undefined : treeDiagram({ headings: ['1st', '2nd'], first: [{ label: cap(col[0]), p: rawFrac(r, n) }, { label: cap(col[1]), p: rawFrac(b, n) }], second: [[{ label: cap(col[0]), p: rawFrac(r - 1, n - 1) }, { label: cap(col[1]), p: rawFrac(b, n - 1) }], [{ label: cap(col[0]), p: rawFrac(r, n - 1) }, { label: cap(col[1]), p: rawFrac(b - 1, n - 1) }]] }),
       answer: pf(p),
       distractors: probOpts(p, wrong),
       typed: typedP(p),
@@ -862,21 +894,29 @@ export const condVennInfo = gen('prob-cond-venn-info', 'prob-conditional', (rng,
 }, { title: 'Use a given conditional probability to complete a Venn diagram' });
 
 export const condSampleSpace = gen('prob-cond-sample-space', 'prob-conditional', (rng, d) => {
-  const kind = pick(rng, size(d, ['dice', 'cards'], ['dice', 'cards', 'children'], ['dice', 'cards']));
+  const kind = pick(rng, size(d, ['dice', 'cards'], ['dice', 'cards', 'children'], ['dice', 'dice', 'children']));
   if (kind === 'dice') {
     const pairs = []; for (let a = 1; a <= 6; a += 1) for (let b = 1; b <= 6; b += 1) pairs.push([a, b]);
-    const given = pick(rng, [
-      { txt: `the total is ${int(rng, 5, 9)}`, f: null },
-      { txt: 'the total is even', f: ([a, b]) => (a + b) % 2 === 0 },
-      { txt: 'at least one dice shows a 6', f: ([a, b]) => a === 6 || b === 6 },
+    const k = int(rng, 5, 9);
+    const given = pick(rng, size(d, [
+      { txt: `the total is ${k}`, f: ([a, b]) => a + b === k },
       { txt: 'the total is more than 8', f: ([a, b]) => a + b > 8 },
-    ]);
-    if (!given.f) { const k = Number(given.txt.match(/\d+/)[0]); given.f = ([a, b]) => a + b === k; }
+    ], [
+      { txt: `the total is ${k}`, f: ([a, b]) => a + b === k },
+      { txt: 'the total is even', f: ([a, b]) => (a + b) % 2 === 0 },
+      { txt: 'the total is more than 8', f: ([a, b]) => a + b > 8 },
+    ], [
+      { txt: 'at least one dice shows a 6', f: ([a, b]) => a === 6 || b === 6 },
+      { txt: 'the product of the two numbers is more than 12', f: ([a, b]) => a * b > 12 },
+      { txt: 'the difference between the two numbers is 2', f: ([a, b]) => Math.abs(a - b) === 2 },
+      { txt: 'the product of the two numbers is odd', f: ([a, b]) => (a * b) % 2 === 1 },
+    ]));
     const ev = pick(rng, [
       { txt: 'both dice show the same number (a double)', f: ([a, b]) => a === b },
       { txt: 'at least one dice shows a 6', f: ([a, b]) => a === 6 || b === 6 },
       { txt: 'the first dice shows an odd number', f: ([a]) => a % 2 === 1 },
       { txt: 'one of the dice shows a 4', f: ([a, b]) => a === 4 || b === 4 },
+      ...(d === 'hard' ? [{ txt: 'the total is more than 7', f: ([a, b]) => a + b > 7 }, { txt: 'the total is a prime number', f: ([a, b]) => [2, 3, 5, 7, 11].includes(a + b) }] : []),
     ].filter((e) => e.txt !== given.txt));
     const G = pairs.filter(given.f); const F = G.filter(ev.f);
     if (F.length === 0 || F.length === G.length) throw new Error('trivial');
@@ -889,7 +929,7 @@ export const condSampleSpace = gen('prob-cond-sample-space', 'prob-conditional',
       typed: typedP(p),
       solution: [
         `"Given that ${given.txt}" shrinks the sample space to only those outcomes: ${G.map(([a, b]) => `(${a}, ${b})`).join(', ')} – ${G.length} outcomes.`,
-        `Of these, ${F.length} have ${ev.txt.replace(/^both dice show/, 'both dice showing').replace(/^the first dice shows/, 'the first dice showing').replace(/shows/, 'showing')}.`,
+        `Of these, the ones where ${ev.txt}: ${F.map(([a, b]) => `(${a}, ${b})`).join(', ')} – that is ${F.length}.`,
         `$P = \\frac{${F.length}}{${G.length}}${p.d !== G.length ? ` = ${p.tex()}` : ''}$`,
         `Answer: ${pf(p)}`,
       ],

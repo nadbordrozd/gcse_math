@@ -15,10 +15,14 @@ const hash = (s) => { let h = 7; for (const ch of String(s)) h = (h * 31 + ch.ch
 /* Labels: fractions, decimals, blanks                                 */
 /* ------------------------------------------------------------------ */
 
+/** An unsimplified fraction label, e.g. rawFrac(6, 9) is drawn as 6/9 (without-replacement trees). */
+export const rawFrac = (n, d) => ({ raw: true, n, d });
+const isStacked = (v) => (v instanceof Frac && v.d !== 1) || Boolean(v && v.raw);
+
 /** Display a probability value for a diagram: Frac -> stacked fraction, number -> decimal, string -> text. */
 function labelSize(v, size = 15) {
   if (v === null || v === undefined) return { w: 30, h: 24 };
-  if (v instanceof Frac && v.d !== 1) {
+  if (isStacked(v)) {
     const chars = Math.max(String(Math.abs(v.n)).length, String(v.d).length);
     return { w: chars * size * 0.6 + 6, h: size * 2.3 };
   }
@@ -31,7 +35,7 @@ export function probLabel(x, y, v, { size = 15, color = 'currentColor', bold = f
   if (v === null || v === undefined) {
     return rect(x - 15, y - 12, 30, 24, { fill: 'none', width: 1.4, dash: '4 3', color: MUTED });
   }
-  if (v instanceof Frac && v.d !== 1) {
+  if (isStacked(v)) {
     const { w } = labelSize(v, size);
     const neg = v.n < 0 ? '−' : '';
     return text(x, y - size * 0.62, `${neg}${Math.abs(v.n)}`, { size, color, bold })
@@ -71,7 +75,7 @@ export function treeDiagram({ first, second = null, headings = null, outcomes = 
   else per = first.map(() => second);
   const leaves = per.map((s) => Math.max(1, s ? s.length : 1));
   const all = [...first, ...per.filter(Boolean).flat()];
-  const hasFrac = all.some((b) => b.p instanceof Frac && b.p.d !== 1);
+  const hasFrac = all.some((b) => isStacked(b.p));
   if (!leafGap) leafGap = hasFrac ? 70 : 56;
   const groupGap = second ? 12 : 0;
   const firstLabelW = Math.max(...first.map((b) => textWidth(b.label, size))) + 10;

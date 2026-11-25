@@ -188,11 +188,11 @@ export const scaleReadValue = gen('prob-scale-read-value', 'prob-scale', (rng, d
       frac(den - k, den), // read from the wrong end
       frac(k, 10), frac(k, den + 2), frac(k + 1, ticks),
     ], form),
-    typed: typedP(p, form),
+    typed: form === 'frac' ? { kind: 'number', value: p, form: 'simplest' } : typedP(p, form),
     solution: [
       `Count the equal gaps between $0$ and $1$: there are ${num(den)}, so each gap is $\\frac{1}{${den}}$${form === 'dec' ? ` $= ${tnum(1 / den)}$` : ''}.`,
       'Count gaps (not tick marks) from $0$ to the arrow.',
-      `The arrow is ${num(k)} gaps along: $${k} \\times \\frac{1}{${den}} = \\frac{${k}}{${den}}${p.d !== den ? ` = ${p.tex()}` : ''}${form === 'dec' ? ` = ${tnum(p.value())}` : ''}$.`,
+      `The arrow is ${num(k)} ${k === 1 ? 'gap' : 'gaps'} along: $${k} \\times \\frac{1}{${den}} = \\frac{${k}}{${den}}${p.d !== den ? ` = ${p.tex()}` : ''}${form === 'dec' ? ` = ${tnum(p.value())}` : ''}$.`,
       `Answer: ${pf(p, form)}`,
     ],
   };
@@ -415,7 +415,9 @@ export const singleNot = gen('prob-single-not', 'prob-single-event', (rng, d) =>
   return {
     prompt: `The probability that ${ev} is $${pt(p, form)}$.<br>What is the probability that ${notEv}?`,
     answer: pf(q, form),
-    distractors: probOpts(q, [p, slip, q.add(frac(1, 10)), q.sub(frac(1, 10)), form === 'frac' ? frac(p.n, p.d - p.n) : null, frac(1, 2)], form),
+    distractors: probOpts(q, form === 'frac'
+      ? [p, frac(p.d - p.n, p.d + p.n), frac(p.n, p.d - p.n), frac(p.d - p.n, p.d + 1), frac(1, p.d - p.n), frac(p.d - p.n - 1, p.d), frac(p.d - p.n + 1, p.d)]
+      : [p, slip, q.add(frac(1, 10)), q.sub(frac(1, 10)), frac(1, 2)], form, { fallback: form !== 'frac' }),
     typed: typedP(q, form),
     solution: [
       'An event either happens or does not happen, so $P(\\text{not } A) = 1 - P(A)$.',
@@ -560,7 +562,7 @@ export const singleSpinner = gen('prob-single-spinner', 'prob-single-event', (rn
       prompt: `A spinner is made of three sectors: ${listAnd(cols.map((c, t) => `${c.toLowerCase()} with angle $${angles[t]}^\\circ$`))}.<br>What is the probability that it lands on ${mode === 'one' ? cols[i].toLowerCase() : `a colour that is <b>not</b> ${cols[i].toLowerCase()}`}?`,
       visual: spinner(cols.map((c, t) => ({ label: c, weight: angles[t] })), { r: 86 }),
       answer: ft(p),
-      distractors: probOpts(p, [frac(1, 3), frac(2, 3), frac(angles[i], 180), frac(ang, 100), frac(360 - ang, 360), frac(angles[i], 360 - angles[i])]),
+      distractors: probOpts(p, [frac(1, 3), frac(2, 3), frac(angles[i], 180), frac(ang, 100), frac(360 - ang, 360), frac(angles[i], 360 - angles[i]), frac(angles[(i + 1) % 3], 360), frac(angles[(i + 2) % 3], 360), frac(1, 4)]),
       typed: typedP(p),
       solution: [
         'The sectors are not equal, so use the angles: a full turn is $360^\\circ$.',
@@ -581,14 +583,16 @@ export const singleSpinner = gen('prob-single-spinner', 'prob-single-event', (rn
   const distinct = [...new Set(labels)];
   if (distinct.length < 2) throw new Error('one label');
   const target = pick(rng, distinct);
-  const mode = numeric ? pick(rng, ['one', 'odd', 'gt']) : pick(rng, size(d, ['one'], ['one', 'not'], ['one', 'not', 'or']));
+  const nums = labels.map(Number);
+  const hasOdd = nums.some((x) => x % 2 === 1) && nums.some((x) => x % 2 === 0);
+  const mode = numeric ? pick(rng, ['one', 'gt', ...(hasOdd ? ['odd'] : [])]) : pick(rng, size(d, ['one'], ['one', 'not'], ['one', 'not', ...(distinct.length > 2 ? ['or'] : [])]));
   let favF; let what;
   const t2 = pick(rng, distinct.filter((x) => x !== target));
   if (mode === 'one') { favF = (x) => x === target; what = numeric ? aWord(target) : target.toLowerCase(); }
   else if (mode === 'not') { favF = (x) => x !== target; what = `a colour that is <b>not</b> ${target.toLowerCase()}`; }
   else if (mode === 'or') { favF = (x) => x === target || x === t2; what = `${target.toLowerCase()} or ${t2.toLowerCase()}`; }
   else if (mode === 'odd') { favF = (x) => Number(x) % 2 === 1; what = 'an odd number'; }
-  else { const k = pick(rng, [2, 3, 4]); favF = (x) => Number(x) > k; what = `a number greater than ${k}`; }
+  else { const k = pick(rng, [...new Set(nums)].sort((x, y) => x - y).slice(0, -1)); favF = (x) => Number(x) > k; what = `a number greater than ${k}`; }
   const fav = labels.filter(favF).length;
   if (fav === 0 || fav === nSec) throw new Error('degenerate');
   const p = frac(fav, nSec);
@@ -635,13 +639,15 @@ export const singleReverse = gen('prob-single-reverse', 'prob-single-event', (rn
     const m = int(rng, 2, 6);
     const other = (p.d - p.n) * m; const ans = p.n * m;
     return {
-      prompt: `A collection has only ${k1} and ${k2} ${item}.<br>The probability of picking ${aWord(k1)} one at random is $${p.tex()}$.<br>There are ${other} ${k2} ${item}. How many ${k1} ${item} are there?`,
+      prompt: `A box contains only ${k1} and ${k2} ${item}.<br>The probability of picking ${aWord(k1)} one at random is $${p.tex()}$.<br>There are ${other} ${k2} ${item}. How many ${k1} ${item} are there?`,
       answer: num(ans),
       distractors: countOpts(ans, [(other * p.n) / p.d, other, other + ans, (other / p.n) * p.d, (other * p.d) / (p.d - p.n)]),
       typed: { kind: 'number', value: ans },
       solution: [
         `$P(\\text{${k2}}) = 1 - ${p.tex()} = ${frac(1).sub(p).tex()}$`,
-        `So the ${other} ${k2} ${item} are $\\frac{${p.d - p.n}}{${p.d}}$ of the total. $\\frac{1}{${p.d}}$ of the total is $${other} \\div ${p.d - p.n} = ${m}$, so the total is $${m} \\times ${p.d} = ${m * p.d}$.`,
+        p.d - p.n === 1
+          ? `So the ${other} ${k2} ${item} are $\\frac{1}{${p.d}}$ of the total, and the total is $${other} \\times ${p.d} = ${m * p.d}$.`
+          : `So the ${other} ${k2} ${item} are $\\frac{${p.d - p.n}}{${p.d}}$ of the total. $\\frac{1}{${p.d}}$ of the total is $${other} \\div ${p.d - p.n} = ${m}$, so the total is $${m} \\times ${p.d} = ${m * p.d}$.`,
         `${cap(k1)}: $${m * p.d} - ${other} = ${ans}$`,
         `Answer: ${num(ans)}`,
       ],
@@ -673,19 +679,21 @@ export const singleReverse = gen('prob-single-reverse', 'prob-single-event', (rn
 /* prob-sum-to-one                                                     */
 /* ================================================================== */
 
+// intro(outs) describes exactly the outcomes shown in the table (outs may be a prefix of the pool).
+const lowList = (outs) => listAnd(outs.map((o) => o.toLowerCase()), 'or');
 const OUTCOME_SETS = [
-  { intro: 'A biased spinner can land on red, blue, green or yellow.', outs: ['Red', 'Blue', 'Green', 'Yellow'], head: 'Colour' },
-  { intro: 'Counters in a bag are red, white, blue or green. A counter is picked at random.', outs: ['Red', 'White', 'Blue', 'Green'], head: 'Colour' },
-  { intro: 'A biased dice is rolled.', outs: ['1', '2', '3', '4', '5', '6'], head: 'Score' },
-  { intro: 'The table shows the probabilities of the weather in a town on a day in April.', outs: ['Sunny', 'Cloudy', 'Rain', 'Snow'], head: 'Weather' },
-  { intro: 'A student is chosen at random. The table shows how students travel to school.', outs: ['Walk', 'Bus', 'Car', 'Cycle', 'Train'], head: 'Travel' },
-  { intro: 'A customer at a café is chosen at random. The table shows what they order to drink.', outs: ['Tea', 'Coffee', 'Juice', 'Water'], head: 'Drink' },
-  { intro: 'A ticket is drawn at random in a raffle. Tickets are four colours.', outs: ['Pink', 'Green', 'Yellow', 'Orange'], head: 'Ticket' },
-  { intro: 'A sweet is taken at random from a jar of flavoured sweets.', outs: ['Lemon', 'Lime', 'Orange', 'Cherry'], head: 'Flavour' },
-  { intro: 'A biased spinner with letters on it is spun.', outs: ['A', 'B', 'C', 'D', 'E'], head: 'Letter' },
-  { intro: 'A football team plays a match.', outs: ['Win', 'Draw', 'Lose'], head: 'Result' },
-  { intro: 'A person at a cinema is chosen at random. The table shows the film they are watching.', outs: ['Comedy', 'Action', 'Horror', 'Cartoon'], head: 'Film' },
-  { intro: 'A car is chosen at random from a car park.', outs: ['Silver', 'Black', 'White', 'Red', 'Blue'], head: 'Colour' },
+  { intro: (o) => `A biased spinner can land on ${lowList(o)}.`, outs: ['Red', 'Blue', 'Green', 'Yellow'], head: 'Colour' },
+  { intro: (o) => `Counters in a bag are ${lowList(o)}. A counter is picked at random.`, outs: ['Red', 'White', 'Blue', 'Green'], head: 'Colour' },
+  { intro: (o) => (o.length === 6 ? 'A biased dice is rolled.' : `A biased spinner has ${o.length} sections numbered 1 to ${o.length}. It is spun once.`), outs: ['1', '2', '3', '4', '5', '6'], head: 'Score' },
+  { intro: (o) => `On a day in April, the weather in a town is one of ${lowList(o).replace(/ or /, ' and ')}. The table shows the probabilities.`, outs: ['Sunny', 'Cloudy', 'Rain', 'Snow'], head: 'Weather' },
+  { intro: (o) => `A student is chosen at random. Each student travels to school in one of these ways: ${o.map((x) => x.toLowerCase()).join(', ')}.`, outs: ['Walk', 'Bus', 'Car', 'Cycle', 'Train'], head: 'Travel' },
+  { intro: (o) => `A customer at a café is chosen at random. Every customer orders one drink: ${lowList(o)}.`, outs: ['Tea', 'Coffee', 'Juice', 'Water'], head: 'Drink' },
+  { intro: (o) => `A ticket is drawn at random in a raffle. The tickets are ${lowList(o)}.`, outs: ['Pink', 'Green', 'Yellow', 'Orange'], head: 'Ticket' },
+  { intro: (o) => `A sweet is taken at random from a jar of ${lowList(o).replace(/ or /, ' and ')} sweets.`, outs: ['Lemon', 'Lime', 'Orange', 'Cherry'], head: 'Flavour' },
+  { intro: (o) => `A biased spinner has ${o.length} sections labelled ${listAnd(o, 'and')}. It is spun once.`, outs: ['A', 'B', 'C', 'D', 'E'], head: 'Letter' },
+  { intro: () => 'A football team plays a match. The result is a win, a draw or a loss.', outs: ['Win', 'Draw', 'Lose'], head: 'Result' },
+  { intro: (o) => `A person at a cinema is chosen at random. Everyone is watching one of these films: ${o.map((x) => x.toLowerCase()).join(', ')}.`, outs: ['Comedy', 'Action', 'Horror', 'Cartoon'], head: 'Film' },
+  { intro: (o) => `A car is chosen at random from a car park. Every car is ${lowList(o)}.`, outs: ['Silver', 'Black', 'White', 'Red', 'Blue'], head: 'Colour' },
 ];
 
 /** Random decimal probabilities summing to 1 with `step` precision. */
@@ -715,7 +723,7 @@ export const sumMissing = gen('prob-sum-table-missing', 'prob-sum-to-one', (rng,
     const j = (miss + 1 + int(rng, 0, k - 2)) % k;
     const res = ans.add(ps[j]);
     return {
-      prompt: `${set.intro}${table(rows, { firstColHeader: true })}Work out the probability of <b>${outs[miss]}</b> or <b>${outs[j]}</b>.`,
+      prompt: `${set.intro(outs)}${table(rows, { firstColHeader: true })}Work out the probability of <b>${outs[miss]}</b> or <b>${outs[j]}</b>.`,
       answer: pf(res, 'dec'),
       distractors: probOpts(res, [ans, ps[j], sumKnown, frac(1).sub(ps[j]), ans.mul(ps[j]), res.add(frac(1, 10))], 'dec'),
       typed: typedP(res, 'dec'),
@@ -730,7 +738,7 @@ export const sumMissing = gen('prob-sum-table-missing', 'prob-sum-to-one', (rng,
   const h = Math.round(sumKnown.value() * 100);
   const slip = h % 10 ? frac((9 - Math.floor(h / 10)) * 10 + (10 - (h % 10)) + 10, 100) : null; // 1 − 0.57 → 0.53
   return {
-    prompt: `${set.intro}${table(rows, { firstColHeader: true })}Work out the missing probability for <b>${outs[miss]}</b>.`,
+    prompt: `${set.intro(outs)}${table(rows, { firstColHeader: true })}Work out the missing probability for <b>${outs[miss]}</b>.`,
     answer: pf(ans, 'dec'),
     distractors: probOpts(ans, [
       sumKnown, slip, frac(1).sub(known[0]), ans.add(frac(1, 10)), ans.sub(frac(1, 10)),
@@ -773,7 +781,7 @@ export const sumRelation = gen('prob-sum-table-relation', 'prob-sum-to-one', (rn
   const rel = m === 1 ? `${outs[ia]} and ${outs[ib]} are equally likely.` : `${outs[ib]} is ${m === 2 ? 'twice' : `${m} times`} as likely as ${outs[ia]}.`;
   const rows = [[set.head, ...outs], ['Probability', ...probs.map((p, i) => (i === ia || i === ib ? '' : tnum(p)))]];
   return {
-    prompt: `${set.intro}${table(rows, { firstColHeader: true })}${rel}<br>Work out the probability of <b>${askB ? outs[ib] : outs[ia]}</b>.`,
+    prompt: `${set.intro(outs)}${table(rows, { firstColHeader: true })}${rel}<br>Work out the probability of <b>${askB ? outs[ib] : outs[ia]}</b>.`,
     answer: pf(ans, 'dec'),
     distractors: probOpts(ans, [
       left, // forgot to share
@@ -794,7 +802,7 @@ export const sumRelation = gen('prob-sum-table-relation', 'prob-sum-to-one', (rn
 }, { title: 'Two missing probabilities linked by "twice as likely"' });
 
 export const sumAlgebra = gen('prob-sum-algebra', 'prob-sum-to-one', (rng, d) => {
-  const outs = pick(rng, [['A', 'B', 'C'], ['Red', 'Blue', 'Green'], ['Win', 'Draw', 'Lose'], ['1', '2', '3', '4'], ['P', 'Q', 'R', 'S']]);
+  const outs = pick(rng, [['A', 'B', 'C'], ['Red', 'Blue', 'Green'], ['Win', 'Draw', 'Lose'], ['1', '2', '3', '4'], ['W', 'X', 'Y', 'Z']]);
   const k = outs.length;
   const sym = pick(rng, ['x', 'k', 'p']);
   const v = pick(rng, size(d, [0.1, 0.2, 0.05, 0.15], [0.1, 0.05, 0.15, 0.12, 0.08], [0.1, 0.05, 0.04, 0.08, 0.15, 0.2]));
@@ -857,19 +865,19 @@ export const sumFractions = gen('prob-sum-fractions', 'prob-sum-to-one', (rng, d
     const c = frac(1).sub(a).sub(b);
     if (c.n <= 0) continue;
     const ask = d === 'hard' && rng() < 0.4 ? 'not' : 'third';
-    const ans = ask === 'not' ? frac(1).sub(a) : c;
+    const ans = ask === 'not' ? a.add(b) : c;
     return {
       prompt: `${ctx.intro(`only ${k1}, ${k2} and ${k3} ${ctx.noun}`)}`
-        + `<br>One is chosen at random. The probability it is ${k1} is $${a.tex()}$ and the probability it is ${k2} is $${b.tex()}$.<br>What is the probability that it is ${ask === 'not' ? `<b>not</b> ${k1}` : k3}?`,
+        + `<br>One is chosen at random. The probability it is ${k1} is $${a.tex()}$ and the probability it is ${k2} is $${b.tex()}$.<br>What is the probability that it is ${ask === 'not' ? `<b>not</b> ${k3}` : k3}?`,
       answer: ft(ans),
       distractors: probOpts(ans, [
         a.add(b), frac(a.n + b.n, a.d + b.d), // added tops and bottoms
-        frac(1, 3), ask === 'not' ? c : frac(1).sub(a), frac(1).sub(frac(a.n + b.n, a.d + b.d)), ask === 'not' ? b : frac(1).sub(b), frac(Math.abs(a.d * b.d - a.n - b.n), a.d * b.d),
+        frac(1, 3), ask === 'not' ? c : frac(1).sub(a), frac(1).sub(frac(a.n + b.n, a.d + b.d)), ask === 'not' ? frac(1).sub(a) : frac(1).sub(b), frac(Math.abs(a.d * b.d - a.n - b.n), a.d * b.d),
       ]),
       typed: typedP(ans),
       solution: ask === 'not' ? [
-        `$P(\\text{not ${k1}}) = 1 - P(\\text{${k1}})$`,
-        `$1 - ${a.tex()} = ${ans.tex()}$`,
+        `Not ${k3} means ${k1} or ${k2}. These cannot happen together, so add.`,
+        `$${a.tex()} + ${b.tex()} = ${ans.tex()}$ (or work out $P(\\text{${k3}})$ first and use $1 - P(\\text{${k3}})$).`,
         `Answer: ${ft(ans)}`,
       ] : [
         'The three probabilities add up to $1$.',

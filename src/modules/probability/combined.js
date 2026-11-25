@@ -228,7 +228,7 @@ export const twoWayFromInfo = gen('prob-2way-from-info', 'prob-two-way-tables', 
   const av = Math.min(a, r1v - 1); const cv = Math.min(c, r2v - 1);
   if (av < 1 || cv < 1) throw new Error('small');
   const colTv = av + cv;
-  const facts = [`There are ${T} ${ctx.who}.`, factR1, `${av} of the ${R1} ${C1}.`, `${colTv} of the ${T} ${ctx.who} ${C1}.`];
+  const facts = [`There are ${T} ${ctx.who}.`, factR1, `${av} of the ${R1} ${C1}.`, `In total, ${colTv} of them ${C1}.`];
   const targets = [
     { txt: `${R2} ${C2}`, v: r2v - cv, wrong: [r2v, cv, r1v - av, T - colTv] },
     { txt: `${R2} ${C1}`, v: cv, wrong: [colTv, r2v - cv, av, Math.abs(colTv - r1v)] },
@@ -278,6 +278,7 @@ function ftreeData(rng, d) {
   return { T, Y: yes.value(), N: T - yes.value(), S1: s1.value(), S2: yes.value() - s1.value(), pYes, pS };
 }
 const asPct = (f) => (f.mul(100).isInt ? `${f.mul(100).value()}%` : null);
+const lc1 = (t) => t.charAt(0).toLowerCase() + t.slice(1);
 const describe = (rng, f) => (asPct(f) && rng() < 0.5 ? asPct(f) : `$${f.tex()}$`);
 const cap1 = (t) => (t.startsWith('$') ? t : t.charAt(0).toUpperCase() + t.slice(1));
 
@@ -303,7 +304,7 @@ export const ftreeComplete = gen('prob-freqtree-complete', 'prob-two-way-tables'
     ? [`${D.Y} is ${yesTxt.replace(/\$/g, '')} of the total, so the total is $${D.Y} \\div ${D.pYes.tex()} = ${D.T}$.`]
     : [
       `${ctx.a[0]}: ${yesTxt} of ${D.T} $= ${D.pYes.tex()} \\times ${D.T} = ${D.Y}$, so ${ctx.a[1]}: $${D.T} - ${D.Y} = ${D.N}$.`,
-      `${ctx.s[0]}: ${sTxt} of ${D.Y} $= ${D.pS.tex()} \\times ${D.Y} = ${D.S1}$, so ${ctx.s[1].toLowerCase()}: $${D.Y} - ${D.S1} = ${D.S2}$.`,
+      `${ctx.s[0]}: ${sTxt} of ${D.Y} $= ${D.pS.tex()} \\times ${D.Y} = ${D.S1}$, so ${lc1(ctx.s[1])}: $${D.Y} - ${D.S1} = ${D.S2}$.`,
     ];
   return {
     prompt: `${facts.join('<br>')}<br>The information is shown in a frequency tree. What number goes in the circle marked <b>?</b>`,
@@ -334,18 +335,18 @@ export const ftreeProb = gen('prob-freqtree-prob', 'prob-two-way-tables', (rng, 
   let p; let prompt; let steps; const wrong = [];
   if (mode === 'whole' || mode === 'fraction') {
     p = frac(D.S1, D.T);
-    prompt = mode === 'whole' ? `One of the ${D.T} ${ctx.heads[0].toLowerCase()} is chosen at random. What is the probability that they are in the group "${ctx.a[0]}, ${ctx.s[0].toLowerCase()}"?`
-      : `What fraction of all ${D.T} ${ctx.heads[0].toLowerCase()} are in the group "${ctx.a[0]}, ${ctx.s[0].toLowerCase()}"? Give your answer in its simplest form.`;
+    prompt = mode === 'whole' ? `One of the ${D.T} ${ctx.heads[0].toLowerCase()} is chosen at random. What is the probability that they are in the group "${ctx.a[0]}, ${lc1(ctx.s[0])}"?`
+      : `What fraction of all ${D.T} ${ctx.heads[0].toLowerCase()} are in the group "${ctx.a[0]}, ${lc1(ctx.s[0])}"? Give your answer in its simplest form.`;
     steps = [`That group is the circle with ${D.S1}. Compare it with everyone: ${D.T}.`, `$\\frac{${D.S1}}{${D.T}}${p.d !== D.T ? ` = ${p.tex()}` : ''}$`];
     wrong.push(frac(D.S1, D.Y), frac(D.Y, D.T), frac(D.S1, D.S2), frac(D.S1, D.T - D.S1));
   } else if (mode === 'yesOnly') {
     p = frac(D.S1, D.Y);
-    prompt = `One of the ${D.Y} ${ctx.heads[0].toLowerCase()} in the "${ctx.a[0]}" group is chosen at random. What is the probability that they are in the group "${ctx.s[0].toLowerCase()}"?`;
+    prompt = `One of the ${D.Y} ${ctx.heads[0].toLowerCase()} in the "${ctx.a[0]}" group is chosen at random. What is the probability that they are in the group "${lc1(ctx.s[0])}"?`;
     steps = [`Only the ${D.Y} in the "${ctx.a[0]}" group can be chosen, so ${D.Y} is the denominator.`, `$\\frac{${D.S1}}{${D.Y}}${p.d !== D.Y ? ` = ${p.tex()}` : ''}$`];
     wrong.push(frac(D.S1, D.T), frac(D.S1, D.S2), frac(D.S2, D.Y), frac(D.Y, D.T));
   } else {
     p = frac(D.T - D.S1, D.T);
-    prompt = `One ${one} is chosen at random from all ${D.T}. What is the probability that they are <b>not</b> in the group "${ctx.a[0]}, ${ctx.s[0].toLowerCase()}"?`;
+    prompt = `One ${one} is chosen at random from all ${D.T}. What is the probability that they are <b>not</b> in the group "${ctx.a[0]}, ${lc1(ctx.s[0])}"?`;
     steps = [`Everyone except the ${D.S1}: $${D.T} - ${D.S1} = ${D.T - D.S1}$ (this includes all ${D.N} in "${ctx.a[1]}").`, `$\\frac{${D.T - D.S1}}{${D.T}}${p.d !== D.T ? ` = ${p.tex()}` : ''}$`];
     wrong.push(frac(D.S2, D.T), frac(D.N, D.T), frac(D.S2, D.Y), frac(D.S1, D.T));
   }
@@ -354,7 +355,7 @@ export const ftreeProb = gen('prob-freqtree-prob', 'prob-two-way-tables', (rng, 
     visual,
     answer: ft(p),
     distractors: probOpts(p, wrong),
-    typed: typedP(p),
+    typed: mode === 'fraction' ? { kind: 'number', value: p, form: 'simplest' } : typedP(p),
     solution: [...steps, `Answer: ${ft(p)}`],
   };
 }, { title: 'Probabilities and fractions from a frequency tree' });
@@ -386,7 +387,7 @@ const vennValues = (rng, d) => {
     const a = int(rng, 2, Math.round(T * 0.4));
     const b = int(rng, 2, Math.round(T * 0.4));
     const out = T - a - b - ab;
-    if (out >= 1 && new Set([a, b, ab, out]).size === 4) return { a, ab, b, out, T };
+    if (out >= 2 && new Set([a, b, ab, out]).size === 4) return { a, ab, b, out, T };
   }
   throw new Error('venn');
 };
@@ -425,14 +426,14 @@ export const vennRead = gen('prob-venn-read', 'prob-venn', (rng, d) => {
   if (e.r.length === 1 && e.r[0] === 'ab') wrong.push(frac(V.ab, V.a + V.ab), frac(V.a + V.ab + V.b, V.T));
   if (key(e.r) === 'b,out') wrong.push(frac(V.a + V.ab, V.T), frac(V.out, V.T), frac(V.b, V.T));
   return {
-    prompt: `The Venn diagram shows information about ${V.T} ${ctx.u}.<br>$\\xi$ = ${V.T} ${ctx.u}, &nbsp;${A} = ${ctx.A[1]}, &nbsp;${B} = ${ctx.B[1]}.<br>One of the ${ctx.u} is chosen at random. Work out $P(${e.tex(A, B)})$${form === 'dec' ? ' as a decimal' : ''}.`,
+    prompt: `The Venn diagram shows information about ${V.T} ${ctx.u}.<br>$\\xi$ = ${V.T} ${ctx.u}, &nbsp;${A} = ${ctx.A[1]}, &nbsp;${B} = ${ctx.B[1]}.<br>One of these ${ctx.u.split(' ')[0]} is chosen at random. Work out $P(${e.tex(A, B)})$${form === 'dec' ? ' as a decimal' : ''}.`,
     visual: venn2({ labels: [A, B], values: V }),
     answer: pf(p, form),
     distractors: probOpts(p, [...wrong, ...others], form),
     typed: typedP(p, form),
     solution: [
       `$${e.tex(A, B)}$ means ${describeRegions(e.r, A, B)}.`,
-      `Add the numbers in those regions: $${e.r.map((r) => V[r]).join(' + ')} = ${fav}$.`,
+      e.r.length > 1 ? `Add the numbers in those regions: $${e.r.map((r) => V[r]).join(' + ')} = ${fav}$.` : `That region holds ${fav}.`,
       `$P = \\frac{${fav}}{${V.T}}${form === 'dec' ? ` = ${tnum(p.value())}` : p.d !== V.T ? ` = ${p.tex()}` : ''}$`,
       `Answer: ${pf(p, form)}`,
     ],
@@ -453,8 +454,8 @@ const LETTER_PAIRS = [['A', 'B'], ['P', 'Q'], ['C', 'D'], ['X', 'Y'], ['E', 'F']
 
 export const vennNotation = gen('prob-venn-notation', 'prob-venn', (rng, d) => {
   const [A, B] = pick(rng, LETTER_PAIRS);
-  const pool = size(d, SET_EXPRS.slice(0, 7), SET_EXPRS, SET_EXPRS);
-  const e = pick(rng, pool.slice(d === 'hard' ? 2 : 0));
+  const pool = size(d, [0, 1, 2, 3, 7, 8], [0, 1, 2, 3, 4, 5, 6, 9], [4, 5, 6, 9, 10, 11]).map((i) => SET_EXPRS[i]);
+  const e = pick(rng, pool);
   const reverse = d !== 'easy' && rng() < 0.4;
   const distinctOthers = [];
   const seen = new Set([key(e.r)]);
@@ -512,7 +513,7 @@ export const vennElements = gen('prob-venn-elements', 'prob-venn', (rng, d) => {
     b: U.filter((x) => !s1.f(x) && s2.f(x)), out: U.filter((x) => !s1.f(x) && !s2.f(x)),
   };
   if (Object.values(reg).some((r) => r.length === 0) || reg.a.length > 9 || reg.b.length > 9 || reg.out.length > 9) throw new Error('empty region');
-  const e = pick(rng, size(d, SET_EXPRS.slice(0, 2), SET_EXPRS.slice(0, 7), SET_EXPRS.slice(2)));
+  const e = pick(rng, size(d, [0, 1], [0, 1, 2, 3, 4, 5, 6], [4, 5, 6, 9, 10, 11]).map((i) => SET_EXPRS[i]));
   const members = U.filter((x) => e.r.some((r) => reg[r].includes(x)));
   const mode = pick(rng, size(d, ['list', 'list', 'prob'], ['list', 'prob'], ['prob', 'list']));
   const setTex = (xs) => `$\\{${xs.join(', ')}\\}$`;
@@ -574,9 +575,9 @@ export const vennComplete = gen('prob-venn-complete', 'prob-venn', (rng, d) => {
     const out = fN.mul(T);
     if (!out.isInt || out.value() < 2) throw new Error('frac');
     const rest = T - out.value();
-    const ab = int(rng, 1, Math.max(1, Math.floor(rest / 4)));
-    const a = int(rng, 1, rest - ab - 1); const b = rest - ab - a;
-    if (b < 1) throw new Error('b');
+    const ab = int(rng, 2, Math.max(2, Math.floor(rest / 4)));
+    const a = int(rng, 2, rest - ab - 2); const b = rest - ab - a;
+    if (b < 2) throw new Error('b');
     Object.assign(V, { a, ab, b, out: out.value() });
     facts = [`There are ${T} ${ctx.u}.`, `$${fN.tex()}$ of them ${ctx.neither.replace(/^(is|are) /, '')}.`.replace(' of them in ', ' of them are in '), `${a + ab} ${ctx.A[2]}.`, `${ab + b} ${ctx.B[2]}.`];
     tgt = pick(rng, ['ab', 'b', 'a']); ans = V[tgt];
@@ -587,7 +588,7 @@ export const vennComplete = gen('prob-venn-complete', 'prob-venn', (rng, d) => {
     wrong = [a + ab, ab + b, rest, out.value(), a + ab + ab + b - T];
   } else {
     // reverse: total unknown
-    facts = [`${V.a} ${ctx.A[2]} but ${ctx.B[3]}.`, `${nB} ${ctx.B[2]}. ${V.ab} of these also ${ctx.A[4]}.`, `${V.out} ${ctx.neither}.`];
+    facts = [`These facts are about some ${ctx.u}.`, `${V.a} ${ctx.A[2]} but ${ctx.B[3]}.`, `${nB} ${ctx.B[2]}. ${V.ab} of these also ${ctx.A[4]}.`, `${V.out} ${ctx.neither}.`];
     tgt = 'T'; ans = V.T;
     steps = [`${B} only: $${nB} - ${V.ab} = ${V.b}$.`, `Total: $${V.a} + ${V.ab} + ${V.b} + ${V.out} = ${V.T}$.`];
     wrong = [V.a + nB + V.out + V.ab, V.a + nB, V.a + V.b + V.out, V.T - V.ab + V.b];
@@ -595,7 +596,7 @@ export const vennComplete = gen('prob-venn-complete', 'prob-venn', (rng, d) => {
   const values = { a: V.a, ab: V.ab, b: V.b, out: V.out };
   Object.keys(values).forEach((r) => { if (r === tgt) values[r] = '?'; else if (d !== 'easy') values[r] = null; });
   return {
-    prompt: `${facts.join('<br>')}<br>${tgt === 'T' ? `How many ${ctx.u} are there altogether?` : `Complete the Venn diagram. What number goes in the region marked <b>?</b> (${regionName[tgt]})`}`,
+    prompt: `${facts.join('<br>')}<br>${tgt === 'T' ? `How many ${ctx.u.split(' ')[0]} are there altogether?` : `Complete the Venn diagram. What number goes in the region marked <b>?</b> (${regionName[tgt]})`}`,
     visual: venn2({ labels: [A, B], values: tgt === 'T' ? { a: d === 'easy' ? V.a : null, ab: null, b: null, out: null } : values, universal: tgt === 'T' ? 'ξ' : `ξ`, }),
     answer: num(ans),
     distractors: countOpts(ans, wrong),
@@ -628,14 +629,16 @@ export const vennThree = gen('prob-venn-three', 'prob-venn', (rng, d) => {
     { txt: `${ctx.verb} at least two of the three ${ctx.cat}`, r: ['ab', 'ac', 'bc', 'abc'], wrong: [['ab', 'ac', 'bc'], ['abc']] },
     { txt: `${ctx.verb} ${yn} or ${zn} (or both)`, r: ['b', 'c', 'ab', 'ac', 'bc', 'abc'], wrong: [['b', 'c'], ['b', 'c', 'bc']] },
   ];
-  const q = pick(rng, qs.slice(0, size(d, 5, 7, 7)));
+  const q = pick(rng, size(d, qs.slice(0, 5), qs, [0, 1, 2, 5, 6].map((i) => qs[i])));
   const count = sum(q.r.map((r) => vals[r]));
-  const asProb = d !== 'easy' && rng() < 0.6;
+  const asProb = d === 'hard' || (d === 'medium' && rng() < 0.6);
   const p = frac(count, T);
   const head = `The Venn diagram shows ${ctx.intro}: ${xn} (${X}), ${yn} (${Y}) and ${zn} (${Z}).`;
   const solution = [
-    `Find the regions for "${q.txt}": ${q.r.length === 1 ? 'one region' : `${q.r.length} regions`}.`,
-    `Add them: $${q.r.map((r) => vals[r]).join(' + ')} = ${count}$.`,
+    ...(q.r.length === 1 ? [`Only one region fits "${q.txt}": it holds ${count}.`] : [
+      `Find the regions for "${q.txt}": ${q.r.length} regions.`,
+      `Add them: $${q.r.map((r) => vals[r]).join(' + ')} = ${count}$.`,
+    ]),
   ];
   if (asProb) {
     return {
