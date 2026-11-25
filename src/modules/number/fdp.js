@@ -381,7 +381,7 @@ export const recArith = gen('num-rec-arith', 'num-recurring-decimals', (rng, d) 
       ],
     };
   }
-}, { title: 'Add/subtract recurring decimals' });
+}, { title: 'Add/subtract recurring decimals', learn: ['num-recurring-decimals', 'num-fraction-add-sub'] });
 
 export const recWhich = gen('num-rec-which', 'num-recurring-decimals', (rng, d) => {
   const pool = [];

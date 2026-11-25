@@ -39,7 +39,7 @@ export const fracSimplify = gen('num-frac-simplify', 'num-equiv-fractions', (rng
     allowEquivalent: true,
     typed: { kind: 'number', value: base },
     solution: [
-      `Find the highest common factor of ${n} and ${dd}: it is ${k}.`,
+      `Find the [[num-hcf-lcm|highest common factor]] of ${n} and ${dd}: it is ${k}.`,
       `Divide the top and bottom by ${k}: $\\frac{${n}}{${dd}} = \\frac{${n} \\div ${k}}{${dd} \\div ${k}} = ${T(base)}$`,
       ...(sk ? [`If you only divide by ${sk} you get $\\frac{${n / sk}}{${dd / sk}}$, which can still be simplified.`] : []),
       `Answer: ${F(base)}`,
@@ -370,7 +370,7 @@ export const fasProper = gen('num-fas-proper', 'num-fraction-add-sub', (rng, d) 
       distractors: uniq(wrong.filter(Boolean), F(ans)),
       typed: { kind: 'number', value: ans },
       solution: [
-        `Use a common denominator: the LCM of ${a.d} and ${b.d} is ${L}.`,
+        `Use a common denominator: the [[num-hcf-lcm|LCM]] of ${a.d} and ${b.d} is ${L}.`,
         `$${T(a)} = \\frac{${a.n * L / a.d}}{${L}}$ and $${T(b)} = \\frac{${b.n * L / b.d}}{${L}}$`,
         `$\\frac{${a.n * L / a.d}}{${L}} ${op} \\frac{${b.n * L / b.d}}{${L}} = \\frac{${a.n * L / a.d + (sub ? -1 : 1) * b.n * L / b.d}}{${L}}${ans.d !== L ? ` = ${T(ans)}` : ''}$`,
         `Only the numerators are ${sub ? 'subtracted' : 'added'} – never ${sub ? 'subtract' : 'add'} the denominators. Answer: ${F(ans)}`,
@@ -655,7 +655,7 @@ export const fpFractionOfFraction = gen('num-fp-fraction-of-fraction', 'num-frac
       `Answer: ${F(ans)}`,
     ],
   };
-}, { title: 'Fraction of a fraction in context', word: true });
+}, { title: 'Fraction of a fraction in context', word: true, learn: ['num-fraction-problems', 'num-fraction-mul-div'] });
 
 export const generators = [
   fracSimplify, fracMixedImproper, fracCompare, fracMissing, fracShaded,

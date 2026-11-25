@@ -126,7 +126,7 @@ export const surdAdd = gen('num-surds-add', 'num-surds-operations', (rng, d) => 
     answer: ans,
     distractors: uniq([`$\\sqrt{${n1 + (sub ? -n2 : n2) + n3}}$`, `$${kRoot(c1 * k1 + (sub ? k2 : -k2) + k3, b)}$`, `$${kRoot(total + 1, b)}$`, `$${kRoot(total, b * 2)}$`, `$${kRoot(Math.max(2, total - 1), b)}$`, naive * naive === n1 + n2 ? null : `$${kRoot(c1 * k1 * k2, b)}$`].filter((s) => s && !/\{-|\$-|\$0/.test(s)), ans),
     solution: [
-      'You can only add or subtract surds when the number under the root is the same, so simplify each one first.',
+      'You can only add or subtract surds when the number under the root is the same, so [[num-surds-simplify|simplify each one]] first.',
       [`$\\sqrt{${n1}} = ${kRoot(k1, b)}$`, `$\\sqrt{${n2}} = ${kRoot(k2, b)}$`, three ? `$\\sqrt{${n3}} = ${kRoot(k3, b)}$` : null].filter(Boolean).join(', '),
       `$${c1 > 1 ? `${c1} \\times ` : ''}${kRoot(k1, b)} ${sub ? '-' : '+'} ${kRoot(k2, b)}${three ? ` + ${kRoot(k3, b)}` : ''} = ${kRoot(total, b)}$ (collect them like $x$ terms)`,
       `Answer: ${ans}.${c1 === 1 && !three && !sub ? ` Note $\\sqrt{${n1}} + \\sqrt{${n2}}$ is <b>not</b> $\\sqrt{${n1 + n2}}$.` : ''}`,
@@ -200,7 +200,7 @@ export const surdExpand = gen('num-surds-expand', 'num-surds-operations', (rng, 
       answer: ans,
       distractors: uniq([...wrongPairs.map(([x, y]) => fmt(x, y)), fmt(p + 1, q), fmt(p, q + 1), fmt(-p, q)], ans),
       solution: [
-        'Expand the brackets as in algebra, remembering that $\\sqrt{' + b + '} \\times \\sqrt{' + b + '} = ' + b + '$.',
+        '[[alg-expand-double|Expand the brackets]] as in algebra, remembering that $\\sqrt{' + b + '} \\times \\sqrt{' + b + '} = ' + b + '$.',
         step,
         `Collect the whole numbers and the surds: ${ans}`,
         `Answer: ${ans}`,
@@ -315,7 +315,7 @@ export const ratCombined = gen('num-surds-rat-combined', 'num-surds-rationalise'
       ],
     };
   }
-}, { title: 'Simplify (√n + c)/√b' });
+}, { title: 'Simplify (√n + c)/√b', learn: ['num-surds-rationalise', 'num-surds-simplify'] });
 
 export const generators = [
   simplifySurd, surdInside, surdCompare,

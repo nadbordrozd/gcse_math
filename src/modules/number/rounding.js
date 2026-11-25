@@ -410,7 +410,7 @@ export const boundsCalc = gen('num-bounds-calc', 'num-bounds-calc', (rng, d) => 
     calculator: true,
     longDecimalsOk: true,
     solution: [
-      `Bounds: $${tnum(aL)} \\leqslant a < ${tnum(aU)}$ and $${tnum(bL)} \\leqslant b < ${tnum(bU)}$.`,
+      `[[num-error-intervals|Bounds]]: $${tnum(aL)} \\leqslant a < ${tnum(aU)}$ and $${tnum(bL)} \\leqslant b < ${tnum(bU)}$.`,
       `To make $${ex.tex}$ as ${upper ? 'large' : 'small'} as possible use the ${useAU ? 'upper' : 'lower'} bound of $a$ and the ${useBU ? 'upper' : 'lower'} bound of $b$${useAU !== useBU ? ` (${ex.tex.includes('frac') ? 'dividing' : 'subtracting'} a ${useBU ? 'bigger' : 'smaller'} number makes the result ${upper ? 'bigger' : 'smaller'})` : ''}.`,
       `$${ex.sub(tnum(A), tnum(B))} = ${tnum(roundTo(raw, 6))}$`,
       `Answer: ${show(val)}`,
@@ -455,7 +455,7 @@ export const boundsWord = gen('num-bounds-word', 'num-bounds-calc', (rng, d) => 
     longDecimalsOk: true,
     solution: [...c.steps, `$= ${tnum(roundTo(raw, 5))}${exact ? '' : '\\ldots'}$`, `Answer: ${fmt(val)}`],
   };
-}, { title: 'Bounds in context', word: true });
+}, { title: 'Bounds in context', word: true, learn: ['num-bounds-calc', 'num-error-intervals'] });
 
 export const boundsAccuracy = gen('num-bounds-accuracy', 'num-bounds-calc', (rng, d) => {
   // easy: x = d × t; medium: x = d ÷ t; hard: x = d ÷ t² (all values correct to 1 decimal place)

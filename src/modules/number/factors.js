@@ -170,7 +170,7 @@ export const fmPuzzle = gen('num-fm-puzzle', 'num-factors-multiples', (rng, d) =
       `Answer: ${x}`,
     ].slice(0, 6),
   };
-}, { title: 'Number puzzle with factor/multiple clues' });
+}, { title: 'Number puzzle with factor/multiple clues', learn: ['num-factors-multiples', 'num-primes'] });
 
 /* ================================================================== */
 /* num-primes                                                          */
@@ -467,7 +467,7 @@ export const pfUse = gen('num-pf-use', 'num-prime-factorisation', (rng, d) => {
       typed: typedIndex(mm),
       solution: [
         `$${tnum(n)}^{2} = (${indexFormMap(m)})^{2}$`,
-        'Squaring <b>doubles</b> every power (power of a power: multiply the indices).',
+        'Squaring <b>doubles</b> every power ([[num-index-laws|power of a power]]: multiply the indices).',
         `$= ${indexFormMap(mm)}$`,
         `Answer: ${ans}`,
       ],
@@ -488,7 +488,7 @@ export const pfUse = gen('num-pf-use', 'num-prime-factorisation', (rng, d) => {
       `Answer: ${num(ans)}`,
     ],
   };
-}, { title: 'Use a prime factorisation' });
+}, { title: 'Use a prime factorisation', learn: ['num-prime-factorisation', 'num-index-laws'] });
 
 /* ================================================================== */
 /* num-hcf-lcm                                                         */
@@ -592,7 +592,7 @@ export const hcfLcmIndex = gen('num-hcf-lcm-index', 'num-hcf-lcm', (rng, d) => {
       `Answer: ${ans}`,
     ],
   };
-}, { title: 'HCF/LCM from prime factor form' });
+}, { title: 'HCF/LCM from prime factor form', learn: ['num-hcf-lcm', 'num-prime-factorisation'] });
 
 export const hcfLcmReverse = gen('num-hcf-lcm-reverse', 'num-hcf-lcm', (rng, d) => {
   for (;;) {
@@ -665,7 +665,7 @@ export const hcfLcmProblems = gen('num-hcf-lcm-word', 'num-hcf-lcm-problems', (r
     distractors: [fmtA(wantLcm ? hcf : l), fmtA(wantLcm ? a * b : Math.abs(a - b)), fmtA(Math.max(a, b)), fmtA(wantLcm ? l * 2 : hcf / 2), fmtA(Math.min(a, b)), fmtA(answer + g), fmtA(a + b)].filter((t) => !/\.\d/.test(t)),
     typed: { kind: 'number', value: answer },
     solution: wantLcm ? [
-      `Things happen "together again" at a <b>common multiple</b> of ${num(a)} and ${num(b)}; we want the <b>lowest</b> one, the LCM.`,
+      `Things happen "together again" at a <b>common multiple</b> of ${num(a)} and ${num(b)}; we want the <b>lowest</b> one, the [[num-hcf-lcm|LCM]].`,
       `Prime factors: $${num(a)} = ${pf(a)}$ and $${num(b)} = ${pf(b)}$.`,
       `Multiples of ${num(big)}: ${range(1, Math.min(6, l / big + 1)).map((m) => num(m * big)).join(', ')} … the first that ${num(Math.min(a, b))} also divides is ${num(l)}.`,
       `Answer: <b>${fmtA(l)}</b>.`,

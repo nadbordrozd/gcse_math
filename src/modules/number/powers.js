@@ -430,7 +430,7 @@ export const fiSolve = gen('num-fi-solve', 'num-fractional-indices', (rng, d) =>
       ],
     };
   }
-}, { title: 'Solve a^x = b with fractional/negative x' });
+}, { title: 'Solve a^x = b with fractional/negative x', learn: ['num-fractional-indices', 'num-index-laws'] });
 
 /* ================================================================== */
 /* num-standard-form                                                   */
