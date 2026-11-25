@@ -391,7 +391,7 @@ export const pythWord = gen('trig-pyth-word', 'trig-pythagoras-problems', (rng, 
       `Answer: <b>${f(unknown)}</b>`,
     ],
   };
-}, { title: 'Pythagoras in context (ladders, ships, screens…)', word: true });
+}, { title: 'Pythagoras in context (ladders, ships, screens…)', word: true, learn: ['trig-pythagoras-problems', 'trig-pythagoras'] });
 
 export const pythCoords = gen('trig-pyth-coords', 'trig-pythagoras-problems', (rng, d) => {
   let dx; let dy;
@@ -440,7 +440,7 @@ export const pythCoords = gen('trig-pyth-coords', 'trig-pythagoras-problems', (r
       `Answer: ${exact ? ans : `<b>${ans}</b>`}`,
     ],
   };
-}, { title: 'Distance between two points' });
+}, { title: 'Distance between two points', learn: ['trig-pythagoras-problems', 'gr-coordinates'] });
 
 /** Isosceles triangle with apex A, base BC, foot of perpendicular M. */
 function isoFig({ halfBase, height, labels = {}, showHeight = true, rotate = 0 }) {
@@ -647,7 +647,7 @@ export const pythComposite = gen('trig-pyth-composite', 'trig-pythagoras-problem
       `Area $= \\frac{1}{2} \\times ${a} \\times ${b} = ${tnum(area)}$. Answer: <b>${fa(area)}</b>`,
     ],
   };
-}, { title: 'Perimeter and area problems needing Pythagoras' });
+}, { title: 'Perimeter and area problems needing Pythagoras', learn: ['trig-pythagoras-problems', 'trig-pythagoras'] });
 
 function gcdLocal(a, b) { while (b) [a, b] = [b, a % b]; return a; }
 

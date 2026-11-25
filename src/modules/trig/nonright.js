@@ -14,7 +14,7 @@ import {
  * Triangle with vertices named n[0], n[1], n[2] (default A, B, C) with angles angs (degrees) at those vertices,
  * drawn to shape. sides: { 'AB': label, ... } using the vertex names; angles: { A: label }.
  */
-function triFig({ angs, n = ['A', 'B', 'C'], sides = {}, angles = {}, rotate = 0, flip = false, showNames = true, width = 360, height = 230 }) {
+export function triFig({ angs, n = ['A', 'B', 'C'], sides = {}, angles = {}, rotate = 0, flip = false, showNames = true, width = 360, height = 230 }) {
   const [a0, b0] = angs;
   // side opposite vertex 2 (between vertex 0 and 1) has length 1
   const c = 1; const b = (c * sinD(angs[1])) / sinD(angs[2]); // side from vertex 0 to vertex 2
@@ -350,7 +350,7 @@ export const areaReverse = gen('trig-area-reverse', 'trig-area-sine', (rng, d) =
       `Answer: <b>${f(bb)}</b>`,
     ],
   };
-}, { title: 'Area = ½ab sin C in reverse (find a side or angle)' });
+}, { title: 'Area = ½ab sin C in reverse (find a side or angle)', learn: ['trig-area-sine', 'trig-sohcahtoa-angle'] });
 
 export const areaSegment = gen('trig-area-segment', 'trig-area-sine', (rng, d) => {
   const rr = d === 'hard' ? int(rng, 40, 150) / 10 : int(rng, 4, 15);
@@ -387,7 +387,7 @@ export const areaSegment = gen('trig-area-segment', 'trig-area-sine', (rng, d) =
       `Segment $= ${approxT(sector)} - ${approxT(tri)} = ${approxT(seg)}$. Answer: <b>${f(seg)}</b>`,
     ],
   };
-}, { title: 'Area of a segment (sector − ½ab sin C)' });
+}, { title: 'Area of a segment (sector − ½ab sin C)', learn: ['trig-area-sine', 'geo-arcs-sectors'] });
 
 /* ------------------------------------------------------------------ */
 /* trig-sine-cosine-problems (mixed / choosing the rule)               */
@@ -436,7 +436,7 @@ export const scWhichEquation = gen('trig-sc-which-equation', 'trig-sine-cosine-p
     distractors: ds,
     solution: [why, 'Check each side is paired with the correct angle (opposite it).', `Answer: ${ans}`],
   };
-}, { title: 'Choose the right rule (which equation?)' });
+}, { title: 'Choose the right rule (which equation?)', learn: ['trig-sine-cosine-problems', 'trig-sine-rule', 'trig-cosine-rule'] });
 
 export const scQuadrilateral = gen('trig-sc-quadrilateral', 'trig-sine-cosine-problems', (rng, d) => {
   const unit = 'cm';
@@ -468,7 +468,7 @@ export const scQuadrilateral = gen('trig-sc-quadrilateral', 'trig-sine-cosine-pr
     f = (v) => `${r.fmt(v)} ${unit}`;
     ans = bd; prompt = `Work out the length of the diagonal $BD$. ${r.text}`;
     wrong = [bd * bd < 1000 ? bd * bd : NaN, Math.sqrt(ab * ab + ad * ad + 2 * ab * ad * cosD(angA)), Math.hypot(ab, ad), Math.sqrt(Math.abs((ab * ab + ad * ad - 2 * ab * ad) * cosD(angA)))];
-    sol = [`In triangle $ABD$ you know two sides and the angle between them: cosine rule.`, `$BD^2 = ${ab}^2 + ${ad}^2 - 2 \\times ${ab} \\times ${ad} \\times \\cos ${At(angA)} = ${approxT(bd * bd)}$`, `$BD = ${approxT(bd)}$`, `Answer: <b>${f(bd)}</b>`];
+    sol = [`In triangle $ABD$ you know two sides and the angle between them: [[trig-cosine-rule|cosine rule]].`, `$BD^2 = ${ab}^2 + ${ad}^2 - 2 \\times ${ab} \\times ${ad} \\times \\cos ${At(angA)} = ${approxT(bd * bd)}$`, `$BD = ${approxT(bd)}$`, `Answer: <b>${f(bd)}</b>`];
   } else if (ask === 'cd') {
     f = (v) => `${r.fmt(v)} ${unit}`;
     ans = cd; prompt = `Work out the length of $CD$. ${r.text}`;
@@ -476,7 +476,7 @@ export const scQuadrilateral = gen('trig-sc-quadrilateral', 'trig-sine-cosine-pr
     wrong = [(bd * sinD(angC)) / sinD(angCBD), (bd * sinD(angBDC)) / sinD(angC), (ab * sinD(angCBD)) / sinD(angC), (Math.hypot(ab, ad) * sinD(angCBD)) / sinD(angC), cd * 1.1];
     sol = [
       `Step 1 – triangle $ABD$ (two sides and the included angle): cosine rule. $BD^2 = ${ab}^2 + ${ad}^2 - 2 \\times ${ab} \\times ${ad}\\cos ${At(angA)}$, so $BD = ${approxT(bd)}$ cm.`,
-      `Step 2 – triangle $BCD$: $CD$ is opposite the $${At(angCBD)}$ angle and $BD$ is opposite the $${At(angC)}$ angle: sine rule.`,
+      `Step 2 – triangle $BCD$: $CD$ is opposite the $${At(angCBD)}$ angle and $BD$ is opposite the $${At(angC)}$ angle: [[trig-sine-rule|sine rule]].`,
       `$CD = \\frac{${approxT(bd)} \\times \\sin ${At(angCBD)}}{\\sin ${At(angC)}} = ${approxT(cd)}$`,
       `Answer: <b>${f(cd)}</b>`,
     ];
@@ -513,7 +513,7 @@ export const scQuadrilateral = gen('trig-sc-quadrilateral', 'trig-sine-cosine-pr
     calculator: true,
     solution: sol,
   };
-}, { title: 'Multi-step: quadrilateral with a diagonal' });
+}, { title: 'Multi-step: quadrilateral with a diagonal', learn: ['trig-sine-cosine-problems', 'trig-cosine-rule', 'trig-sine-rule', 'trig-area-sine'] });
 
 const bearing3 = (b) => `${String(((b % 360) + 360) % 360).padStart(3, '0')}°`;
 
@@ -608,14 +608,14 @@ export const scWord = gen('trig-sc-word', 'trig-sine-cosine-problems', (rng, d) 
   let wrong; let sol;
   if (ctx.kind === 'area') {
     wrong = [2 * ctx.value, 0.5 * ctx.b * ctx.c, 0.5 * ctx.b * ctx.c * Math.abs(cosD(ctx.ang)), ctx.b * ctx.c * sinD(ctx.ang) / 4];
-    sol = [`Two sides and the angle between them: area $= \\frac{1}{2}ab\\sin C$.`, `$\\frac{1}{2} \\times ${ctx.b} \\times ${ctx.c} \\times \\sin ${At(ctx.ang)} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
+    sol = [`Two sides and the angle between them: [[trig-area-sine|area]] $= \\frac{1}{2}ab\\sin C$.`, `$\\frac{1}{2} \\times ${ctx.b} \\times ${ctx.c} \\times \\sin ${At(ctx.ang)} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'angle') {
     const cv = (ctx.b * ctx.b + ctx.c * ctx.c - ctx.a * ctx.a) / (2 * ctx.b * ctx.c);
     wrong = [180 - ctx.value, acosD(Math.max(-1, Math.min(1, (ctx.a * ctx.a + ctx.c * ctx.c - ctx.b * ctx.b) / (2 * ctx.a * ctx.c)))), acosD(roundTo(cv, 1)), 90 - ctx.value / 2, acosD(Math.max(-1, Math.min(1, cv * 2)))];
-    sol = [`Three sides known → cosine rule for an angle. The angle wanted is opposite the side of ${num(ctx.a)}.`, `$\\cos\\theta = \\frac{${tnum(ctx.b)}^2 + ${tnum(ctx.c)}^2 - ${tnum(ctx.a)}^2}{2 \\times ${tnum(ctx.b)} \\times ${tnum(ctx.c)}} = ${cv < 0 ? '-' : ''}${approxT(Math.abs(cv))}$`, `$\\theta = ${approxT(ctx.value)}^\\circ$`, `Answer: <b>${f(ctx.value)}</b>`];
+    sol = [`Three sides known → [[trig-cosine-rule|cosine rule]] for an angle. The angle wanted is opposite the side of ${num(ctx.a)}.`, `$\\cos\\theta = \\frac{${tnum(ctx.b)}^2 + ${tnum(ctx.c)}^2 - ${tnum(ctx.a)}^2}{2 \\times ${tnum(ctx.b)} \\times ${tnum(ctx.c)}} = ${cv < 0 ? '-' : ''}${approxT(Math.abs(cv))}$`, `$\\theta = ${approxT(ctx.value)}^\\circ$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'sine') {
     wrong = [(ctx.base * sinD(ctx.a1)) / sinD(ctx.top), (ctx.base * sinD(ctx.top)) / sinD(ctx.a2), ctx.base * sinD(ctx.a2), (ctx.base * sinD(ctx.a2)) / sinD(ctx.a1)];
-    sol = [`The angle at the boat is $180^\\circ - ${ctx.a1}^\\circ - ${ctx.a2}^\\circ = ${ctx.top}^\\circ$.`, `The distance from A to the boat is opposite the ${ctx.a2}° angle at B; the ${ctx.base} m shore is opposite the ${ctx.top}° angle. Sine rule:`, `$x = \\frac{${ctx.base} \\times \\sin ${At(ctx.a2)}}{\\sin ${At(ctx.top)}} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
+    sol = [`The angle at the boat is $180^\\circ - ${ctx.a1}^\\circ - ${ctx.a2}^\\circ = ${ctx.top}^\\circ$.`, `The distance from A to the boat is opposite the ${ctx.a2}° angle at B; the ${ctx.base} m shore is opposite the ${ctx.top}° angle. [[trig-sine-rule|Sine rule]]:`, `$x = \\frac{${ctx.base} \\times \\sin ${At(ctx.a2)}}{\\sin ${At(ctx.top)}} = ${approxT(ctx.value)}$`, `Answer: <b>${f(ctx.value)}</b>`];
   } else if (ctx.kind === 'sineAngle') {
     wrong = [180 - ctx.value, 180 - ctx.angAtTop - ctx.value, ctx.jib * sinD(ctx.angAtTop) / ctx.cable <= 1 ? asinD((ctx.jib * sinD(ctx.angAtTop)) / ctx.cable) : NaN, asinD(roundTo((ctx.cable * sinD(ctx.angAtTop)) / ctx.jib, 1)), asinD(ctx.cable / ctx.jib)];
     sol = [`In triangle $PQR$: $QR = ${ctx.cable}$ m is opposite angle $QPR$, and $PQ = ${ctx.jib}$ m is opposite the ${ctx.angAtTop}° angle at $R$.`, `Sine rule: $\\frac{\\sin QPR}{${ctx.cable}} = \\frac{\\sin ${At(ctx.angAtTop)}}{${ctx.jib}}$, so $\\sin QPR = ${approxT((ctx.cable * sinD(ctx.angAtTop)) / ctx.jib)}$`, `$QPR = ${approxT(ctx.value)}^\\circ$`, `Answer: <b>${f(ctx.value)}</b>`];
@@ -624,7 +624,7 @@ export const scWord = gen('trig-sc-word', 'trig-sine-cosine-problems', (rng, d) 
     const extra = ctx.kind === 'perimeter' ? ctx.b + ctx.c : 0;
     wrong = [Math.sqrt(ctx.b * ctx.b + ctx.c * ctx.c + 2 * ctx.b * ctx.c * cosD(ctx.ang)) + extra, Math.hypot(ctx.b, ctx.c) + extra, x * x < 3000 ? x * x + extra : NaN, Math.sqrt(Math.abs((ctx.b * ctx.b + ctx.c * ctx.c - 2 * ctx.b * ctx.c) * cosD(ctx.ang))) + extra, ctx.kind === 'perimeter' ? x : ctx.b + ctx.c];
     sol = [
-      `${ctx.lead ?? 'Two sides and the angle between them.'} Use the cosine rule.`,
+      `${ctx.lead ?? 'Two sides and the angle between them.'} Use [[trig-cosine-rule|the cosine rule]].`,
       `$x^2 = ${tnum(ctx.b)}^2 + ${tnum(ctx.c)}^2 - 2 \\times ${tnum(ctx.b)} \\times ${tnum(ctx.c)} \\times \\cos ${At(ctx.ang)} = ${approxT(x * x)}$`,
       `$x = ${approxT(x)}$${ctx.kind === 'perimeter' ? `, so the perimeter is $${approxT(x)} + ${ctx.b} + ${ctx.c} = ${approxT(ctx.value)}$` : ''}`,
       `Answer: <b>${f(ctx.value)}</b>`,
@@ -639,7 +639,7 @@ export const scWord = gen('trig-sc-word', 'trig-sine-cosine-problems', (rng, d) 
     hint: 'Sketch the triangle and mark what you know. Two sides and the included angle → cosine rule; pairs of opposite sides and angles → sine rule.',
     solution: sol,
   };
-}, { title: 'Sine and cosine rule in context (bearings, fields, clocks…)', word: true });
+}, { title: 'Sine and cosine rule in context (bearings, fields, clocks…)', word: true, learn: ['trig-sine-cosine-problems', 'trig-cosine-rule', 'trig-sine-rule', 'trig-area-sine'] });
 
 export const sineRuleGenerators = [sineSide, sineAngle, sineWhich];
 export const cosineRuleGenerators = [cosSide, cosAngle];

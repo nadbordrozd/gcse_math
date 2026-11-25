@@ -13,7 +13,7 @@ const tanDir = (a) => [-Math.sin(rad(a)), Math.cos(rad(a))];
  * Circle figure. on: { A: angleDeg } points on the unit circle centre O; ext: { P: [x, y] } other points.
  * draw(g) adds chords etc.; names on the circle are pushed outwards from O.
  */
-function circleFig({ on = {}, ext = {}, showO = true, rotate = 0, draw, nameDirs = {}, width = 340, height = 260, hideNames = [] }) {
+export function circleFig({ on = {}, ext = {}, showO = true, rotate = 0, draw, nameDirs = {}, width = 340, height = 260, hideNames = [] }) {
   const pts = { O: [0, 0] };
   for (const [k, a] of Object.entries(on)) pts[k] = onCircle([0, 0], 1, a);
   Object.assign(pts, ext);
@@ -536,7 +536,7 @@ export const ctReason = gen('trig-ct-reason', 'trig-circle-theorems', (rng, d) =
  * Inscribed triangle ABC with angles a (at A), b (at B), c (at C) and a tangent ST at A.
  * A at the bottom; T on the side of B, S on the side of C. labels: { TAB, SAC, A, B, C } -> text.
  */
-function altSegFig(rng, { a, b, c }, labels, { showO = false, rotate = null, extra = null } = {}) {
+export function altSegFig(rng, { a, b, c }, labels, { showO = false, rotate = null, extra = null } = {}) {
   const tA = 270; const tB = tA + 2 * c; const tC = tB + 2 * a;
   const on = { A: tA, B: tB, C: tC };
   const Ap = onCircle([0, 0], 1, tA);
@@ -589,7 +589,7 @@ export const ctmAltSegment = gen('trig-ctm-alt-segment', 'trig-circle-theorems-m
     typed: { kind: 'number', value: ans },
     solution: sol,
   };
-}, { title: 'Alternate segment theorem' });
+}, { title: 'Alternate segment theorem', learn: ['trig-circle-theorems-multi'] });
 
 export const ctmTangentsCircumference = gen('trig-ctm-tangents-circumference', 'trig-circle-theorems-multi', (rng, d) => {
   const p = 2 * int(rng, 20, 42);
@@ -617,7 +617,7 @@ export const ctmTangentsCircumference = gen('trig-ctm-tangents-circumference', '
       `Answer: <b>${deg(p)}</b>`,
     ],
   };
-}, { title: 'Two tangents and the angle at the circumference' });
+}, { title: 'Two tangents and the angle at the circumference', learn: ['trig-circle-theorems-multi', 'trig-circle-theorems'] });
 
 export const ctmCentreIsosceles = gen('trig-ctm-centre-isosceles', 'trig-circle-theorems-multi', (rng, d) => {
   if (d === 'hard') { rng(); rng(); } // hard draws its own numbers, never a copy of easy
@@ -657,7 +657,7 @@ export const ctmCentreIsosceles = gen('trig-ctm-centre-isosceles', 'trig-circle-
       `Answer: <b>${deg(90 - a)}</b>`,
     ],
   };
-}, { title: 'Angle at the centre with an isosceles triangle' });
+}, { title: 'Angle at the centre with an isosceles triangle', learn: ['trig-circle-theorems-multi', 'trig-circle-theorems'] });
 
 export const ctmCyclicMulti = gen('trig-ctm-cyclic-multi', 'trig-circle-theorems-multi', (rng, d) => {
   const mode = d === 'easy' ? 'exterior' : pick(rng, ['exterior', 'isosceles', 'centre']);
@@ -718,7 +718,7 @@ export const ctmCyclicMulti = gen('trig-ctm-cyclic-multi', 'trig-circle-theorems
       `Answer: <b>${deg(180 - a)}</b>`,
     ],
   };
-}, { title: 'Cyclic quadrilaterals: exterior angle, isosceles, centre' });
+}, { title: 'Cyclic quadrilaterals: exterior angle, isosceles, centre', learn: ['trig-circle-theorems-multi', 'trig-circle-theorems'] });
 
 export const ctmSemicircleSegment = gen('trig-ctm-semicircle-segment', 'trig-circle-theorems-multi', (rng, d) => {
   const a = int(rng, 22, 68); // angle CAB
@@ -765,7 +765,7 @@ export const ctmSemicircleSegment = gen('trig-ctm-semicircle-segment', 'trig-cir
       `Answer: <b>${deg(ans)}</b>`,
     ],
   };
-}, { title: 'Semicircle then same segment' });
+}, { title: 'Semicircle then same segment', learn: ['trig-circle-theorems-multi', 'trig-circle-theorems'] });
 
 export const circlePartGenerators = [circlePartName, circlePartDef, circleRadiusDiameter];
 export const circleTheoremGenerators = [ctCentre, ctSemicircle, ctSameSegment, ctCyclic, ctTangent, ctReason];

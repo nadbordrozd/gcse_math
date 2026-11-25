@@ -326,7 +326,7 @@ export const vgRatio = gen('trig-vg-ratio', 'trig-vector-geometry', (rng, d) => 
       `Answer: ${vopt(ans)}`,
     ],
   };
-}, { title: 'Points dividing a line in a ratio (midpoints too)' });
+}, { title: 'Points dividing a line in a ratio (midpoints too)', learn: ['trig-vector-geometry', 'rat-share'] });
 
 export const vgParallel = gen('trig-vg-parallel', 'trig-vector-geometry', (rng, d) => {
   const p = intExcept(rng, -4, 5, [0]); const q = intExcept(rng, -5, 5, [0, p]);

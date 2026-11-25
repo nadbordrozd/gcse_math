@@ -430,13 +430,13 @@ export const sohAngleTwoStep = gen('trig-soh-angle-two-step', 'trig-sohcahtoa-an
     typed: DP1.typed(x),
     calculator: true,
     solution: [
-      `Step 1 – Pythagoras in triangle $ABD$: $AB = \\sqrt{${ad}^2 - ${db}^2} = \\sqrt{${ad * ad - db * db}} = ${ab}$ cm.`,
+      `Step 1 – [[trig-pythagoras|Pythagoras]] in triangle $ABD$: $AB = \\sqrt{${ad}^2 - ${db}^2} = \\sqrt{${ad * ad - db * db}} = ${ab}$ cm.`,
       `Step 2 – in triangle $ABC$, $AB$ is opposite $x$ and $BC = ${bc}$ cm is adjacent: $\\tan x = \\frac{${ab}}{${bc}}$`,
       `$x = \\tan^{-1}\\left(\\frac{${ab}}{${bc}}\\right) = ${approxT(x)}^\\circ$`,
       `Answer: <b>${f(x)}</b>`,
     ],
   };
-}, { title: 'Two-step: find an angle via a shared side' });
+}, { title: 'Two-step: find an angle via a shared side', learn: ['trig-sohcahtoa-angle', 'trig-pythagoras'] });
 
 /* ------------------------------------------------------------------ */
 /* trig-exact-values                                                   */
@@ -674,7 +674,7 @@ export const exactTriangle = gen('trig-exact-triangle', 'trig-exact-values', (rn
       `Answer: ${tex(ans)}`,
     ],
   };
-}, { title: 'Exact sides with 30°, 45° and 60°' });
+}, { title: 'Exact sides with 30°, 45° and 60°', learn: ['trig-exact-values', 'trig-sohcahtoa-side'] });
 
 export const sohcahtoaSideGenerators = [sohSide, sohWhich, sohSideWord, sohTwoStep];
 export const sohcahtoaAngleGenerators = [sohAngle, sohAngleWord, sohAngleTwoStep];

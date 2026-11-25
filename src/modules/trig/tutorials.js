@@ -1,5 +1,7 @@
 // Tutorials ("Learn" pages) for the trig module. See docs/TUTORIAL_GUIDELINES.md.
 import { h, p, list, steps, key, display, note, mistake, figure, example } from '../../tutorial-kit.js';
+import { measureTutorials } from './tutorials-measure.js';
+import { shapeTutorials } from './tutorials-shapes.js';
 import { svg, polygon, text, rightAngleMark, angleMark, line, sideLabel, vertexLabel, centroid, ACCENT, ACCENT2 } from '../../svg.js';
 
 /* ------------------------------------------------------------------ */
@@ -179,5 +181,7 @@ export const tutorials = [
     ].join(''),
   },
 ];
+
+tutorials.push(...measureTutorials, ...shapeTutorials);
 
 void text;

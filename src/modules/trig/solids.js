@@ -11,7 +11,7 @@ const clampDims = (dims) => {
 };
 
 /** Cuboid figure: labels { AB, BC, CG } (edge -> label), lines: extra segments, angle at A between AC and AG. */
-function cuboidFig({ w, d, h, labels = {}, diag = true, base = false, angle = null, width = 360, height = 250 }) {
+export function cuboidFig({ w, d, h, labels = {}, diag = true, base = false, angle = null, width = 360, height = 250 }) {
   let [dw, dd, dh] = clampDims([w, d * 1.15, h]);
   // In this projection AG runs through F when width : height = 0.5 : 0.36; keep clear of that
   if (Math.abs(dw / dh - 0.5 / 0.36) < 0.3) dw = dw / dh > 0.5 / 0.36 ? dh * 1.75 : dh * 1.05;
@@ -83,7 +83,7 @@ export const cuboidDiagonal = gen('trig-3d-cuboid-diagonal', 'trig-3d', (rng, d)
       `Answer: <b>${f(diagL)}</b>`,
     ],
   };
-}, { title: 'Length of a cuboid diagonal' });
+}, { title: 'Length of a cuboid diagonal', learn: ['trig-3d', 'trig-pythagoras'] });
 
 export const cuboidAngle = gen('trig-3d-cuboid-angle', 'trig-3d', (rng, d) => {
   const unit = 'cm';
@@ -139,9 +139,9 @@ export const cuboidAngle = gen('trig-3d-cuboid-angle', 'trig-3d', (rng, d) => {
       `Answer: <b>${fa(th)}</b>`,
     ],
   };
-}, { title: 'Angle between a cuboid diagonal and the base' });
+}, { title: 'Angle between a cuboid diagonal and the base', learn: ['trig-3d', 'trig-sohcahtoa-angle'] });
 
-function pyramidFig({ s, h, labels = {}, angle = null, showHeight = true }) {
+export function pyramidFig({ s, h, labels = {}, angle = null, showHeight = true }) {
   const dh = Math.min(Math.max(h, s * 0.8), s * 1.15);
   const py = pyramid(s, s * 1.1, dh);
   return fig({
@@ -226,7 +226,7 @@ export const pyramid3d = gen('trig-3d-pyramid', 'trig-3d', (rng, d) => {
       `Answer: <b>${fa(th)}</b>`,
     ],
   };
-}, { title: 'Square-based pyramid: height and angles' });
+}, { title: 'Square-based pyramid: height and angles', learn: ['trig-3d', 'trig-sohcahtoa-angle'] });
 
 function prismFig({ base, height, l, labels = {}, line = null, angle = null, mid = false }) {
   const [db, dh, dl] = clampDims([base, height, l * 1.1]);
@@ -317,6 +317,6 @@ export const prism3d = gen('trig-3d-prism', 'trig-3d', (rng, d) => {
       `Answer: <b>${fa(th)}</b>`,
     ],
   };
-}, { title: 'Triangular prism: lengths and angles in 3D' });
+}, { title: 'Triangular prism: lengths and angles in 3D', learn: ['trig-3d', 'trig-sohcahtoa-angle'] });
 
 export const solidsGenerators = [cuboidDiagonal, cuboidAngle, pyramid3d, prism3d];

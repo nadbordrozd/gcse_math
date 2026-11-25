@@ -84,7 +84,7 @@ export const simPair = gen('trig-sim-pair', 'trig-similar-lengths', (rng, d) => 
 }, { title: 'Similar triangles side by side: find a length' });
 
 /** A-shape: triangle ABC with DE parallel to BC (D on AB, E on AC). */
-function nestedFig({ k, labels, apexAngle = 50, baseTilt = 0, names3 = ['A', 'B', 'C', 'D', 'E'], apexX = 0.15 }) {
+export function nestedFig({ k, labels, apexAngle = 50, baseTilt = 0, names3 = ['A', 'B', 'C', 'D', 'E'], apexX = 0.15 }) {
   const [A0, B0, C0, D0, E0] = names3;
   const Lb = 1; const ang1 = 180 + 90 - apexAngle / 2 + baseTilt; const ang2 = 270 + apexAngle / 2 + baseTilt;
   void ang1; void ang2;
