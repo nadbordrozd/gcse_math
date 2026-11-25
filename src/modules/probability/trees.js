@@ -662,7 +662,7 @@ export const depAlgebra = gen('prob-dep-algebra', 'prob-tree-dependent', (rng, d
     solution: [
       `$\\frac{${k}}{n} \\times \\frac{${k - 1}}{n - 1} = ${p.tex()}$, so $\\frac{${k * (k - 1)}}{n(n - 1)} = ${p.tex()}$.`,
       `$n(n - 1) = ${k * (k - 1)} \\times ${frac(1).div(p).tex()} = ${N * (N - 1)}$, i.e. $n^2 - n - ${N * (N - 1)} = 0$.`,
-      `$(n - ${N})(n + ${N - 1}) = 0$, and $n$ must be positive, so $n = ${N}$.`,
+      `[[alg-solve-quad-factorising|Factorise]]: $(n - ${N})(n + ${N - 1}) = 0$, and $n$ must be positive, so $n = ${N}$.`,
       `Answer: ${num(N)}`,
     ],
   };
@@ -856,7 +856,7 @@ export const condTreeReverse = gen('prob-cond-tree-reverse', 'prob-conditional',
       `Answer: ${pf(p, form)}`,
     ],
   };
-}, { title: 'Reverse conditional probability on a tree diagram' });
+}, { title: 'Reverse conditional probability on a tree diagram', learn: ['prob-conditional', 'prob-tree-dependent'] });
 
 export const condVennInfo = gen('prob-cond-venn-info', 'prob-conditional', (rng, d) => {
   const ctx = pick(rng, CVENN);

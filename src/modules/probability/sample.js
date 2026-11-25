@@ -378,7 +378,7 @@ export const ssCode = gen('prob-ss-code', 'prob-sample-space', (rng, d) => {
       `Answer: ${ft(p)}`,
     ],
   };
-}, { title: 'Probability of guessing a code (product rule)' });
+}, { title: 'Probability of guessing a code (product rule)', learn: ['prob-sample-space', 'num-product-rule'] });
 
 /* ================================================================== */
 /* prob-expected-frequency                                             */
@@ -783,7 +783,7 @@ export const efTableExpected = gen('prob-ef-table-expected', 'prob-expected-freq
       `Answer: ${money(profit)}`,
     ],
   };
-}, { title: 'Expected outcomes from a probability table or a game' });
+}, { title: 'Expected outcomes from a probability table or a game', learn: ['prob-expected-frequency', 'prob-sum-to-one'] });
 
 export const sampleArchetypes = [ssTwoDice, ssTwoSpinners, ssListing, ssPairs, ssCode];
 export const expectedArchetypes = [efExpected, efRelFreq, efFair, efBestEstimate, efReverse, efTableExpected];

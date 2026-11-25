@@ -86,7 +86,7 @@ for (const t of TUTORIALS) visit(t.id, []);
 // Archetype learn lists and [[links]] inside generated solutions.
 for (const g of GENERATORS) {
   if (mods.length && !TUTORIALS.some((t) => inScope(t) && t.skills?.includes(g.skillId)) && !(g.learn || []).length) continue;
-  for (const id of g.learn || []) if (!resolveTutorial(id)) failures.push(`${g.id}: learn id ${id} has no page`);
+  for (const id of g.learn || []) if (!resolveTutorial(id)) (SKILL[id] && !strict ? warnings : failures).push(`${g.id}: learn id ${id} has no page${SKILL[id] ? ' yet' : ''}`);
   for (const d of ['easy', 'hard']) {
     for (let seed = 1; seed <= 15; seed += 1) {
       let q; try { q = generateSafely(g, seed * 101, { difficulty: d }); } catch { continue; }

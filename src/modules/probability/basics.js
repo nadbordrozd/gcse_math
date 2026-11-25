@@ -845,7 +845,7 @@ export const sumAlgebra = gen('prob-sum-algebra', 'prob-sum-to-one', (rng, d) =>
     ], 'dec'),
     typed: typedP(ans, 'dec'),
     solution: [
-      'The probabilities of all the outcomes add up to $1$, so make an equation.',
+      'The probabilities of all the outcomes add up to $1$, so make an equation and [[alg-solve-one-two-step|solve it]].',
       `$${outs.map((_, i) => expr(coefs[i], consts[i])).join(' + ').replace(/\+ -/g, '-')} = 1$`,
       `Collect terms: $${Atex}${sym} ${C < 0 ? '-' : '+'} ${tnum(Math.abs(C))} = 1$, so $${Atex}${sym} = ${tnum(1 - C)}$ and $${sym} = ${tnum(1 - C)} \\div ${tnum(A)} = ${tnum(v)}$.`,
       ...(askVar ? [] : [`$P(\\text{${outs[target]}}) = ${coefs[target] === 1 ? '' : `${tnum(coefs[target])} \\times `}${tnum(v)}${consts[target] ? ` ${consts[target] < 0 ? '-' : '+'} ${tnum(Math.abs(consts[target]))}` : ''} = ${tnum(values[target])}$`]),
