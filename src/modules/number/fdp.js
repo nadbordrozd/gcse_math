@@ -39,22 +39,22 @@ export const fdpConvert = gen('num-fdp-convert', 'num-fdp-convert', (rng, d) => 
     distractors = uniq((dir === 'PD' ? pdWrong : [...decWrong, tidy(dec * 100), tidy(dec + 0.1)]).filter((v) => v > 0 && v !== dec && dpOf(v) <= 3).map((v) => num(v)), answer);
     typed = { kind: 'number', value: dec };
     steps = dir === 'FD'
-      ? [`Make the denominator 10, 100 or 1000, or divide the numerator by the denominator.`, `$${T(f, true)} = ${dec >= 1 ? `${Math.floor(dec)} + ` : ''}${T(f.sub(Math.floor(dec)))} = ${tnum(dec)}$`]
+      ? [`Make the denominator 10, 100 or 1000 (or divide the numerator by the denominator).`, `$${T(f, true)} = ${dec >= 1 ? `${Math.floor(dec)} + ` : ''}${[10, 100, 1000].map((k) => (k % f.sub(Math.floor(dec)).d === 0 ? `\\frac{${f.sub(Math.floor(dec)).n * (k / f.sub(Math.floor(dec)).d)}}{${k}}` : null)).find(Boolean) || T(f.sub(Math.floor(dec)))} = ${tnum(dec)}$`]
       : [`Per cent means "out of 100", so divide by 100.`, `$${tnum(p)} \\div 100 = ${tnum(dec)}$`];
   } else if (dir === 'DF' || dir === 'PF') {
     answer = F(f, f.n > f.d);
     distractors = uniq([...fracWrongFromDec, frac(f.n, f.d * 10), frac(f.n * 2, f.d), frac(Math.max(1, f.n - 1), f.d)].filter((g) => !g.eq(f) && g.n > 0 && !g.isInt && (f.value() > 1 || g.value() < 1)).map((g) => F(g, g.n > g.d)), answer);
-    typed = { kind: 'number', value: f };
+    typed = { kind: 'number', value: f, form: 'simplest' };
     const den = dir === 'DF' ? 10 ** dpOf(dec) : 100;
     const top = dir === 'DF' ? Math.round(dec * den) : p;
     steps = [
-      dir === 'DF' ? `${num(dec)} has ${dpOf(dec)} decimal place${dpOf(dec) > 1 ? 's' : ''}, so write it over ${num(den)}: $\\frac{${tnum(top)}}{${tnum(den)}}$` : `Per cent means "out of 100": $${tnum(p)}\\% = \\frac{${tnum(p)}}{100}$${Number.isInteger(p) ? '' : ` = \\frac{${tnum(p * 10)}}{1000}`}`,
+      dir === 'DF' ? `${num(dec)} has ${dpOf(dec)} decimal place${dpOf(dec) > 1 ? 's' : ''}, so write it over ${num(den)}: $\\frac{${tnum(top)}}{${tnum(den)}}$` : `Per cent means "out of 100": $${tnum(p)}\\% = \\frac{${tnum(p)}}{100}${Number.isInteger(p) ? '' : ` = \\frac{${tnum(p * 10)}}{1000}`}$`,
       `Simplify by dividing top and bottom by the same number: $= ${T(f)}${f.n > f.d ? ` = ${T(f, true)}` : ''}$`,
     ];
   } else {
     answer = pct(p);
     distractors = uniq([tidy(dec), tidy(p / 10), tidy(p * 10), Number(`${f.n}.${f.d}`), f.n + f.d, tidy(100 / f.d * (f.n + 1)), tidy(p + 10)].filter((v) => v !== p && dpOf(v) <= 2).map((v) => pct(v)), answer);
-    typed = { kind: 'number', value: p };
+    typed = { kind: 'number', value: p, percent: true };
     steps = dir === 'FP'
       ? [`Change to a decimal first, then multiply by 100.`, `$${T(f, true)} = ${tnum(dec)}$ and $${tnum(dec)} \\times 100 = ${tnum(p)}$`]
       : [`Multiply the decimal by 100 to get a percentage.`, `$${tnum(dec)} \\times 100 = ${tnum(p)}$`];
@@ -70,20 +70,19 @@ export const fdpConvert = gen('num-fdp-convert', 'num-fdp-convert', (rng, d) => 
 
 export const fdpGivenFact = gen('num-fdp-given-fact', 'num-fdp-convert', (rng, d) => {
   let f;
-  do { f = frac(int(rng, 1, 39), pick(rng, [8, 16, 40, 80, 125])); } while (f.d < 8 || dpOf(f.value()) < 3 || dpOf(f.value()) > 4);
+  do { f = frac(int(rng, size(d, 1, 3, 11), size(d, 7, 39, 99)), pick(rng, size(d, [8, 40], [40, 80, 125], [80, 125, 200]))); } while (f.d < 8 || f.n >= f.d || dpOf(f.value()) !== 3);
   const dec = f.value();
-  const type = pick(rng, size(d, ['times10', 'over10', 'double'], ['over10', 'mixed', 'times', 'double'], ['mixed', 'times', 'over100', 'half']));
-  let target; let val; let how;
-  if (type === 'times10') { target = frac(f.n * 10, f.d); val = tidy(dec * 10); how = `$${T(target)}$ is 10 times $${T(f)}$, so multiply ${num(dec)} by 10.`; }
-  else if (type === 'over10') { target = frac(f.n, f.d * 10); val = tidy(dec / 10); how = `The denominator is 10 times bigger, so the fraction is 10 times smaller: $${tnum(dec)} \\div 10$.`; }
-  else if (type === 'over100') { target = frac(f.n, f.d * 100); val = tidy(dec / 100); how = `The denominator is 100 times bigger, so divide ${num(dec)} by 100.`; }
-  else if (type === 'double') { const k = 2; target = frac(f.n * k, f.d); val = tidy(dec * k); how = `$${T(target)}$ is ${k} times $${T(f)}$: $${tnum(dec)} \\times ${k}$.`; }
-  else if (type === 'half') { target = frac(f.n, f.d * 2); val = tidy(dec / 2); how = `The denominator has doubled, so halve ${num(dec)}.`; }
-  else if (type === 'times') { const k = pick(rng, [3, 4, 5]); target = frac(f.n * k, f.d); val = tidy(dec * k); how = `$${T(target)}$ is ${k} times $${T(f)}$: $${tnum(dec)} \\times ${k}$.`; }
-  else { const w = int(rng, 1, 5); target = f.add(w); val = tidy(dec + w); how = `$${T(target, true)} = ${w} + ${T(f)}$, so add ${w} to ${num(dec)}.`; }
-  if (target.d !== f.d * (type === 'over10' ? 10 : type === 'over100' ? 100 : type === 'half' ? 2 : 1) && type !== 'mixed') throw new Error('retry');
+  const type = pick(rng, size(d, ['times10', 'double', 'times'], ['over10', 'mixed', 'times', 'double'], ['mixed', 'times', 'half', 'over10']));
+  let tn = f.n; let td = f.d; let val; let how; let shown;
+  const fr = () => `\\frac{${tn}}{${td}}`;
+  if (type === 'times10') { tn = f.n * 10; val = tidy(dec * 10); how = `$${fr()}$ is 10 times $${T(f)}$, so multiply ${num(dec)} by 10.`; }
+  else if (type === 'over10') { td = f.d * 10; val = tidy(dec / 10); how = `The denominator is 10 times bigger, so the fraction is 10 times smaller: $${tnum(dec)} \\div 10$.`; }
+  else if (type === 'double') { tn = f.n * 2; val = tidy(dec * 2); how = `$${fr()}$ is 2 times $${T(f)}$: $${tnum(dec)} \\times 2$.`; }
+  else if (type === 'half') { td = f.d * 2; val = tidy(dec / 2); how = `The denominator has doubled, so halve ${num(dec)}.`; }
+  else if (type === 'times') { const k = pick(rng, [3, 4, 5]); tn = f.n * k; val = tidy(dec * k); how = `$${fr()}$ is ${k} times $${T(f)}$: $${tnum(dec)} \\times ${k}$.`; }
+  if (type === 'mixed') { const w = int(rng, 1, 5); shown = T(f.add(w), true); val = tidy(dec + w); how = `$${shown} = ${w} + ${T(f)}$, so add ${w} to ${num(dec)}.`; }
+  else shown = fr();
   if (dpOf(val) > 3) throw new Error('retry');
-  const shown = type === 'mixed' ? T(target, true) : `\\frac{${type.startsWith('times') || type === 'double' ? target.n : f.n}}{${type === 'over10' ? f.d * 10 : type === 'over100' ? f.d * 100 : type === 'half' ? f.d * 2 : f.d}}`;
   return {
     prompt: `As a decimal, $${T(f)} = ${tnum(dec)}$<br>Write $${shown}$ as a decimal.`,
     answer: num(val),
@@ -94,7 +93,7 @@ export const fdpGivenFact = gen('num-fdp-given-fact', 'num-fdp-convert', (rng, d
 }, { title: 'Use a given F–D fact' });
 
 export const fdpEqual = gen('num-fdp-equal', 'num-fdp-convert', (rng, d) => {
-  const f = niceFrac(rng, d === 'hard' ? 'medium' : d);
+  const f = niceFrac(rng, d);
   const dec = tidy(f.value()); const p = tidy(dec * 100);
   const form = pick(rng, ['dec', 'pct', 'frac']);
   const shown = form === 'dec' ? num(dec) : form === 'pct' ? pct(p) : `$${T(f)}$`;
@@ -163,7 +162,7 @@ export const fdpoOrder = gen('num-fdpo-order', 'num-fdp-order', (rng, d) => {
     count: 4,
     solution: [
       'Change them all to the same form – decimals are easiest.',
-      items.map((it) => `${it.text} $= ${tnum(roundTo(it.v, 4))}${terminates(Math.round(it.v * 1e6), 1e6) ? '' : '\\ldots'}$`).join(', '),
+      items.map((it) => (dpOf(tidy(it.v)) > 3 ? `${it.text} $\\approx ${tnum(roundTo(it.v, 3))}$` : `${it.text} $= ${tnum(tidy(it.v))}$`)).join(", "),
       `Smallest to largest: ${answer}`,
     ],
   };
@@ -179,7 +178,7 @@ export const fdpoExtreme = gen('num-fdpo-extreme', 'num-fdp-order', (rng, d) => 
     distractors: items.filter((it) => it !== target).map((it) => it.text),
     solution: [
       'Write each one as a decimal so they can be compared.',
-      items.map((it) => `${it.text} $\\approx ${tnum(roundTo(it.v, 3))}$`).join(', '),
+      items.map((it) => (dpOf(tidy(it.v)) > 3 ? `${it.text} $\\approx ${tnum(roundTo(it.v, 3))}$` : `${it.text} $= ${tnum(tidy(it.v))}$`)).join(", "),
       `Answer: ${target.text}`,
     ],
   };
@@ -210,7 +209,7 @@ export const fdpoClosest = gen('num-fdpo-closest', 'num-fdp-order', (rng, d) => 
   }
   // a percentage between two fractions
   for (;;) {
-    const a = frac(int(rng, 1, 4), pick(rng, [3, 4, 5, 8]));
+    const a = frac(int(rng, 1, 4), pick(rng, size(d, [4, 5, 10], [3, 4, 5, 8], [6, 7, 8, 9, 12])));
     const b = frac(a.n * 2 + 1, a.d * 2);
     if (a.value() >= 1 || b.value() >= 1 || a.n >= a.d) continue;
     const lo = a.value() * 100; const hi = b.value() * 100;

@@ -61,12 +61,13 @@ export const fmIdentify = gen('num-fm-identify', 'num-factors-multiples', (rng, 
     const n = pick(rng, size(d, [24, 30, 36, 40, 48], [42, 54, 56, 60, 63, 72, 84, 90], [96, 120, 126, 144, 180, 196]));
     const fs = factorsOf(n).filter((x) => x > 2 && x < n);
     ans = pick(rng, fs);
-    wrong = shuffle(rng, [n * 2, n * 3, ...range(3, Math.min(n - 1, 40)).filter((x) => n % x !== 0)]).slice(0, 6);
+    const showMultiple = chance(rng, 0.6);
+    wrong = [...(showMultiple ? [n * 2] : []), ...shuffle(rng, range(3, Math.min(n - 1, 40)).filter((x) => n % x !== 0)).slice(0, 4)].slice(0, 4);
     prompt = `Which of these numbers is a factor of ${n}?`;
-    steps = [`A factor of ${n} divides into ${n} exactly.`, `$${n} \\div ${ans} = ${n / ans}$, so ${ans} is a factor. (${n * 2} is a <i>multiple</i> of ${n}, not a factor.)`];
+    steps = [`A factor of ${n} divides into ${n} exactly.`, `$${n} \\div ${ans} = ${n / ans}$, so ${ans} is a factor.${showMultiple ? ` (${n * 2} is a <i>multiple</i> of ${n}, not a factor.)` : ' None of the others divide exactly into ' + n + '.'}`];
   } else if (type === 'commonMultiple') {
     let a; let b;
-    do { [a, b] = sample(rng, [4, 6, 8, 9, 10, 12, 15], 2); } while (lcm(a, b) === a * b && chance(rng, 0.6));
+    do { [a, b] = sample(rng, [4, 6, 8, 9, 10, 12, 15], 2); } while ((lcm(a, b) === a * b && chance(rng, 0.6)) || a % b === 0 || b % a === 0);
     const L = lcm(a, b);
     ans = L * int(rng, 1, 3);
     wrong = shuffle(rng, [...range(2, 15).map((m) => a * m), ...range(2, 15).map((m) => b * m)].filter((x) => x % L !== 0 && x > 12)).slice(0, 6);
@@ -131,25 +132,31 @@ const CLUES = [
   { make: (x, rng) => { const k = pick(rng, factorsOf(x).filter((f) => f > 2 && f < x && f <= 12)); return k ? { text: `It is a multiple of ${k}.`, test: (y) => y % k === 0 } : null; } },
   { make: (x, rng) => { const m = x * pick(rng, [2, 3, 4, 5, 6]); return m <= 200 ? { text: `It is a factor of ${m}.`, test: (y) => m % y === 0 } : null; } },
   { make: (x) => ({ text: x % 2 ? 'It is odd.' : 'It is even.', test: (y) => y % 2 === x % 2 }) },
-  { make: (x, rng) => { const lo = x - int(rng, 1, 15); const hi = x + int(rng, 1, 15); return lo > 1 ? { text: `It is between ${lo} and ${hi}.`, test: (y) => y > lo && y < hi } : null; } },
+  { range: true, make: (x, rng) => { const lo = x - int(rng, 1, 15); const hi = Math.min(99, x + int(rng, 1, 15)); return lo > 1 && hi > x ? { text: `It is between ${lo} and ${hi}.`, test: (y) => y > lo && y < hi } : null; } },
   { make: (x) => (isSquare(x) ? { text: 'It is a square number.', test: isSquare } : null) },
   { make: (x) => (isPrime(x) ? { text: 'It is a prime number.', test: isPrime } : null) },
   { make: (x) => ({ text: `Its digits add up to ${String(x).split('').reduce((a, b) => a + Number(b), 0)}.`, test: (y) => String(y).split('').reduce((a, b) => a + Number(b), 0) === String(x).split('').reduce((a, b) => a + Number(b), 0) }) },
 ];
 
 export const fmPuzzle = gen('num-fm-puzzle', 'num-factors-multiples', (rng, d) => {
-  const x = int(rng, size(d, 6, 12, 20), size(d, 40, 80, 100));
-  const universe = range(1, 100);
-  const clues = [];
+  const x = int(rng, size(d, 6, 12, 20), size(d, 40, 80, 99));
+  const universe = range(1, 99);
+  let clues = [];
   let left = universe;
-  for (const c of shuffle(rng, CLUES)) {
+  for (const c of shuffle(rng, CLUES.filter((cc) => d !== 'hard' || !cc.range))) {
     const cl = c.make(x, rng);
     if (!cl) continue;
     const next = left.filter(cl.test);
     if (next.length < left.length) { clues.push(cl); left = next; }
     if (left.length === 1) break;
   }
-  if (left.length !== 1 || clues.length < 2 || clues.length > 4) throw new Error('retry');
+  if (left.length !== 1) throw new Error('retry');
+  // drop any clue that the others already make unnecessary (e.g. "even" next to "multiple of 12")
+  for (let i = clues.length - 1; i >= 0; i -= 1) {
+    const rest = clues.filter((_, j) => j !== i);
+    if (rest.length >= 2 && universe.filter((y) => rest.every((c) => c.test(y))).length === 1) clues = rest;
+  }
+  if (clues.length < 2 || clues.length > 4) throw new Error('retry');
   // distractors: numbers that satisfy all but one clue
   const near = universe.filter((y) => y !== x && clues.filter((c) => c.test(y)).length === clues.length - 1);
   return {
@@ -159,7 +166,7 @@ export const fmPuzzle = gen('num-fm-puzzle', 'num-factors-multiples', (rng, d) =
     typed: { kind: 'number', value: x },
     solution: [
       'Use one clue at a time to cut down the list of possible numbers.',
-      ...clues.slice(0, 3).map((c, i) => `${i === 0 ? 'Start with' : 'Then'}: "${c.text}" ${i === clues.length - 1 ? `leaves only ${x}.` : `leaves ${universe.filter((y) => clues.slice(0, i + 1).every((cc) => cc.test(y))).length} numbers.`}`),
+      ...clues.map((c, i) => `${i === 0 ? 'Start with' : 'Then'}: "${c.text}" ${i === clues.length - 1 ? `leaves only ${x}.` : `leaves ${universe.filter((y) => clues.slice(0, i + 1).every((cc) => cc.test(y))).length} numbers.`}`),
       `Answer: ${x}`,
     ].slice(0, 6),
   };
@@ -253,7 +260,7 @@ export const primesFacts = gen('num-primes-facts', 'num-primes', (rng, d) => {
     const N = p * q;
     const wantSum = chance(rng);
     ans = wantSum ? p + q : Math.abs(p - q);
-    prompt = `Two prime numbers are multiplied together. The answer is ${N}. Work out the ${wantSum ? 'sum' : 'difference'} of the two prime numbers.`;
+    prompt = `Two prime numbers are multiplied together. The answer is ${N}. ${wantSum ? 'Work out the sum of the two prime numbers.' : 'Work out the difference between the two prime numbers.'}`;
     wrong = [wantSum ? Math.abs(p - q) : p + q, N, 1 + N, Math.max(p, q), wantSum ? p + q + 2 : Math.abs(p - q) + 2];
     steps = [`Try dividing ${N} by small primes: 3, 5, 7, 11, 13, …`, `$${N} = ${Math.min(p, q)} \\times ${Math.max(p, q)}$, and both are prime.`, `${wantSum ? 'Sum' : 'Difference'}: $${wantSum ? `${p} + ${q}` : `${Math.max(p, q)} - ${Math.min(p, q)}`} = ${ans}$`];
   } else {
@@ -323,7 +330,7 @@ export const primesTwoProps = gen('num-primes-two-properties', 'num-primes', (rn
 function randomPrimeMap(rng, d) {
   for (;;) {
     const m = {};
-    const ps = size(d, sample(rng, [2, 3, 5], int(rng, 2, 2)), sample(rng, [2, 3, 5, 7], int(rng, 2, 3)), sample(rng, [2, 3, 5, 7, 11], 3));
+    const ps = size(d, sample(rng, [2, 3, 5, 7], int(rng, 2, 3)), sample(rng, [2, 3, 5, 7], int(rng, 2, 3)), sample(rng, [2, 3, 5, 7, 11], 3));
     ps.forEach((p) => { m[p] = int(rng, 1, p === 2 ? size(d, 3, 4, 5) : p <= 5 ? 2 : 1); });
     const v = valueOfMap(m);
     const [lo, hi] = size(d, [12, 100], [100, 800], [500, 5000]);
@@ -493,7 +500,8 @@ function pairWithCommon(rng, d) {
     const [p, q] = sample(rng, size(d, [2, 3, 4, 5], [2, 3, 4, 5, 7], [2, 3, 5, 7, 11, 4]), 2);
     if (gcd(p, q) !== 1) continue;
     const a = g * p; const b = g * q;
-    if (size(d, a <= 60 && b <= 60, a <= 120 && b <= 120, a <= 400 && b <= 400)) return [a, b];
+    const lo = Math.min(a, b); const hi = Math.max(a, b);
+    if (size(d, hi <= 60, lo >= 16 && hi <= 120, lo >= 50 && hi <= 400)) return [a, b];
   }
 }
 
@@ -516,8 +524,28 @@ export const hcfDirect = gen('num-hcf-direct', 'num-hcf-lcm', (rng, d) => {
 }, { title: 'Find the HCF' });
 
 export const lcmDirect = gen('num-lcm-direct', 'num-hcf-lcm', (rng, d) => {
-  const [a, b] = pairWithCommon(rng, d === 'hard' ? 'medium' : 'easy');
+  if (d === 'hard') {
+    // LCM of three numbers
+    const [a, b, c] = sample(rng, [4, 6, 8, 9, 10, 12, 14, 15, 18, 20], 3).sort((x, y) => x - y);
+    const L = lcm(lcm(a, b), c);
+    if (L > 360 || L === a * b * c || L === c) throw new Error('retry');
+    const pf = (n) => primeFactors(n).join(' \\times ');
+    return {
+      prompt: `Work out the lowest common multiple (LCM) of ${a}, ${b} and ${c}.`,
+      answer: num(L),
+      distractors: uniq([a * b * c, lcm(a, b), lcm(b, c), L * 2, gcd(gcd(a, b), c), a * b * c / gcd(gcd(a, b), c), lcm(a, c)].filter((v) => v !== L && v > 1).map((v) => num(v)), num(L)),
+      typed: { kind: 'number', value: L },
+      solution: [
+        `Prime factors: $${a} = ${pf(a)}$, $${b} = ${pf(b)}$, $${c} = ${pf(c)}$.`,
+        'The LCM uses every prime that appears, with the highest power that appears in any one number.',
+        `LCM $= ${primeFactors(L).join(' \\times ')} = ${tnum(L)}$`,
+        `Answer: ${num(L)}`,
+      ],
+    };
+  }
+  const [a, b] = pairWithCommon(rng, d);
   const h = gcd(a, b); const L = lcm(a, b);
+  if (L > 400) throw new Error('retry');
   const big = Math.max(a, b); const small = Math.min(a, b);
   return {
     prompt: `Work out the lowest common multiple (LCM) of ${a} and ${b}.`,
@@ -555,7 +583,7 @@ export const hcfLcmIndex = gen('num-hcf-lcm-index', 'num-hcf-lcm', (rng, d) => {
   return {
     prompt: `$A = ${indexFormMap(A)}$ and $B = ${indexFormMap(B)}$<br>${asNumber ? `Work out the ${wantH ? 'highest common factor (HCF)' : 'lowest common multiple (LCM)'} of $A$ and $B$.` : `Write the ${wantH ? 'HCF' : 'LCM'} of $A$ and $B$ as a product of prime factors.`}`,
     answer: ans,
-    distractors: uniq([...wrongMaps.map(fmt), fmt({ ...ansMap, [ps[0]]: (ansMap[ps[0]] || 0) + 1 }), fmt({ ...ansMap, [ps[1]]: Math.max(1, (ansMap[ps[1]] || 1) + (chance(rng) ? 1 : -1)) })], ans),
+    distractors: uniq([...wrongMaps, { ...ansMap, [ps[0]]: (ansMap[ps[0]] || 0) + 1 }, { ...ansMap, [ps[1]]: Math.max(1, (ansMap[ps[1]] || 1) + (chance(rng) ? 1 : -1)) }, { ...ansMap, [ps[0]]: Math.max(0, (ansMap[ps[0]] || 0) - 1) }].filter((mp) => Object.values(mp).some((k) => k > 0)).filter((mp) => !asNumber || valueOfMap(mp) <= 20 * valueOfMap(ansMap)).map(fmt), ans),
     typed: asNumber ? { kind: 'number', value: valueOfMap(ansMap) } : typedIndex(ansMap),
     solution: [
       wantH ? 'HCF: take only the primes that appear in <b>both</b>, with the <b>lower</b> power.' : 'LCM: take <b>every</b> prime that appears in either, with the <b>higher</b> power.',

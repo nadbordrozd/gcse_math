@@ -187,7 +187,7 @@ export const estOneSf = gen('num-est-1sf', 'num-estimation', (rng, d) => {
 }, { title: 'Estimate by rounding to 1 s.f.' });
 
 export const estClosest = gen('num-est-closest', 'num-estimation', (rng, d) => {
-  const e = pick(rng, [EST[0], EST[2], EST[3], EST[6], EST[5]])(rng);
+  const e = pick(rng, size(d, [EST[0], EST[1], EST[4]], [EST[2], EST[3], EST[5]], [EST[6], EST[3], EST[2], EST[5]]))(rng);
   const est = tidy(e.f(...e.r));
   if (est <= 0) throw new Error('retry');
   const k = Math.floor(Math.log10(est));
@@ -217,33 +217,35 @@ export const estClosest = gen('num-est-closest', 'num-estimation', (rng, d) => {
 }, { title: 'Closest in value (order of magnitude)' });
 
 const EST_WORD = [
-  (rng) => { const n = near(rng, pick(rng, [30, 40, 50, 60]), 0); const p = near(rng, pick(rng, [4, 5, 6, 7, 8]), 2); return { p: `A school buys ${num(n)} calculators costing £${num(p, 2)} each. Estimate the total cost.`, r: [roundSf(n, 1), roundSf(p, 1)], est: roundSf(n, 1) * roundSf(p, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
-  (rng) => { const n = near(rng, pick(rng, [200, 300, 400]), 0); const per = pick(rng, [20, 40, 50]); const pp = near(rng, per, 0); return { p: `${num(n)} people are going on a trip. Each coach holds ${pp} people. Estimate the number of coaches needed.`, r: [roundSf(n, 1), roundSf(pp, 1)], est: roundSf(n, 1) / roundSf(pp, 1), how: (a, b) => `$${a} \\div ${b}$` }; },
-  (rng) => { const l = near(rng, pick(rng, [6, 8, 9]), 2); const g = near(rng, pick(rng, [0.2, 0.3]), 3); const est = roundSf(l, 1) / roundSf(g, 1); if (!Number.isInteger(est)) throw new Error('r'); return { p: `A jug holds ${num(l)} litres of squash. Each glass holds ${num(g)} litres. Estimate how many glasses can be filled.`, r: [roundSf(l, 1), roundSf(g, 1)], est, how: (a, b) => `$${a} \\div ${b}$` }; },
-  (rng) => { const s = near(rng, pick(rng, [40, 50, 60, 70]), 1); const t = near(rng, pick(rng, [2, 3, 4]), 2); return { p: `A car travels at an average speed of ${num(s)} km/h for ${num(t)} hours. Estimate the distance travelled.`, r: [roundSf(s, 1), roundSf(t, 1)], est: roundSf(s, 1) * roundSf(t, 1), unit: 'km', how: (a, b) => `$${a} \\times ${b}$` }; },
-  (rng) => { const w = near(rng, pick(rng, [9, 20, 30]), 1); const h = near(rng, pick(rng, [3, 4, 5, 6]), 2); return { p: `A wall is ${num(w)} m long and ${num(h)} m high. Estimate its area.`, r: [roundSf(w, 1), roundSf(h, 1)], est: roundSf(w, 1) * roundSf(h, 1), unit: 'm²', how: (a, b) => `$${a} \\times ${b}$` }; },
-  (rng) => { const n = near(rng, pick(rng, [20, 30, 40]), 0); const wk = 52; const c = near(rng, pick(rng, [3, 4, 5]), 2); return { p: `Femi spends £${num(c, 2)} on lunch each school day. There are ${n} school days this term. Estimate how much he spends on lunch this term.`, r: [roundSf(c, 1), roundSf(n, 1)], est: roundSf(c, 1) * roundSf(n, 1), money: true, how: (a, b) => `$${a} \\times ${b}$`, x: wk }; },
-  (rng) => { const tot = near(rng, pick(rng, [600, 800, 900]), 0); const n = near(rng, pick(rng, [20, 30]), 0); const est = roundSf(tot, 1) / roundSf(n, 1); return { p: `A group of ${n} friends share a bill of £${num(tot, 2)} equally. Estimate how much each person pays.`, r: [roundSf(tot, 1), roundSf(n, 1)], est, money: true, how: (a, b) => `$${a} \\div ${b}$` }; },
-  (rng) => { const m = near(rng, pick(rng, [3, 4, 6]), 2); const k = near(rng, pick(rng, [20, 30, 40]), 0); return { p: `One box weighs ${num(m)} kg. A van carries ${k} boxes. Estimate the total weight of the boxes.`, r: [roundSf(m, 1), roundSf(k, 1)], est: roundSf(m, 1) * roundSf(k, 1), unit: 'kg', how: (a, b) => `$${a} \\times ${b}$` }; },
-  (rng) => { const d1 = near(rng, pick(rng, [300, 400, 600]), 0); const s = near(rng, pick(rng, [50, 60]), 0); const est = roundSf(d1, 1) / roundSf(s, 1); if (!Number.isInteger(est * 10)) throw new Error('r'); return { p: `A train travels ${num(d1)} km at an average speed of ${s} km/h. Estimate the time the journey takes, in hours.`, r: [roundSf(d1, 1), roundSf(s, 1)], est, unit: 'hours', how: (a, b) => `$${a} \\div ${b}$` }; },
-  (rng) => { const n = near(rng, pick(rng, [200, 300, 500]), 0); const p = near(rng, pick(rng, [0.2, 0.4, 0.5]), 3); return { p: `${num(n)} people each give £${num(p, 2)} to a charity collection. Estimate the total amount collected.`, r: [roundSf(n, 1), roundSf(p, 1)], est: roundSf(n, 1) * roundSf(p, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
-  (rng) => { const r = near(rng, pick(rng, [3, 4, 5]), 2); return { p: `A circular pond has radius ${num(r)} m. Using $\\pi \\approx 3$, estimate the area of the pond.`, r: [roundSf(r, 1)], est: 3 * roundSf(r, 1) ** 2, unit: 'm²', how: (a) => `$3 \\times ${a}^{2}$` }; },
-  (rng) => { const pages = near(rng, pick(rng, [300, 400, 500]), 0); const per = near(rng, pick(rng, [20, 40, 50]), 0); return { p: `Isla reads about ${per} pages a day. Her book has ${num(pages)} pages. Estimate how many days it will take her to read the book.`, r: [roundSf(pages, 1), roundSf(per, 1)], est: roundSf(pages, 1) / roundSf(per, 1), unit: 'days', how: (a, b) => `$${a} \\div ${b}$` }; },
-  (rng) => { const lit = near(rng, pick(rng, [40, 50, 60]), 1); const pr = near(rng, pick(rng, [1, 2]), 2); return { p: `Diesel costs £${num(pr, 2)} per litre. Ben puts ${num(lit)} litres in his van. Estimate the cost.`, r: [roundSf(pr, 1), roundSf(lit, 1)], est: roundSf(pr, 1) * roundSf(lit, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const n = near(rng, pick(rng, [30, 40, 50, 60]), 0); const p = near(rng, pick(rng, [4, 5, 6, 7, 8]), 2); return { p: `A school buys ${num(n)} calculators costing £${num(p, 2)} each. Estimate the total cost.`, o: [n, p], r: [roundSf(n, 1), roundSf(p, 1)], est: roundSf(n, 1) * roundSf(p, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const n = near(rng, pick(rng, [20, 30, 40, 50]), 0); const pp = near(rng, pick(rng, [20, 30, 40]), 0); return { p: `A theatre has ${n} rows of seats. Each row has ${pp} seats. Estimate the total number of seats in the theatre.`, o: [n, pp], r: [roundSf(n, 1), roundSf(pp, 1)], est: roundSf(n, 1) * roundSf(pp, 1), how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const l = near(rng, pick(rng, [6, 8, 9]), 2); const g = near(rng, pick(rng, [0.2, 0.3]), 3); const est = roundSf(l, 1) / roundSf(g, 1); if (!Number.isInteger(est)) throw new Error('r'); return { p: `A jug holds ${num(l)} litres of squash. Each glass holds ${num(g)} litres. Estimate how many glasses can be filled.`, o: [l, g], r: [roundSf(l, 1), roundSf(g, 1)], est, how: (a, b) => `$${a} \\div ${b}$` }; },
+  (rng) => { const s = near(rng, pick(rng, [40, 50, 60, 70]), 1); const t = near(rng, pick(rng, [2, 3, 4]), 2); return { p: `A car travels at an average speed of ${num(s)} km/h for ${num(t)} hours. Estimate the distance travelled.`, o: [s, t], r: [roundSf(s, 1), roundSf(t, 1)], est: roundSf(s, 1) * roundSf(t, 1), unit: 'km', how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const w = near(rng, pick(rng, [9, 20, 30]), 1); const h = near(rng, pick(rng, [3, 4, 5, 6]), 2); return { p: `A wall is ${num(w)} m long and ${num(h)} m high. Estimate its area.`, o: [w, h], r: [roundSf(w, 1), roundSf(h, 1)], est: roundSf(w, 1) * roundSf(h, 1), unit: 'm²', how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const n = near(rng, pick(rng, [20, 30, 40]), 0); const wk = 52; const c = near(rng, pick(rng, [3, 4, 5]), 2); return { p: `Femi spends £${num(c, 2)} on lunch each school day. There are ${n} school days this term. Estimate how much he spends on lunch this term.`, o: [c, n], r: [roundSf(c, 1), roundSf(n, 1)], est: roundSf(c, 1) * roundSf(n, 1), money: true, how: (a, b) => `$${a} \\times ${b}$`, x: wk }; },
+  (rng) => { const tot = near(rng, pick(rng, [600, 800, 900]), 0); const n = near(rng, pick(rng, [20, 30]), 0); const est = roundSf(tot, 1) / roundSf(n, 1); return { p: `A group of ${n} friends share a bill of £${num(tot, 2)} equally. Estimate how much each person pays.`, o: [tot, n], r: [roundSf(tot, 1), roundSf(n, 1)], est, money: true, how: (a, b) => `$${a} \\div ${b}$` }; },
+  (rng) => { const m = near(rng, pick(rng, [3, 4, 6]), 2); const k = near(rng, pick(rng, [20, 30, 40]), 0); return { p: `One box weighs ${num(m)} kg. A van carries ${k} boxes. Estimate the total weight of the boxes.`, o: [m, k], r: [roundSf(m, 1), roundSf(k, 1)], est: roundSf(m, 1) * roundSf(k, 1), unit: 'kg', how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const d1 = near(rng, pick(rng, [300, 400, 600]), 0); const s = near(rng, pick(rng, [50, 60]), 0); const est = roundSf(d1, 1) / roundSf(s, 1); if (!Number.isInteger(est * 10)) throw new Error('r'); return { p: `A train travels ${num(d1)} km at an average speed of ${s} km/h. Estimate the time the journey takes, in hours.`, o: [d1, s], r: [roundSf(d1, 1), roundSf(s, 1)], est, unit: 'hours', how: (a, b) => `$${a} \\div ${b}$` }; },
+  (rng) => { const n = near(rng, pick(rng, [200, 300, 500]), 0); const p = near(rng, pick(rng, [0.2, 0.4, 0.5]), 3); return { p: `${num(n)} people each give £${num(p, 2)} to a charity collection. Estimate the total amount collected.`, o: [n, p], r: [roundSf(n, 1), roundSf(p, 1)], est: roundSf(n, 1) * roundSf(p, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
+  (rng) => { const r = near(rng, pick(rng, [3, 4, 5]), 2); return { p: `A circular pond has radius ${num(r)} m. Using $\\pi \\approx 3$, estimate the area of the pond.`, o: [r], r: [roundSf(r, 1)], est: 3 * roundSf(r, 1) ** 2, unit: 'm²', how: (a) => `$3 \\times ${a}^{2}$` }; },
+  (rng) => { const pages = near(rng, pick(rng, [300, 400, 500]), 0); const per = near(rng, pick(rng, [20, 40, 50]), 0); return { p: `Isla reads about ${per} pages a day. Her book has ${num(pages)} pages. Estimate how many days it will take her to read the book.`, o: [pages, per], r: [roundSf(pages, 1), roundSf(per, 1)], est: roundSf(pages, 1) / roundSf(per, 1), unit: 'days', how: (a, b) => `$${a} \\div ${b}$` }; },
+  (rng) => { const lit = near(rng, pick(rng, [40, 50, 60]), 1); const pr = near(rng, pick(rng, [1, 2]), 2); return { p: `Diesel costs £${num(pr, 2)} per litre. Ben puts ${num(lit)} litres in his van. Estimate the cost.`, o: [pr, lit], r: [roundSf(pr, 1), roundSf(lit, 1)], est: roundSf(pr, 1) * roundSf(lit, 1), money: true, how: (a, b) => `$${a} \\times ${b}$` }; },
 ];
 
-export const estWord = gen('num-est-word', 'num-estimation', (rng) => {
-  const c = pick(rng, EST_WORD)(rng);
+export const estWord = gen('num-est-word', 'num-estimation', (rng, d) => {
+  // easy: multiply two whole-ish numbers; medium: money and division; hard: decimals below 1, π, division to a decimal
+  const c = EST_WORD[pick(rng, size(d, [0, 1, 3, 4, 7, 12], [5, 6, 8, 11, 2], [2, 9, 10, 8, 6]))](rng);
   const est = tidy(c.est);
   if (!Number.isInteger(est * 10) || est <= 0) throw new Error('retry');
-  const fmt = (v) => (c.money ? money(v) : c.unit ? `${num(v)} ${c.unit}` : num(v));
+  const unitFor = (v) => (v === 1 ? c.unit.replace(/s$/, '') : c.unit);
+  const fmt = (v) => (c.money ? money(v) : c.unit ? `${num(v)} ${unitFor(v)}` : num(v));
   return {
     prompt: c.p,
     answer: fmt(est),
     distractors: uniq([est * 10, est / 10, est * 2, est / 2, est + c.r[0], tidy(est * 1.5)].map(tidy).filter((v) => v > 0 && v !== est && dpOf(v) <= (c.money ? 2 : 1)).map(fmt), fmt(est)),
     typed: { kind: 'number', value: est },
     solution: [
-      `Round each number to 1 significant figure: ${c.r.map((v) => num(v)).join(' and ')}.`,
+      `Round ${c.r.length > 1 ? 'each number' : 'the number'} to 1 significant figure: ${c.r.map((v, i) => `${num(c.o[i])} → ${num(v)}`).join(', ')}.`,
       `${c.how(...c.r.map((v) => tnum(v)))} $= ${tnum(est)}$`,
       `Answer: about ${fmt(est)}`,
     ],
@@ -254,26 +256,45 @@ export const estWord = gen('num-est-word', 'num-estimation', (rng) => {
 /* num-error-intervals                                                 */
 /* ================================================================== */
 
+// Each quantity lists the accuracies that make sense for it, with a realistic range [lo, hi] for the rounded value.
+// u = 'sf2' means "to 2 significant figures".
 const QTY = [
-  { name: 'length of a pipe', v: 'l', unit: 'm' }, { name: 'mass of a parcel', v: 'm', unit: 'kg' },
-  { name: 'height of a tree', v: 'h', unit: 'm' }, { name: 'time taken to run a race', v: 't', unit: 's' },
-  { name: 'volume of water in a tank', v: 'V', unit: 'litres' }, { name: 'width of a table', v: 'w', unit: 'cm' },
-  { name: 'distance between two towns', v: 'd', unit: 'km' }, { name: 'temperature of an oven', v: 'T', unit: '°C' },
+  { name: 'length of a pipe', v: 'l', unit: 'm', acc: [[1, 2, 20], [0.1, 1.2, 9.9], [0.01, 1.05, 4.99], ['sf2', 1.1, 9.9]] },
+  { name: 'mass of a parcel', v: 'm', unit: 'kg', acc: [[1, 2, 30], [0.1, 0.5, 15], [0.01, 0.25, 4.99], ['sf2', 1.1, 9.9]] },
+  { name: 'height of a tree', v: 'h', unit: 'm', acc: [[1, 3, 40], [0.1, 2.5, 25], ['sf2', 11, 39]] },
+  { name: 'time taken to run a race', v: 't', unit: 's', acc: [[1, 11, 60], [0.1, 9.6, 15], [0.01, 10.05, 13.99]] },
+  { name: 'volume of water in a tank', v: 'V', unit: 'litres', acc: [[10, 50, 950], [100, 200, 5000], [5, 20, 500], ['sf2', 110, 990]] },
+  { name: 'width of a table', v: 'w', unit: 'cm', acc: [[1, 60, 200], [10, 60, 250], [5, 60, 200], [0.1, 60, 150]] },
+  { name: 'distance between two towns', v: 'd', unit: 'km', acc: [[1, 5, 150], [10, 20, 400], [0.1, 2, 30], ['sf2', 11, 99]] },
+  { name: 'temperature of an oven', v: 'T', unit: '°C', acc: [[10, 150, 250], [5, 150, 240], [1, 150, 230]] },
+  { name: 'number of people at a football match', v: 'n', unit: 'people', acc: [[100, 3000, 60000], [1000, 5000, 60000], [10, 800, 9000], ['sf2', 11000, 99000]] },
 ];
+const ACC_TEXT = { 1: 'to the nearest whole number', 10: 'to the nearest 10', 100: 'to the nearest 100', 1000: 'to the nearest 1000', 5: 'to the nearest 5', 0.1: 'to 1 decimal place', 0.01: 'to 2 decimal places', sf2: 'to 2 significant figures' };
+const ACC_BY_DIFF = { easy: [1, 10], medium: [0.1, 100, 1000, 10], hard: [0.01, 5, 'sf2'] };
 
-function accuracyFor(rng, d) {
-  if (d === 'easy') return pick(rng, [{ text: 'to the nearest whole number', u: 1 }, { text: 'to the nearest 10', u: 10 }]);
-  if (d === 'medium') return pick(rng, [{ text: 'to 1 decimal place', u: 0.1 }, { text: 'to the nearest 10', u: 10 }, { text: 'to the nearest 100', u: 100 }, { text: 'to the nearest whole number', u: 1 }]);
-  return pick(rng, [{ text: 'to 2 decimal places', u: 0.01 }, { text: 'to 2 significant figures', u: null }, { text: 'to the nearest 5', u: 5 }, { text: 'to 1 decimal place', u: 0.1 }]);
+/** Pick a quantity, an accuracy suited to the difficulty, a realistic rounded value x and the unit u. */
+function qtyFor(rng, d, { noTemp = false } = {}) {
+  for (;;) {
+    const q = pick(rng, QTY.filter((qq) => !noTemp || qq.unit !== '°C'));
+    const opts = q.acc.filter(([u]) => ACC_BY_DIFF[d].includes(u));
+    if (!opts.length) continue;
+    const [uu, lo, hi] = pick(rng, opts);
+    let x; let u = uu;
+    if (uu === 'sf2') {
+      const e = Math.floor(Math.log10(lo));
+      x = tidy(int(rng, Math.ceil(lo / 10 ** (e - 1)), Math.floor(hi / 10 ** (e - 1))) * 10 ** (e - 1));
+      u = tidy(10 ** (Math.floor(Math.log10(x)) - 1));
+      if (x % (u * 10) === 0) continue;
+    } else x = tidy(int(rng, Math.ceil(lo / uu), Math.floor(hi / uu)) * uu);
+    if (uu !== 'sf2' && uu < 1 && Math.round(x / uu) % 10 === 0) continue; // avoid 3.0 / 4.10 style values
+    return { q, x, u, text: ACC_TEXT[uu] };
+  }
 }
 const ineq = (v, lo, hi, lop = '\\leqslant', hop = '<') => `$${tnum(lo)} ${lop} ${v} ${hop} ${tnum(hi)}$`;
 
 export const eiRounded = gen('num-ei-rounded', 'num-error-intervals', (rng, d) => {
-  const q = pick(rng, QTY);
-  const acc = accuracyFor(rng, d);
-  let x; let u = acc.u;
-  if (u === null) { x = tidy(int(rng, 11, 99) * 10 ** int(rng, -1, 1)); u = tidy(10 ** (Math.floor(Math.log10(x)) - 1)); }
-  else x = tidy(int(rng, 2, 99) * u + (u >= 10 ? int(rng, 1, 9) * u * 10 : 0));
+  const { q, x, u, text } = qtyFor(rng, d);
+  const acc = { text };
   const h = tidy(u / 2);
   const lo = tidy(x - h); const hi = tidy(x + h);
   const ans = ineq(q.v, lo, hi);
@@ -329,11 +350,9 @@ export const eiBound = gen('num-ei-bound', 'num-error-intervals', (rng, d) => {
       ],
     };
   }
-  const acc = accuracyFor(rng, d === 'easy' ? 'easy' : 'medium');
-  const u = acc.u;
-  const x = tidy(int(rng, 3, 99) * u + (u >= 10 ? int(rng, 1, 9) * u * 10 : 0));
+  const { q, x, u, text } = qtyFor(rng, d === 'easy' ? 'easy' : 'medium', { noTemp: true });
+  const acc = { text };
   const upper = chance(rng);
-  const q = pick(rng, QTY.filter((qq) => qq.unit !== '°C'));
   const b = tidy(upper ? x + u / 2 : x - u / 2);
   const fmt = (v) => `${num(v)} ${q.unit}`;
   return {
@@ -384,7 +403,7 @@ export const boundsCalc = gen('num-bounds-calc', 'num-bounds-calc', (rng, d) => 
   const wrongPick = ex.f(useAU ? aU : aL, useBU ? bL : bU);
   const wrongs = [ex.f(a, b), wrongPick, ex.f(useAU ? aL : aU, useBU ? bU : bL), ex.f(useAU ? a + ua : a - ua, useBU ? b + ub : b - ub), ex.f(upper ? aU : aL, upper ? bU : bL)];
   return {
-    prompt: `$a = ${tnum(a)}$ ${accText(ua)}.<br>$b = ${tnum(b)}$ ${accText(ub)}.<br>Work out the <b>${upper ? 'upper' : 'lower'}</b> bound of $${ex.tex}$.${exact ? '' : '<br>Give your answer to 4 significant figures.'}`,
+    prompt: `$a = ${tnum(a, ua === 0.1 ? 1 : null)}$ ${accText(ua)}.<br>$b = ${tnum(b, ub === 0.1 ? 1 : null)}$ ${accText(ub)}.<br>Work out the <b>${upper ? 'upper' : 'lower'}</b> bound of $${ex.tex}$.${exact ? '' : '<br>Give your answer to 4 significant figures.'}`,
     answer: show(val),
     distractors: uniq(wrongs.filter((v) => Number.isFinite(v) && v > 0).map(show).filter((s) => s !== show(val)), show(val)),
     typed: { kind: 'number', value: val, ...(exact ? {} : { tolerance: 0.5 * 10 ** -dpShow }) },
@@ -415,8 +434,9 @@ const BOUND_WORD = [
   { make: (rng) => { const r = int(rng, 3, 12); return { p: `The radius of a circle is ${r} cm, correct to the nearest cm. Work out the upper bound of its circumference.`, f: () => 2 * Math.PI * (r + 0.5), wrong: [2 * Math.PI * r, Math.PI * (r + 0.5) ** 2, 2 * Math.PI * (r + 1), Math.PI * (r + 0.5)], steps: [`Upper bound of the radius: ${num(r + 0.5)} cm`, `$2 \\times \\pi \\times ${tnum(r + 0.5)}$`], unit: 'cm' }; } },
 ];
 
-export const boundsWord = gen('num-bounds-word', 'num-bounds-calc', (rng) => {
-  const c = pick(rng, BOUND_WORD).make(rng);
+export const boundsWord = gen('num-bounds-word', 'num-bounds-calc', (rng, d) => {
+  // easy: areas/volumes/totals (multiply); medium: rates (divide, mixed bounds); hard: "definitely", reverse formulae
+  const c = BOUND_WORD[pick(rng, size(d, [1, 5, 6, 7, 11], [0, 2, 4, 10], [3, 8, 9, 2, 4]))].make(rng);
   const raw = c.f();
   const exact = c.int || dpOf(tidy(raw)) <= 3;
   const val = c.int ? raw : exact ? tidy(raw) : roundSf(raw, 4);
@@ -424,10 +444,12 @@ export const boundsWord = gen('num-bounds-word', 'num-bounds-calc', (rng) => {
   const show = (v) => (c.int ? num(v) : exact ? num(tidy(v)) : num(roundSf(v, 4), sfDpOf(roundSf(v, 4), 4)));
   const fmt = (v) => `${show(v)}${c.unit ? ` ${c.unit}` : ''}`;
   const needsSf = !exact && !/significant/.test(c.p);
+  // when the answer is exact, only show distractors that are exact too (no 10-digit decimals)
+  const wrongs = c.wrong.filter((v) => Number.isFinite(v) && v > 0 && (!exact || c.int || dpOf(tidy(v)) <= 3));
   return {
     prompt: `${c.p}${needsSf ? ' Give your answer to 4 significant figures.' : ''}`,
     answer: fmt(val),
-    distractors: uniq(c.wrong.filter((v) => Number.isFinite(v) && v > 0).map(fmt).filter((s) => s !== fmt(val)), fmt(val)),
+    distractors: uniq(wrongs.map(fmt).filter((s) => s !== fmt(val)), fmt(val)),
     typed: { kind: 'number', value: val, ...(dps === null ? {} : { tolerance: 0.5 * 10 ** -dps }) },
     calculator: true,
     longDecimalsOk: true,
@@ -435,29 +457,39 @@ export const boundsWord = gen('num-bounds-word', 'num-bounds-calc', (rng) => {
   };
 }, { title: 'Bounds in context', word: true });
 
-export const boundsAccuracy = gen('num-bounds-accuracy', 'num-bounds-calc', (rng) => {
+export const boundsAccuracy = gen('num-bounds-accuracy', 'num-bounds-calc', (rng, d) => {
+  // easy: x = d × t; medium: x = d ÷ t; hard: x = d ÷ t² (all values correct to 1 decimal place)
+  const EX = {
+    easy: { tex: 'x = dt', f: (a, b) => a * b, sub: (a, b) => `${a} \\times ${b}`, hiPick: [1, 1] },
+    medium: { tex: 'x = \\dfrac{d}{t}', f: (a, b) => a / b, sub: (a, b) => `${a} \\div ${b}`, hiPick: [1, -1] },
+    hard: { tex: 'x = \\dfrac{d}{t^{2}}', f: (a, b) => a / (b * b), sub: (a, b) => `${a} \\div ${b}^{2}`, hiPick: [1, -1] },
+  }[d];
   for (;;) {
-    const D = tidy(int(rng, 200, 900) / 10); const t = tidy(int(rng, 20, 90) / 10);
-    const lo = (D - 0.05) / (t + 0.05); const hi = (D + 0.05) / (t - 0.05);
+    const D = tidy(int(rng, size(d, 21, 200, 200), size(d, 99, 900, 990)) / 10); const t = tidy(int(rng, size(d, 21, 20, 21), size(d, 99, 90, 60)) / 10);
+    const h = 0.05;
+    const hiD = tidy(D + h * EX.hiPick[0]); const hiT = tidy(t + h * EX.hiPick[1]);
+    const loD = tidy(D - h * EX.hiPick[0]); const loT = tidy(t - h * EX.hiPick[1]);
+    const lo = EX.f(loD, loT); const hi = EX.f(hiD, hiT);
     let k = 4;
     while (k > 0 && roundSf(lo, k) !== roundSf(hi, k)) k -= 1;
     if (k < 1 || k > 3) continue;
     const ans = roundSf(lo, k);
     const dpA = sfDpOf(ans, k);
-    const opts = [roundSf(D / t, k + 1), roundSf(lo, k + 1), roundSf(hi, k + 1), roundSf(D / t, k + 2)];
+    const val = EX.f(D, t);
+    const opts = [roundSf(val, k + 1), roundSf(lo, k + 1), roundSf(hi, k + 1), roundSf(val, k + 2)];
     const ansText = num(ans, dpA);
-    const others = uniq(opts.map((v) => num(v, sfDpOf(v, k + 1))).filter((s) => s !== ansText && Number(s) !== ans), ansText);
+    const others = uniq(opts.map((v) => num(v, sfDpOf(v, k + 1))).filter((s) => s !== ansText && Number(s.replace(/,/g, '')) !== ans), ansText);
     if (others.length < 3) continue;
     return {
-      prompt: `$x = \\dfrac{d}{t}$<br>$d = ${tnum(D)}$ correct to 1 decimal place.<br>$t = ${tnum(t)}$ correct to 1 decimal place.<br>By considering bounds, work out the value of $x$ to a suitable degree of accuracy.`,
+      prompt: `$${EX.tex}$<br>$d = ${tnum(D, 1)}$ correct to 1 decimal place.<br>$t = ${tnum(t, 1)}$ correct to 1 decimal place.<br>By considering bounds, work out the value of $x$ to a suitable degree of accuracy.`,
       answer: ansText,
       distractors: others,
       count: Math.min(5, others.length + 1),
       calculator: true,
       longDecimalsOk: true,
       solution: [
-        `Upper bound: $x = ${tnum(tidy(D + 0.05))} \\div ${tnum(tidy(t - 0.05))} = ${tnum(roundTo(hi, 5))}\\ldots$`,
-        `Lower bound: $x = ${tnum(tidy(D - 0.05))} \\div ${tnum(tidy(t + 0.05))} = ${tnum(roundTo(lo, 5))}\\ldots$`,
+        `Upper bound: $x = ${EX.sub(tnum(hiD), tnum(hiT))} = ${tnum(roundTo(hi, 5))}${dpOf(tidy(hi)) > 5 ? '\\ldots' : ''}$`,
+        `Lower bound: $x = ${EX.sub(tnum(loD), tnum(loT))} = ${tnum(roundTo(lo, 5))}${dpOf(tidy(lo)) > 5 ? '\\ldots' : ''}$`,
         `Both bounds round to ${ansText} (${sfText(k)}), but they would not agree to ${sfText(k + 1)}.`,
         `Answer: ${ansText}`,
       ],

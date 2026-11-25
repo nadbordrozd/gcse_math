@@ -190,9 +190,9 @@ export const pvNumberLine = gen('num-pv-number-line', 'num-place-value', (rng, d
   const r = k % n;
   const dp = Math.max(dpOf(step), dpOf(v));
   const wrongs = [
-    tidy(below + r * (M / 10)), tidy(below + r), tidy(below + r / 10), tidy(v + step), tidy(v - step),
+    tidy(below + r * (M / 10)), M >= 10 ? tidy(below + r) : null, tidy(v + step), tidy(v - step), tidy(below + r * step * 2), tidy(v + M),
     tidy(below + r * (M / (n - 1))), tidy(below + M - r * step),
-  ].filter((w) => w !== v && dpOf(w) <= dp + 1);
+  ].filter((w) => w !== null && w !== v && dpOf(w) <= dp + 1 && w >= s - M && w <= s + (majors + 1) * M);
   return {
     prompt: 'What number is the arrow pointing to?',
     visual,
@@ -336,13 +336,16 @@ const DIVIDE_CONTEXTS = [
 ];
 
 export const wmWordDivide = gen('num-wm-word-divide', 'num-written-methods', (rng, d) => {
-  const ctx = pick(rng, DIVIDE_CONTEXTS);
-  const k = pick(rng, ctx.per);
+  // easy: small divisor and answers up to about 12; medium: the context's normal range; hard: larger totals, awkward divisors
+  const ctx = pick(rng, d === 'easy' ? DIVIDE_CONTEXTS.filter((c) => c.mode !== 'rem') : DIVIDE_CONTEXTS);
+  const pers = [...ctx.per].sort((x, y) => x - y);
+  const k = d === 'easy' ? pers[0] : d === 'hard' ? pers[pers.length - 1] : pick(rng, pers);
   let N;
   let total;
   do {
-    N = int(rng, ctx.tot[0], ctx.tot[1]);
-    if (d === 'easy' && !ctx.money) N = Math.min(N, k * int(rng, 5, 12) + int(rng, 1, k - 1));
+    N = d === 'hard' ? int(rng, ctx.tot[1], Math.round(ctx.tot[1] * (ctx.money ? 2 : 2.5))) : int(rng, ctx.tot[0], ctx.tot[1]);
+    if (d === 'easy' && !ctx.money) N = k * int(rng, 4, 12) + int(rng, 1, k - 1);
+    if (d === 'easy' && ctx.money) N = int(rng, ctx.tot[0], ctx.tot[0] + Math.round((ctx.tot[1] - ctx.tot[0]) / 3));
     total = ctx.money ? (ctx.mode === 'down' ? N * 100 : N) : N;
   } while (total % k === 0);
   const q = Math.floor(total / k); const r = total % k;
@@ -390,7 +393,7 @@ const MULTI = [
     const a = int(rng, 2, 4); const ch = int(rng, 1, 4); const pa = int(rng, 9, size(d, 15, 24, 38)); const pc = int(rng, 5, pa - 2);
     const cost = a * pa + ch * pc; const note = cost < 50 ? 50 : 100;
     if (cost >= note) throw new Error('retry');
-    return { prompt: `Cinema tickets cost £${pa} for an adult and £${pc} for a child. ${pick(rng, ['Mrs Khan', 'Mr Jones', 'Ms Patel', 'Mr Evans'])} buys ${a} adult tickets and ${ch} child tickets. She pays with a £${note} note. How much change should she get?`.replace(/She pays/, 'They pay').replace(/should she/, 'should they'), ans: note - cost, money: true, wrongs: [cost, note - (pa + pc), note - (a + ch) * pa, note - a * pa, note - cost + 10], steps: [`Adults: $${a} \\times ${pa} = ${a * pa}$; children: $${ch} \\times ${pc} = ${ch * pc}$`, `Total cost: $${a * pa} + ${ch * pc} = ${cost}$ pounds`, `Change: $${note} - ${cost} = ${note - cost}$`, `Change: £${note - cost}`] };
+    return { prompt: `Cinema tickets cost £${pa} for an adult and £${pc} for a child. ${pick(rng, ['Mrs Khan', 'Ms Jones', 'Ms Patel', 'Mrs Evans', 'Mrs Okafor'])} buys ${a} adult tickets and ${ch} child tickets. She pays with a £${note} note. How much change should she get?`, ans: note - cost, money: true, wrongs: [cost, note - (pa + pc), note - (a + ch) * pa, note - a * pa, note - cost + 10], steps: [`Adults: $${a} \\times ${pa} = ${a * pa}$; children: $${ch} \\times ${pc} = ${ch * pc}$`, `Total cost: $${a * pa} + ${ch * pc} = ${cost}$ pounds`, `Change: $${note} - ${cost} = ${note - cost}$`, `Change: £${note - cost}`] };
   },
   (rng, d) => {
     const r = int(rng, 11, 16); const h = int(rng, 6, 9); const dys = int(rng, 3, 6); const ot = d === 'hard' ? int(rng, 3, 8) : 0;
@@ -451,7 +454,7 @@ const MULTI = [
 ];
 
 export const wmWordMulti = gen('num-wm-word-multistep', 'num-written-methods', (rng, d) => {
-  const t = pick(rng, MULTI)(rng, d);
+  const t = MULTI[pick(rng, size(d, [1, 2, 6, 8, 9, 10], [0, 3, 4, 5, 7, 12], [0, 3, 4, 7, 9, 11, 1]))](rng, d);
   const fmt = (v) => (t.money ? money(v) : t.unit ? `${num(v)} ${t.unit}` : num(v));
   return {
     prompt: t.prompt,
@@ -541,7 +544,7 @@ const NEG_CONTEXTS = [
 
 export const negContext = gen('num-neg-context', 'num-negatives', (rng, d) => {
   const k = size(d, 1, 2, 3);
-  const pool = d === 'easy' ? NEG_CONTEXTS.slice(0, 13) : NEG_CONTEXTS;
+  const pool = size(d, [0, 3, 5, 6, 8, 2], [1, 2, 4, 7, 9, 12, 6], [4, 7, 9, 10, 11, 13, 1]).map((i) => NEG_CONTEXTS[i]);
   const c = pick(rng, pool)(rng, k);
   const fmt = (v) => (c.money ? money(v) : c.u === '°C' ? `$${tnum(v)}^\\circ$C` : c.u ? `${num(v)} ${c.u}` : num(v));
   return {
@@ -595,7 +598,7 @@ export const bidmasEvaluate = gen('num-bidmas-evaluate', 'num-bidmas', (rng, d) 
   return {
     prompt: `Work out $${exprTex(ex)}$`,
     answer: num(ans),
-    distractors: uniq([ltr, noPow, noBr, ans + 10, ans - 1, ans + 1].filter((v) => v !== null && Number.isInteger(v) && v !== ans).map((v) => num(v)), num(ans)),
+    distractors: uniq([ltr, noPow, noBr, ans + 10, ans - 1, ans + 1].filter((v) => v !== null && Number.isInteger(v) && v !== ans && v >= 0 && v <= Math.max(200, ans * 5)).map((v) => num(v)), num(ans)),
     typed: { kind: 'number', value: ans },
     solution: [
       'Use the order of operations (BIDMAS): <b>B</b>rackets, <b>I</b>ndices (powers), then <b>D</b>ivision and <b>M</b>ultiplication, then <b>A</b>ddition and <b>S</b>ubtraction.',
@@ -675,7 +678,7 @@ export const bidmasBrackets = gen('num-bidmas-brackets', 'num-bidmas', (rng, d) 
 
 export const bidmasMissing = gen('num-bidmas-missing', 'num-bidmas', (rng, d) => {
   const x = int(rng, 2, size(d, 9, 12, 15));
-  const forms = size(d, ['addMul', 'mulSub', 'divAdd'], ['subMul', 'addMul', 'brMul', 'divAdd'], ['subMul', 'brMul', 'sqSub', 'brDiv']);
+  const forms = size(d, ['addMul', 'mulSub', 'divAdd'], ['subMul', 'addMul', 'brMul', 'divAdd'], ['brMul', 'sqSub', 'brDiv', 'brDiv']);
   const f = pick(rng, forms);
   const B = '\\square';
   let lhs; let r; let wrongs; let steps;
@@ -743,7 +746,7 @@ export const decAddSub = gen('num-dec-add-sub', 'num-decimal-calc', (rng, d) => 
 
 export const decMultiply = gen('num-dec-multiply', 'num-decimal-calc', (rng, d) => {
   let a; let b; let square = false;
-  const v = d === 'easy' ? pick(rng, ['dd', 'int', 'sq']) : d === 'medium' ? pick(rng, ['dd', 'one', 'int', 'sq']) : pick(rng, ['two', 'hund', 'one']);
+  const v = d === 'easy' ? pick(rng, ['dd', 'int', 'sq']) : d === 'medium' ? pick(rng, ['one', 'one', 'sq', 'int']) : pick(rng, ['two', 'hund', 'one']);
   if (v === 'dd') { a = tidy(int(rng, 2, 9) / 10); b = tidy(int(rng, 2, 9) / 10); }
   else if (v === 'int') { a = nz(dec(rng, 1, 20, 2), 2); b = int(rng, 2, 9); }
   else if (v === 'sq') { a = pick(rng, [tidy(int(rng, 2, 9) / 10), tidy(int(rng, 11, 15) / 10)]); b = a; square = true; }
@@ -805,7 +808,7 @@ export const decRelated = gen('num-dec-related-fact', 'num-decimal-calc', (rng, 
     let ea; let eb;
     do { ea = int(rng, size(d, -1, -2, -2), size(d, 1, 1, 2)); eb = int(rng, size(d, -1, -2, -2), 1); } while ((ea === 0 && eb === 0) || ea + eb > 3);
     q = `${tnum(s(a, ea))} \\times ${tnum(s(b, eb))}`; ans = s(p, ea + eb);
-    expl = `$${tnum(s(a, ea))}$ is $${a}$ ${ea >= 0 ? `× ${10 ** ea}` : `÷ ${10 ** -ea}`} and $${tnum(s(b, eb))}$ is $${b}$ ${eb >= 0 ? `× ${10 ** eb}` : `÷ ${10 ** -eb}`}, so the answer is $${tnum(p)}$ ${ea + eb >= 0 ? `× ${tnum(10 ** (ea + eb))}` : `÷ ${tnum(10 ** -(ea + eb))}`}.`;
+    expl = `$${tnum(s(a, ea))}$ is $${a}$ ${ea >= 0 ? `× ${10 ** ea}` : `÷ ${10 ** -ea}`} and $${tnum(s(b, eb))}$ is $${b}$ ${eb >= 0 ? `× ${10 ** eb}` : `÷ ${10 ** -eb}`}, so the answer is ${num(p)} ${ea + eb >= 0 ? `× ${num(10 ** (ea + eb))}` : `÷ ${num(10 ** -(ea + eb))}`}.`;
   } else if (mode === 'div') {
     const k = int(rng, -2, 1);
     q = `${tnum(s(p, k))} \\div ${tnum(s(a, k))}`; ans = b;
@@ -815,7 +818,7 @@ export const decRelated = gen('num-dec-related-fact', 'num-decimal-calc', (rng, 
     const k = int(rng, -2, 1); const ea = int(rng, -2, 1);
     if (k === ea) throw new Error('retry');
     q = `${tnum(s(p, k))} \\div ${tnum(s(a, ea))}`; ans = s(b, k - ea);
-    expl = `$${tnum(p)} \\div ${a} = ${b}$. The first number is ${k >= 0 ? `× ${10 ** k}` : `÷ ${10 ** -k}`} and the divisor is ${ea >= 0 ? `× ${10 ** ea}` : `÷ ${10 ** -ea}`}, so the answer is $${b}$ ${k - ea >= 0 ? `× ${tnum(10 ** (k - ea))}` : `÷ ${tnum(10 ** (ea - k))}`}.`;
+    expl = `$${tnum(p)} \\div ${a} = ${b}$. The first number is ${k >= 0 ? `× ${10 ** k}` : `÷ ${10 ** -k}`} and the divisor is ${ea >= 0 ? `× ${10 ** ea}` : `÷ ${10 ** -ea}`}, so the answer is $${b}$ ${k - ea >= 0 ? `× ${num(10 ** (k - ea))}` : `÷ ${num(10 ** (ea - k))}`}.`;
   }
   if (dpOf(ans) > 3) throw new Error('retry');
   return {
@@ -882,7 +885,7 @@ export const calcEvaluate = gen('num-calc-evaluate', 'num-calculator', (rng, d) 
   const v = rd(e.v);
   if (!Number.isFinite(v) || v <= 0 || e.v > 5000) throw new Error('retry');
   const dps = mode.sf ? Math.max(0, mode.sf - 1 - Math.floor(Math.log10(Math.abs(v)))) : mode.dp;
-  const show = (x) => num(x, dps);
+  const show = (x) => num(x, mode.sf ? Math.max(0, mode.sf - 1 - Math.floor(Math.log10(Math.abs(x)))) : dps);
   const trunc = Math.trunc(e.v * 10 ** dps) / 10 ** dps;
   return {
     prompt: `Use your calculator to work out<br>$$${e.tex}$$Give your answer to ${mode.label}.`.replace('$$', '$\\displaystyle ').replace('$$', '$<br>').replace('$<br>Give', '$<br>Give'),
@@ -933,7 +936,7 @@ const INTERPRET = [
 ];
 
 export const calcInterpret = gen('num-calc-interpret', 'num-calculator', (rng, d) => {
-  const c = pick(rng, d === 'easy' ? INTERPRET.filter((_, i) => i !== 1 && i !== 5) : INTERPRET)(rng);
+  const c = INTERPRET[pick(rng, size(d, [3, 4, 0], [0, 1, 3], [1, 2, 5]))](rng);
   if (c.hours !== undefined) {
     const h = Math.floor(c.hours); const m = Math.round((c.hours - h) * 60);
     const decPart = Math.round((c.hours - h) * 100);
@@ -973,7 +976,7 @@ export const calcInterpret = gen('num-calc-interpret', 'num-calculator', (rng, d
 /* ================================================================== */
 
 const CHOICE_CONTEXTS = [
-  { items: ['starters', 'main courses', 'desserts'], make: (c) => `A restaurant menu has ${c[0]} starters, ${c[1]} main courses${c[2] ? ` and ${c[2]} desserts` : ''}. A meal is one ${c[2] ? 'starter, one main course and one dessert' : 'starter and one main course'}. How many different meals are possible?` },
+  { items: ['starters', 'main courses', 'desserts'], make: (c) => `A restaurant menu has ${c[0]} starters${c[2] ? `, ${c[1]} main courses and ${c[2]} desserts` : ` and ${c[1]} main courses`}. A meal is one ${c[2] ? 'starter, one main course and one dessert' : 'starter and one main course'}. How many different meals are possible?` },
   { items: ['faces', 'bodies', 'hairstyles'], make: (c) => `In a computer game you build a character by choosing from ${c[0]} faces${c[2] ? `, ${c[1]} bodies and ${c[2]} hairstyles` : ` and ${c[1]} bodies`}. How many different characters can be made?` },
   { items: ['shirts', 'pairs of trousers', 'pairs of shoes'], make: (c) => `Sam has ${c[0]} shirts${c[2] ? `, ${c[1]} pairs of trousers and ${c[2]} pairs of shoes` : ` and ${c[1]} pairs of trousers`}. An outfit is one of each. How many different outfits can he choose?` },
   { items: ['breads', 'fillings', 'sauces'], make: (c) => `A sandwich shop offers ${c[0]} types of bread${c[2] ? `, ${c[1]} fillings and ${c[2]} sauces` : ` and ${c[1]} fillings`}. A sandwich uses one of each. How many different sandwiches are possible?` },

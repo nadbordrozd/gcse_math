@@ -100,6 +100,11 @@ export function gen(id, skill, build, meta = {}) {
       try {
         const data = build(rng, d);
         if (meta.longDecimalsOk) data.longDecimalsOk = true;
+        // Fraction answers to "simplest form / mixed number / improper fraction" questions must be typed in that form.
+        const t = data.typed;
+        if (t && t.kind === 'number' && t.value instanceof Frac && !t.form && /simplest form|as a fraction|what fraction|mixed number|improper fraction/i.test(data.prompt)) {
+          t.form = /mixed number/i.test(data.prompt) ? 'mixed' : /improper fraction/i.test(data.prompt) ? 'improper' : 'simplest';
+        }
         // Make sure there are enough genuine distractors, so the core never pads with generic fillers.
         if (i >= 40) retryStats[`${id} FALLBACK`] = (retryStats[`${id} FALLBACK`] || 0) + 1;
         if (i < 40) buildOptions(() => 0.5, data.answer, data.distractors || [], { count: data.count ?? 5, allowEquivalent: data.allowEquivalent, fill: false });

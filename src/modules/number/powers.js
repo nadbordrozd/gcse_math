@@ -65,7 +65,7 @@ export const sqEstimate = gen('num-sq-estimate', 'num-squares-roots', (rng, d) =
 
 export const sqPowerOf = gen('num-sq-power-of', 'num-squares-roots', (rng, d) => {
   const base = pick(rng, size(d, [2, 3, 10], [2, 3, 5, 4], [2, 3, 5, 6, 7]));
-  const e = int(rng, size(d, 3, 3, 4), size(d, 5, 6, base === 2 ? 10 : 5));
+  const e = int(rng, size(d, 2, 3, base === 2 ? 7 : 4), size(d, 4, 6, base === 2 ? 12 : 6));
   const n = base ** e;
   if (n > 100000) throw new Error('retry');
   const askN = d !== 'easy' && chance(rng, 0.5);
@@ -76,7 +76,7 @@ export const sqPowerOf = gen('num-sq-power-of', 'num-squares-roots', (rng, d) =>
       distractors: uniq([n / base, e + 1, e - 1, Math.round(n / e) === e ? e + 2 : e * 2, Math.round(Math.sqrt(n))].filter((v) => Number.isInteger(v) && v > 0 && v !== e && v < 1000).map((v) => num(v)), num(e)),
       typed: { kind: 'number', value: e },
       solution: [
-        `Keep multiplying by ${base}: ${Array.from({ length: e }, (_, i) => tnum(base ** (i + 1))).join(', ')}.`,
+        `Keep multiplying by ${base}: ${Array.from({ length: e }, (_, i) => num(base ** (i + 1))).join(', ')}.`,
         `That is ${e} lots of ${base} multiplied together, so $n = ${e}$.`,
         `Answer: ${e}`,
       ],
@@ -85,10 +85,10 @@ export const sqPowerOf = gen('num-sq-power-of', 'num-squares-roots', (rng, d) =>
   return {
     prompt: `Write ${num(n)} as a power of ${base}.`,
     answer: P(base, e),
-    distractors: uniq([P(base, e + 1), P(base, e - 1), P(base, n / base), P(base * base, e), P(base, e * 2)].filter((s) => !/\{\d+\.\d/.test(s)), P(base, e)),
+    distractors: uniq([P(base, e + 1), P(base, e - 1), P(e, base), P(base * base, e), P(base, e * 2)].filter((s) => !/\{\d+\.\d/.test(s)), P(base, e)),
     typed: powText(base, e),
     solution: [
-      `Repeatedly divide by ${base}: ${Array.from({ length: e }, (_, i) => tnum(n / base ** i)).join(' → ')} → 1.`,
+      `Repeatedly divide by ${base}: ${Array.from({ length: e }, (_, i) => num(n / base ** i)).join(' → ')} → 1.`,
       `That is ${e} divisions, so $${tnum(n)} = ${base}^{${e}}$.`,
       `Answer: ${P(base, e)}`,
     ],
@@ -100,9 +100,9 @@ export const sqPowerOf = gen('num-sq-power-of', 'num-squares-roots', (rng, d) =>
 /* ================================================================== */
 
 export const idxMulDiv = gen('num-idx-mul-div', 'num-index-laws', (rng, d) => {
-  const alg = d !== 'easy' && chance(rng, 0.5);
+  const alg = d === 'hard' || (d === 'medium' && chance(rng, 0.5));
   const div = chance(rng, 0.45);
-  let m = int(rng, 2, 9); let n = int(rng, 2, 8);
+  let m = int(rng, 2, size(d, 7, 9, 12)); let n = int(rng, 2, size(d, 6, 8, 11));
   if (div && m <= n) m = n + int(rng, 1, 6);
   if (!alg) {
     const b = pick(rng, [2, 3, 5, 7, 10]);
@@ -215,25 +215,31 @@ export const idxFindN = gen('num-idx-find-n', 'num-index-laws', (rng, d) => {
 }, { title: 'Find a missing index' });
 
 export const idxEvaluate = gen('num-idx-evaluate', 'num-index-laws', (rng, d) => {
-  const b = pick(rng, size(d, [2, 3, 10], [2, 3, 5], [2, 3, 5, 7]));
+  // easy: b^m × b^n ÷ b^k with a small positive result; medium: bigger indices, base 3 or 5;
+  // hard: a power of a power on top and a result that may be 1 or a fraction
+  const b = pick(rng, size(d, [2, 10], [2, 3, 5], [2, 3, 5]));
+  const pw = d === 'hard' ? pick(rng, [2, 3]) : 1;
   let m; let n; let k;
   for (;;) {
-    m = int(rng, 3, 9); n = int(rng, 2, 8); k = int(rng, 2, 9);
-    const e = m + n - k;
-    if (e >= 1 && e <= (b === 2 ? 6 : 3) && k > 1) break;
+    m = int(rng, size(d, 2, 4, 2), size(d, 6, 12, 5)); n = int(rng, size(d, 1, 3, 2), size(d, 5, 10, 8)); k = int(rng, 2, size(d, 9, 20, 20));
+    const e = m * pw + n - k;
+    if (d === 'hard' ? e >= -3 && e <= (b === 2 ? 4 : 2) && b ** Math.abs(e) <= 125 : e >= 1 && e <= (b === 2 ? 6 : 3)) break;
   }
-  const e = m + n - k;
-  const ans = b ** e;
+  const e = m * pw + n - k;
+  const ans = e >= 0 ? frac(b ** e) : frac(1, b ** -e);
+  const fmt = (f) => (f.isInt ? num(f.n) : F(f));
+  const top = pw > 1 ? `(${b}^{${m}})^{${pw}}` : `${b}^{${m}}`;
+  const wrongs = [frac(b * Math.abs(e) || 1), e >= 0 ? frac(b ** (e + 1)) : frac(b ** -e), frac(Math.abs(e) || 2), e > 0 ? frac(b ** (e - 1)) : frac(1, b ** (1 - e)), e === 0 ? frac(0) : frac(-1).mul(ans), pw > 1 ? (m + pw + n - k >= 0 ? frac(b ** (m + pw + n - k)) : frac(1, b ** (k - m - pw - n))) : frac((b * b) ** Math.max(e, 0))];
   return {
-    prompt: `Work out the value of $\\dfrac{${b}^{${m}} \\times ${b}^{${n}}}{${b}^{${k}}}$`,
-    answer: num(ans),
-    distractors: uniq([b * e, b ** (m * n - k) > 1e6 ? b ** (e + 1) : b ** (m * n - k), e, b ** (e + 1), b ** (e - 1) || 1, (b * b) ** e].filter((v) => Number.isInteger(v) && v > 0 && v !== ans && v < 1e7).map((v) => num(v)), num(ans)),
+    prompt: `Work out the value of $\\dfrac{${top} \\times ${b}^{${n}}}{${b}^{${k}}}$`,
+    answer: fmt(ans),
+    distractors: uniq(wrongs.filter((f) => !f.eq(ans) && f.n !== 0 && Math.abs(f.value()) < 1e7).map(fmt), fmt(ans)),
     typed: { kind: 'number', value: ans },
     solution: [
-      `Top: $${b}^{${m}} \\times ${b}^{${n}} = ${b}^{${m + n}}$ (add the indices).`,
-      `Divide: $${b}^{${m + n}} \\div ${b}^{${k}} = ${b}^{${e}}$ (subtract the indices).`,
-      `$${b}^{${e}} = ${tnum(ans)}$${e > 1 ? ` (not $${b} \\times ${e}$)` : ''}`,
-      `Answer: ${num(ans)}`,
+      ...(pw > 1 ? [`Power of a power: $(${b}^{${m}})^{${pw}} = ${b}^{${m * pw}}$ (multiply the indices).`] : []),
+      `Top: $${b}^{${m * pw}} \\times ${b}^{${n}} = ${b}^{${m * pw + n}}$ (add the indices).`,
+      `Divide: $${b}^{${m * pw + n}} \\div ${b}^{${k}} = ${b}^{${e}}$ (subtract the indices).`,
+      `$${b}^{${e}} = ${ans.tex()}$${e > 1 ? ` (not $${b} \\times ${e}$)` : e === 0 ? ' (any number to the power 0 is 1)' : e < 0 ? ' (a negative power means "one over")' : ''}. Answer: ${fmt(ans)}`,
     ],
   };
 }, { title: 'Evaluate using index laws' });
@@ -312,12 +318,16 @@ export const nziWritePower = gen('num-nzi-write-power', 'num-negative-zero-indic
 }, { title: 'Write as a negative power', longDecimalsOk: true });
 
 export const nziOrder = gen('num-nzi-order', 'num-negative-zero-indices', (rng, d) => {
-  const pool = [[2, -1], [2, -2], [2, -3], [3, -1], [3, -2], [4, -1], [5, -1], [10, -1], [10, -2], [4, 0], [7, 0], [2, 0], [5, -2], [4, -2], [3, 0]].map(([b, e]) => ({ tex: `$${b}^{${e}}$`, v: b ** e }));
-  extra(pool, d);
+  const Pw = (b, e) => ({ tex: `$${b}^{${e}}$`, f: e >= 0 ? frac(b ** e) : frac(1, b ** -e) });
+  const Qw = (f, e) => ({ tex: `$\\left(${T(f)}\\right)^{${e}}$`, f: e >= 0 ? frac(f.n ** e, f.d ** e) : frac(f.d ** -e, f.n ** -e) });
+  const pool = size(d,
+    [Pw(2, -1), Pw(3, -1), Pw(4, -1), Pw(5, -1), Pw(10, -1), Pw(2, 0), Pw(7, 0), Pw(9, 0), Pw(2, 2), Pw(3, 1), Pw(8, -1), Pw(6, -1)],
+    [Pw(2, -1), Pw(2, -2), Pw(2, -3), Pw(3, -1), Pw(3, -2), Pw(4, -1), Pw(5, -1), Pw(10, -1), Pw(10, -2), Pw(4, 0), Pw(7, 0), Pw(5, -2), Pw(4, -2), Pw(2, -4)],
+    [Pw(2, -2), Pw(3, -2), Pw(2, -3), Pw(5, 0), Pw(10, -1), Qw(frac(1, 2), -2), Qw(frac(2, 3), -1), Qw(frac(1, 3), 2), Qw(frac(3, 4), -2), Qw(frac(2, 5), -1), Qw(frac(1, 2), 3), Qw(frac(4, 3), -1), Qw(frac(5, 2), -2)]);
   for (;;) {
     const set = sample(rng, pool, 5);
-    const vals = set.map((s) => s.v);
-    if (new Set(vals.map((v) => roundTo(v, 9))).size < 5) continue;
+    set.forEach((s) => { s.v = s.f.value(); });
+    if (new Set(set.map((s) => s.v)).size < 5) continue;
     const wantMax = chance(rng);
     const target = set.reduce((b, s) => ((wantMax ? s.v > b.v : s.v < b.v) ? s : b));
     return {
@@ -326,15 +336,12 @@ export const nziOrder = gen('num-nzi-order', 'num-negative-zero-indices', (rng, 
       distractors: set.filter((s) => s !== target).map((s) => s.tex),
       solution: [
         'Work out each value: a power of 0 is 1 and a negative power is a fraction ("one over").',
-        set.map((s) => `${s.tex} $= ${Frac.of(frac(Math.round(s.v * 1e6), 1e6)).tex()}$`).join(', '),
+        set.map((s) => `${s.tex} $= ${s.f.tex()}$`).join(', '),
         `Answer: ${target.tex}`,
       ],
     };
   }
 }, { title: 'Compare zero and negative powers' });
-function extra(pool, d) {
-  if (d === 'hard') pool.push({ tex: '$\\left(\\frac{1}{2}\\right)^{-2}$', v: 4 }, { tex: '$\\left(\\frac{2}{3}\\right)^{-1}$', v: 1.5 }, { tex: '$\\left(\\frac{1}{3}\\right)^{2}$', v: 1 / 9 });
-}
 
 /* ================================================================== */
 /* num-fractional-indices                                              */
@@ -433,7 +440,7 @@ function sfNumber(rng, d, small) {
   const sig = size(d, int(rng, 1, 2), int(rng, 2, 3), int(rng, 2, 4));
   let m;
   do { m = tidy(int(rng, 10 ** (sig - 1), 10 ** sig - 1) / 10 ** (sig - 1)); } while (m === 1 && sig === 1 && false);
-  const e = small ? -int(rng, 1, size(d, 3, 5, 7)) : int(rng, 2, size(d, 5, 7, 9));
+  const e = small ? -int(rng, size(d, 1, 2, 4), size(d, 3, 5, 7)) : int(rng, size(d, 2, 3, 5), size(d, 5, 7, 9));
   return [m, e];
 }
 
@@ -485,17 +492,17 @@ export const sfToOrdinary = gen('num-sf-ordinary', 'num-standard-form', (rng, d)
 }, { title: 'Standard form to ordinary number' });
 
 export const sfOrder = gen('num-sf-order', 'num-standard-form', (rng, d) => {
-  const small = chance(rng);
+  const small = d === 'easy' ? false : d === 'medium' ? true : chance(rng);
   const baseE = small ? -int(rng, 2, 5) : int(rng, 3, 7);
   const items = [];
   const seen = new Set();
   while (items.length < 5) {
-    const e = baseE + int(rng, -1, 1);
+    const e = baseE + int(rng, -1, 1) * (d === 'easy' ? 2 : 1);
     const m = tidy(int(rng, 11, 99) / 10);
     const v = tidy(m * 10 ** e);
     if (seen.has(v)) continue;
     seen.add(v);
-    const ordinary = d !== 'easy' && items.length === 4 && chance(rng, 0.7) && dpOf(v) <= 7;
+    const ordinary = d === 'hard' && items.length >= 3 && chance(rng, 0.7) && dpOf(v) <= 7;
     items.push({ v, text: ordinary ? `$${tnum(v)}$` : sfm(m, e) });
   }
   const wantMax = chance(rng);
@@ -515,10 +522,13 @@ export const sfOrder = gen('num-sf-order', 'num-standard-form', (rng, d) => {
 }, { title: 'Order numbers in standard form' });
 
 export const sfFix = gen('num-sf-fix', 'num-standard-form', (rng, d) => {
-  const big = chance(rng);
-  const m = big ? tidy(int(rng, 11, 990) / (chance(rng) ? 1 : 10)) : tidy(int(rng, 1, 99) / 100);
+  // easy: 2-digit number in front, positive power; medium: 3 digits or 0.x in front, any power; hard: 0.0x or 4 digits, negative powers
+  const big = d === 'easy' ? true : chance(rng);
+  const m = d === 'easy' ? int(rng, 11, 99)
+    : d === 'medium' ? (big ? tidy(int(rng, 101, 999) / pick(rng, [1, 10])) : tidy(int(rng, 11, 99) / 100))
+      : (big ? tidy(int(rng, 1001, 9999) / pick(rng, [1, 10])) : tidy(int(rng, 11, 99) / 1000));
   if (m >= 1 && m < 10) throw new Error('retry');
-  const e = int(rng, -6, 8);
+  const e = size(d, int(rng, 2, 8), int(rng, -6, 8), -int(rng, 2, 9));
   if (e === 0) throw new Error('retry');
   const [mm, ee] = norm(m, e);
   const ans = sfm(mm, ee);
@@ -626,11 +636,11 @@ export const sfcOrdinary = gen('num-sfc-ordinary', 'num-standard-form-calc', (rn
 const SF_WORD = [
   (rng) => { const m = int(rng, 2, 9); const e = -int(rng, 3, 5); const tot = int(rng, 2, 9); return { p: `The mass of one grain of sand is $${m} \\times 10^{${e}}$ grams. Work out the number of grains of sand in ${tot * m} kg of sand. Give your answer in standard form.`, v: (tot * m * 1000) / (m * 10 ** e), steps: [`${tot * m} kg = ${num(tot * m * 1000)} g`, `$${tnum(tot * m * 1000)} \\div (${m} \\times 10^{${e}})$`] }; },
   (rng) => { const n = int(rng, 2, 8); const e = int(rng, 6, 9); const k = pick(rng, [2, 3, 4, 5]); return { p: `A computer does $${n} \\times 10^{${e}}$ calculations every second. How many calculations does it do in ${k} minutes? Give your answer in standard form.`, v: n * 10 ** e * k * 60, steps: [`${k} minutes = ${k * 60} seconds`, `$${n} \\times 10^{${e}} \\times ${k * 60}$`] }; },
-  (rng) => { const m = pick(rng, [1.5, 2, 2.5, 3, 4, 6]); const e = int(rng, 6, 8); const k = pick(rng, [2, 4, 5, 10]); return { p: `The population of a country is $${tnum(m)} \\times 10^{${e}}$. One in every ${k} people lives in the capital city. How many people live in the capital? Give your answer in standard form.`, v: tidy(m * 10 ** e / k), steps: [`$${tnum(m)} \\times 10^{${e}} \\div ${k}$`] }; },
-  (rng) => { const d1 = pick(rng, [1.5, 2.3, 4.2, 5.8, 7.7]); const e = int(rng, 7, 9); const s = 3; return { p: `Light travels at $${s} \\times 10^{5}$ km per second. A star is $${tnum(d1 * s)} \\times 10^{${e}}$ km from Earth. How many seconds does light take to reach Earth from the star? Give your answer in standard form.`, v: tidy(d1 * 10 ** (e - 5)), steps: [`time = distance ÷ speed`, `$(${tnum(d1 * s)} \\times 10^{${e}}) \\div (${s} \\times 10^{5})$`] }; },
+  (rng) => { const m = pick(rng, [1.5, 2, 2.5, 3, 4, 6]); const e = int(rng, 6, 8); const k = pick(rng, [4, 5, 8, 10]); return { p: `The population of a country is $${tnum(m)} \\times 10^{${e}}$. One in every ${k} people lives in the capital city. How many people live in the capital? Give your answer in standard form.`, v: tidy(m * 10 ** e / k), steps: [`$${tnum(m)} \\times 10^{${e}} \\div ${k}$`] }; },
+  (rng) => { const [planet, dm, e] = pick(rng, [['Mars', 2.28, 8], ['Jupiter', 7.8, 8], ['Saturn', 1.44, 9], ['Uranus', 2.88, 9], ['Neptune', 4.5, 9], ['Venus', 1.08, 8]]); return { p: `Light travels at $3 \\times 10^{5}$ km per second. ${planet} is about $${tnum(dm)} \\times 10^{${e}}$ km from the Sun. How many seconds does light from the Sun take to reach ${planet}? Give your answer in standard form.`, v: tidy(dm / 3 * 10 ** (e - 5)), steps: [`time = distance ÷ speed`, `$(${tnum(dm)} \\times 10^{${e}}) \\div (3 \\times 10^{5}) = ${tnum(tidy(dm / 3))} \\times 10^{${e - 5}}$`] }; },
   (rng) => { const n = int(rng, 2, 9); const e = int(rng, 3, 6); const k = int(rng, 2, 8); return { p: `A bacteria colony has $${n} \\times 10^{${e}}$ cells. The number of cells is multiplied by ${k * 10}. How many cells are there now? Give your answer in standard form.`, v: n * 10 ** e * k * 10, steps: [`$${n} \\times 10^{${e}} \\times ${k * 10} = ${n * k * 10} \\times 10^{${e}}$`] }; },
-  (rng) => { const m = int(rng, 2, 8); const e = int(rng, 9, 12); const p = pick(rng, [4, 5, 8]); return { p: `A hard drive stores $${m * p} \\times 10^{${e}}$ bytes. Each film uses $${p} \\times 10^{9}$ bytes. How many films can be stored? Give your answer in standard form.`, v: m * 10 ** (e - 9), steps: [`$(${m * p} \\times 10^{${e}}) \\div (${p} \\times 10^{9}) = ${m} \\times 10^{${e - 9}}$`] }; },
-  (rng) => { const m = int(rng, 2, 9); const e = -int(rng, 5, 8); const n = int(rng, 2, 9); return { p: `The width of a human hair is about $${m} \\times 10^{${e}}$ metres. ${n} hundred hairs are laid side by side. What is their total width in metres? Give your answer in standard form.`, v: tidy(m * n * 100 * 10 ** e), steps: [`$${n * 100} \\times ${m} \\times 10^{${e}} = ${m * n * 100} \\times 10^{${e}}$`] }; },
+  (rng) => { const m = int(rng, 2, 8); const e = int(rng, 12, 14); const p = pick(rng, [4, 5, 8]); const [M, E] = norm(m * p, e); return { p: `A data centre stores $${tnum(M)} \\times 10^{${E}}$ bytes of films. Each film uses $${p} \\times 10^{9}$ bytes. How many films are stored? Give your answer in standard form.`, v: m * 10 ** (e - 9), steps: [`$(${tnum(M)} \\times 10^{${E}}) \\div (${p} \\times 10^{9})$`, `$${tnum(M)} \\div ${p} = ${tnum(tidy(M / p))}$ and $10^{${E}} \\div 10^{9} = 10^{${E - 9}}$`] }; },
+  (rng) => { const m = int(rng, 2, 9); const e = -int(rng, 5, 6); const n = int(rng, 2, 9); return { p: `The width of a human hair is about $${m} \\times 10^{${e}}$ metres. ${n * 100} hairs are laid side by side. What is their total width in metres? Give your answer in standard form.`, v: tidy(m * n * 100 * 10 ** e), steps: [`$${n * 100} \\times ${m} \\times 10^{${e}} = ${m * n * 100} \\times 10^{${e}}$`] }; },
   (rng) => { const a = pick(rng, [1.2, 2.4, 3.6, 4.8]); const e = int(rng, 10, 12); const p = pick(rng, [6, 8, 12]); return { p: `A government spends £$${tnum(a)} \\times 10^{${e}}$ in a year. This is shared equally over ${p} areas of spending. How much is spent on each area? Give your answer in standard form.`.replace('£$', '£$'), v: tidy(a * 10 ** e / p), steps: [`$${tnum(a)} \\times 10^{${e}} \\div ${p}$`] }; },
   (rng) => { const m = int(rng, 2, 9); const e = -int(rng, 20, 24); const n = int(rng, 2, 9); return { p: `The mass of an atom is $${m} \\times 10^{${e}}$ grams. Work out the mass of $${n} \\times 10^{5}$ of these atoms. Give your answer in standard form.`, v: m * n * 10 ** (e + 5), steps: [`Multiply: $${m} \\times ${n} = ${m * n}$ and $10^{${e}} \\times 10^{5} = 10^{${e + 5}}$`] }; },
   (rng) => { const m = pick(rng, [1.5, 2.5, 3.5, 4.5]); const e = int(rng, 4, 6); const t = pick(rng, [20, 40, 60]); return { p: `A river carries $${tnum(m)} \\times 10^{${e}}$ litres of water past a bridge every minute. How many litres pass in ${t} hours? Give your answer in standard form.`, v: tidy(m * 10 ** e * t * 60), steps: [`${t} hours = ${t * 60} minutes`, `$${tnum(m)} \\times 10^{${e}} \\times ${t * 60}$`] }; },
@@ -639,8 +649,10 @@ const SF_WORD = [
   (rng) => { const p = pick(rng, [6.4, 6.8, 7.2, 8.4]); const e = 7; const k = pick(rng, [2, 4, 8]); return { p: `The population of a country is $${tnum(p)} \\times 10^{${e}}$. The population is expected to ${k === 2 ? 'double' : `increase by a factor of ${k}`} in the next century. What will the population be? Give your answer in standard form.`, v: tidy(p * k * 10 ** e), steps: [`$${tnum(p)} \\times ${k} = ${tnum(tidy(p * k))}$, so $${tnum(tidy(p * k))} \\times 10^{${e}}$`] }; },
 ];
 
-export const sfcWord = gen('num-sfc-word', 'num-standard-form-calc', (rng) => {
-  const c = pick(rng, SF_WORD)(rng);
+export const sfcWord = gen('num-sfc-word', 'num-standard-form-calc', (rng, d) => {
+  // easy: one multiplication/division with whole numbers; medium: two standard-form numbers or adding;
+  // hard: unit conversions or dividing two standard-form numbers
+  const c = SF_WORD[pick(rng, size(d, [2, 4, 7, 10, 12], [6, 8, 11, 9, 5], [0, 1, 3, 5, 9]))](rng);
   const e = Math.floor(Math.log10(c.v));
   const m = roundSf(c.v / 10 ** e, 4);
   const [mm, ee] = norm(m, e);
@@ -653,7 +665,7 @@ export const sfcWord = gen('num-sfc-word', 'num-standard-form-calc', (rng) => {
     allowEquivalent: true,
     calculator: true,
     typed: { kind: 'number', value: tidy(mm * 10 ** ee) },
-    solution: [...c.steps, `$= ${tnum(mm)} \\times 10^{${ee}}$`, `Answer: ${ans}`],
+    solution: [...c.steps, ...(c.steps.some((s) => s.includes(`${tnum(mm)} \\times 10^{${ee}}$`)) ? [] : [`$= ${tnum(mm)} \\times 10^{${ee}}$`]), `Answer: ${ans}`],
   };
 }, { title: 'Standard form in context', word: true });
 

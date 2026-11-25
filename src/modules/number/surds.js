@@ -32,8 +32,8 @@ const kRoot = (k, b) => (k === 1 ? `\\sqrt{${b}}` : `${k}\\sqrt{${b}}`);
 /* ================================================================== */
 
 export const simplifySurd = gen('num-surds-simplify-basic', 'num-surds-simplify', (rng, d) => {
-  const k = size(d, pick(rng, [2, 3]), pick(rng, [2, 3, 4, 5]), pick(rng, [4, 5, 6, 7, 10]));
-  const inner = pick(rng, size(d, [2, 3, 5], [2, 3, 5, 6, 7], [2, 3, 5, 6, 7, 10, 11]));
+  const k = size(d, pick(rng, [2, 3, 4, 5]), pick(rng, [4, 5, 6, 7, 8]), pick(rng, [4, 5, 6, 7, 10]));
+  const inner = pick(rng, size(d, [2, 3, 5, 6, 7], [2, 3, 5, 6, 7], [2, 3, 5, 6, 7, 10, 11]));
   const n = k * k * inner;
   const coef = d === 'hard' ? pick(rng, [2, 3]) : 1;
   const ans = `$${coef * k}\\sqrt{${inner}}$`;
@@ -60,7 +60,7 @@ export const simplifySurd = gen('num-surds-simplify-basic', 'num-surds-simplify'
 }, { title: 'Simplify √n to a√b' });
 
 export const surdInside = gen('num-surds-simplify-inside', 'num-surds-simplify', (rng, d) => {
-  const k = int(rng, 2, size(d, 3, 5, 9)); const b = pick(rng, SQUAREFREE.slice(0, size(d, 3, 6, 10)));
+  const k = int(rng, 2, size(d, 5, 7, 9)); const b = pick(rng, SQUAREFREE.slice(0, size(d, 5, 7, 10)));
   const n = k * k * b;
   const ans = `$\\sqrt{${n}}$`;
   return {
@@ -129,13 +129,13 @@ export const surdAdd = gen('num-surds-add', 'num-surds-operations', (rng, d) => 
       'You can only add or subtract surds when the number under the root is the same, so simplify each one first.',
       [`$\\sqrt{${n1}} = ${kRoot(k1, b)}$`, `$\\sqrt{${n2}} = ${kRoot(k2, b)}$`, three ? `$\\sqrt{${n3}} = ${kRoot(k3, b)}$` : null].filter(Boolean).join(', '),
       `$${c1 > 1 ? `${c1} \\times ` : ''}${kRoot(k1, b)} ${sub ? '-' : '+'} ${kRoot(k2, b)}${three ? ` + ${kRoot(k3, b)}` : ''} = ${kRoot(total, b)}$ (collect them like $x$ terms)`,
-      `Answer: ${ans}. Note $\\sqrt{${n1}} ${sub ? '-' : '+'} \\sqrt{${n2}}$ is <b>not</b> $\\sqrt{${n1 + (sub ? -n2 : n2)}}$.`,
+      `Answer: ${ans}.${c1 === 1 && !three && !sub ? ` Note $\\sqrt{${n1}} + \\sqrt{${n2}}$ is <b>not</b> $\\sqrt{${n1 + n2}}$.` : ''}`,
     ],
   };
 }, { title: 'Add and subtract surds' });
 
 export const surdMultiply = gen('num-surds-multiply', 'num-surds-operations', (rng, d) => {
-  const type = pick(rng, size(d, ['same', 'simple', 'square'], ['simple', 'square', 'coef'], ['coef', 'triple', 'square']));
+  const type = pick(rng, size(d, ['same', 'simple', 'square'], ['simple', 'square', 'coef'], ['coef', 'triple', 'coef']));
   let prompt; let p = 0; let q = 0; let b = 1; let wrongs = []; let steps;
   if (type === 'same') { const n = pick(rng, SQUAREFREE); const c = int(rng, 2, 5); prompt = `$${c}\\sqrt{${n}} \\times \\sqrt{${n}}$`; p = c * n; wrongs = [[c * n * n, 0], [0, c], [c, 0], [2 * c * n, 0]]; steps = [`$\\sqrt{${n}} \\times \\sqrt{${n}} = ${n}$`, `$${c} \\times ${n} = ${p}$`]; }
   else if (type === 'square') { const c = int(rng, 2, 6); const n = pick(rng, SQUAREFREE); prompt = `$(${c}\\sqrt{${n}})^{2}$`; p = c * c * n; wrongs = [[c * n, 0], [2 * c * n, 0], [c * c, 0], [0, c * c]]; b = n; steps = [`$(${c}\\sqrt{${n}})^{2} = ${c}^{2} \\times (\\sqrt{${n}})^{2}$`, `$= ${c * c} \\times ${n} = ${p}$ (don't forget to square the ${c})`]; }
@@ -174,9 +174,10 @@ export const surdExpand = gen('num-surds-expand', 'num-surds-operations', (rng, 
   let a; let c; let s1 = 1; let s2 = 1; let m1 = 1; let m2 = 1; let prompt; let p; let q;
   if (type === 'single') {
     a = int(rng, 2, 6); c = int(rng, 1, 5) * (chance(rng) ? 1 : -1);
-    prompt = `$\\sqrt{${b}}(${a} ${c < 0 ? '-' : '+'} \\sqrt{${b}})$`;
+    const cAbs = Math.abs(c); const cT = cAbs === 1 ? '' : cAbs;
+    prompt = `$\\sqrt{${b}}(${a} ${c < 0 ? '-' : '+'} ${cT}\\sqrt{${b}})$`;
     p = c * b; q = a;
-    return finish(`Multiply each term in the bracket by $\\sqrt{${b}}$: $${a}\\sqrt{${b}}$ and $${c < 0 ? '-' : ''}\\sqrt{${b}} \\times \\sqrt{${b}} = ${c < 0 ? '-' : ''}${b}$`, [[p, -q], [a + c, 0], [0, a + 1], [p * 2, q]].map(([x, y]) => [x * (c < 0 ? -1 : 1) * 0 + x, y]));
+    return finish(`Multiply each term in the bracket by $\\sqrt{${b}}$: $${a} \\times \\sqrt{${b}} = ${a}\\sqrt{${b}}$ and $${c < 0 ? '-' : ''}${cT}\\sqrt{${b}} \\times \\sqrt{${b}} = ${c < 0 ? '-' : ''}${cT ? `${cAbs} \\times ` : ''}${b}${cT ? ` = ${c < 0 ? '-' : ''}${cAbs * b}` : ''}$`, [[p, -q], [a + c, 0], [0, a + c], [c * b * b, q], [c, q]]);
   }
   a = int(rng, 1, 7); c = int(rng, 1, 7);
   if (type === 'diffSq') { prompt = `$(${a} + \\sqrt{${b}})(${a} - \\sqrt{${b}})$`; p = a * a - b; q = 0; return finish(`The $\\sqrt{${b}}$ terms cancel: $${a}\\sqrt{${b}} - ${a}\\sqrt{${b}} = 0$. You are left with $${a}^{2} - (\\sqrt{${b}})^{2} = ${a * a} - ${b}$`, [[a * a + b, 0], [a * a - b, 2 * a], [a * a - b * b, 0], [a * a, -b]]); }
@@ -285,23 +286,32 @@ export const ratConjugate = gen('num-surds-rat-conjugate', 'num-surds-rationalis
 
 export const ratCombined = gen('num-surds-rat-combined', 'num-surds-rationalise', (rng, d) => {
   for (;;) {
-    const b = pick(rng, [2, 3, 5, 6, 7]);
-    const k = int(rng, 2, 5); const c = int(rng, 1, 9);
+    // easy: (√(k²b) + c)/√b; medium: also minus signs and b = 5, 6, 7; hard: denominator m√b
+    const b = pick(rng, size(d, [2, 3], [2, 3, 5, 6, 7], [2, 3, 5, 6, 7]));
+    const m = d === 'hard' ? pick(rng, [2, 3]) : 1;
+    const k = m * int(rng, 1, size(d, 4, 5, 3)); const c = int(rng, 1, 9) * (d !== 'easy' && chance(rng) ? -1 : 1);
+    if (k < 2) continue;
     const top = k * k * b;
-    // (√top + c)/√b = (k b + c√b)/b = k + (c/b)√b
-    const q = frac(c, b);
+    // (√top + c)/(m√b) = (k b + c√b)/(m b) = k/m + (c/(m b))√b
+    const a = k / m;
+    const q = frac(c, m * b);
     if (q.isInt) continue;
-    const form = (a, f) => (f.isInt ? `$${a} + ${kRoot(f.n, b)}$` : `$${a} + \\dfrac{${f.n === 1 ? '' : f.n}\\sqrt{${b}}}{${f.d}}$`);
-    const ans = form(k, q);
+    const form = (av, f) => {
+      const s = f.n < 0 ? '-' : '+'; const fa = f.n < 0 ? f.neg() : f;
+      return fa.isInt ? `$${av} ${s} ${kRoot(fa.n, b)}$` : `$${av} ${s} \\dfrac{${fa.n === 1 ? '' : fa.n}\\sqrt{${b}}}{${fa.d}}$`;
+    };
+    const ans = form(a, q);
+    const den = `${m > 1 ? m : ''}\\sqrt{${b}}`;
+    const cs = c < 0 ? '-' : '+'; const ca = Math.abs(c);
     return {
-      prompt: `Simplify $\\dfrac{\\sqrt{${top}} + ${c}}{\\sqrt{${b}}}$<br>Give your answer in the form $a + \\dfrac{p\\sqrt{${b}}}{q}$ where $a$, $p$ and $q$ are integers.`,
+      prompt: `Simplify $\\dfrac{\\sqrt{${top}} ${cs} ${ca}}{${den}}$<br>Give your answer in the form $a ${cs} \\dfrac{p\\sqrt{${b}}}{q}$ where $a$, $p$ and $q$ are integers.`,
       answer: ans,
-      distractors: uniq([form(k, frac(c, 1)), form(k * b, q), form(k, frac(c, b * b)), form(k + 1, q), form(k, q.add(1)), form(k * k, q)], ans),
+      distractors: uniq([form(a, frac(c, m)), form(k * b, q), form(a, frac(c, m * b * b)), form(a + 1, q), form(a, q.neg()), form(k * k, q), form(k, q)].filter((s) => s !== ans), ans),
       solution: [
         `Simplify the surd on top first: $\\sqrt{${top}} = ${kRoot(k, b)}$.`,
-        `Multiply top and bottom by $\\sqrt{${b}}$: $\\dfrac{(${kRoot(k, b)} + ${c})\\sqrt{${b}}}{${b}} = \\dfrac{${k * b} + ${c}\\sqrt{${b}}}{${b}}$`,
-        `Split the fraction: $\\dfrac{${k * b}}{${b}} + \\dfrac{${c}\\sqrt{${b}}}{${b}} = ${k} + \\dfrac{${c}\\sqrt{${b}}}{${b}}$`,
-        `Answer: $${k} + \\dfrac{${c}\\sqrt{${b}}}{${b}}$`,
+        `Multiply top and bottom by $\\sqrt{${b}}$: $\\dfrac{(${kRoot(k, b)} ${cs} ${ca})\\sqrt{${b}}}{${m * b}} = \\dfrac{${k * b} ${cs} ${ca}\\sqrt{${b}}}{${m * b}}$`,
+        `Split the fraction and simplify each part: $\\dfrac{${k * b}}{${m * b}} = ${a}$ and $\\dfrac{${ca}\\sqrt{${b}}}{${m * b}}${Math.abs(q.n) !== ca || q.d !== m * b ? ` = ${surdTex(0, q.n < 0 ? q.neg() : q, b)}` : ''}$`,
+        `Answer: ${ans}`,
       ],
     };
   }

@@ -148,10 +148,30 @@ export const fracCompare = gen('num-frac-compare', 'num-equiv-fractions', (rng, 
 }, { title: 'Compare and order fractions' });
 
 export const fracMissing = gen('num-frac-missing', 'num-equiv-fractions', (rng, d) => {
-  const f = properFrac(rng, size(d, [2, 3, 4, 5], [3, 4, 5, 6, 7, 8], [6, 7, 8, 9, 11, 12]));
-  const k = int(rng, 2, size(d, 5, 9, 12));
+  const f = properFrac(rng, size(d, [2, 3, 4, 5], [3, 4, 5, 6, 7, 8], [3, 4, 5, 6, 7, 8]));
+  const k = int(rng, 2, size(d, 5, 9, 9));
   const where = pick(rng, d === 'easy' ? ['top'] : ['top', 'bottom', 'top']);
-  const big = frac(1, 1); void big;
+  if (d === 'hard') {
+    // neither fraction is in its simplest form: e.g. 6/9 = ?/15 – simplify first, then scale
+    let k1 = int(rng, 2, 6);
+    if (k1 === k) k1 += 1;
+    const N1 = f.n * k1; const D1 = f.d * k1; const N = f.n * k; const D = f.d * k;
+    if (D % D1 === 0 || N % N1 === 0) throw new Error('retry');
+    const ans = where === 'top' ? N : D;
+    const shown = where === 'top' ? `\\frac{${N1}}{${D1}} = \\frac{\\square}{${D}}` : `\\frac{${N1}}{${D1}} = \\frac{${N}}{\\square}`;
+    const wrongs = where === 'top' ? [N1 + (D - D1), Math.round(N1 * D / D1 + 1), D - D1, ans + f.n, ans - f.n] : [D1 + (N - N1), N + (D1 - N1), ans + f.d, ans - f.d, D1 * N / N1 + 1];
+    return {
+      prompt: `Work out the missing number.<br>$${shown}$`,
+      answer: num(ans),
+      distractors: uniq(wrongs.filter((v) => Number.isInteger(v) && v > 0 && v !== ans).map((v) => num(v)), num(ans)),
+      typed: { kind: 'number', value: ans },
+      solution: [
+        `${where === 'top' ? D1 : N1} does not go exactly into ${where === 'top' ? D : N}, so first simplify: $\\frac{${N1}}{${D1}} = ${T(f)}$ (divide top and bottom by ${k1}).`,
+        `Now $${T(f)} = ${where === 'top' ? `\\frac{\\square}{${D}}` : `\\frac{${N}}{\\square}`}$: the ${where === 'top' ? 'denominator' : 'numerator'} is multiplied by ${k}, so $${where === 'top' ? f.n : f.d} \\times ${k} = ${ans}$.`,
+        `Answer: ${ans}`,
+      ],
+    };
+  }
   const N = f.n * k; const D = f.d * k;
   const ans = where === 'top' ? N : D;
   const shown = where === 'top' ? `\\frac{${f.n}}{${f.d}} = \\frac{\\square}{${D}}` : `\\frac{${f.n}}{${f.d}} = \\frac{${N}}{\\square}`;
@@ -259,7 +279,7 @@ const UNIT_FRAC = [
 export const foaAsFraction = gen('num-foa-as-fraction', 'num-fraction-of-amount', (rng, d) => {
   if (d === 'easy' || chance(rng, 0.4)) {
     let a; let b;
-    do { b = int(rng, 6, size(d, 30, 60, 90)); a = int(rng, 2, d === 'hard' ? b * 2 : b - 1); } while (gcd(a, b) === 1 || a === b);
+    do { b = int(rng, size(d, 6, 12, 24), size(d, 30, 60, 120)); a = int(rng, 2, b - 1); } while (gcd(a, b) === 1);
     const ans = frac(a, b);
     return {
       prompt: `Write ${a} as a fraction of ${b}. Give your answer in its simplest form.`,
@@ -313,7 +333,7 @@ export const foaReverse = gen('num-foa-reverse', 'num-fraction-of-amount', (rng,
     typed: { kind: 'number', value: whole },
     solution: [
       `$${T(f)}$ of the total is ${num(v)}.`,
-      `So $\\frac{1}{${f.d}}$ is $${tnum(v)} \\div ${f.n} = ${tnum(v / f.n)}$.`,
+      ...(f.n > 1 ? [`So $\\frac{1}{${f.d}}$ is $${tnum(v)} \\div ${f.n} = ${tnum(v / f.n)}$.`] : []),
       `The whole is $\\frac{${f.d}}{${f.d}}$: $${tnum(v / f.n)} \\times ${f.d} = ${tnum(whole)}$.`,
       `Answer: ${fmt(whole)}`,
     ],
@@ -467,19 +487,22 @@ export const fmdMixedNumbers = gen('num-fmd-mixed', 'num-fraction-mul-div', (rng
     const op = div ? '\\div' : '\\times';
     const wA = Math.floor(A.value()); const fA = A.sub(wA);
     const wB = Math.floor(B.value()); const fB = B.sub(wB);
-    const naive = div ? null : frac(wA * wB, 1).add(B.isInt ? fA.mul(wB) : fA.mul(fB));
+    // Classic slip: multiply whole parts and fraction parts separately (only wrong when both are mixed numbers);
+    // with a whole-number multiplier the slip is forgetting to multiply the fraction part.
+    const naive = div ? null : B.isInt ? frac(wA * wB, 1).add(fA) : frac(wA * wB, 1).add(fA.mul(fB));
     const fmt = (f) => (f.isInt ? `$${f.n}$` : F(f, true));
     const wrong = [naive, div ? A.mul(B) : A.div(B), div ? B.div(A) : null, ans.add(1), ans.value() > 1 ? ans.sub(1) : null,
       ans.add(frac(1, ans.d === 1 ? 2 : ans.d)), ans.isInt ? ans.add(frac(1, 2)) : ans.sub(frac(1, ans.d)), frac(A.n * B.n + 1, A.d * B.d)].filter((f) => f && !f.eq(ans) && f.n > 0);
+    const mixedAns = !ans.isInt && ans.n > ans.d;
     return {
-      prompt: `Work out $${T(A, true)} ${op} ${B.isInt ? B.n : T(B, true)}$<br>Give your answer as a mixed number in its simplest form.`,
+      prompt: `Work out $${T(A, true)} ${op} ${B.isInt ? B.n : T(B, true)}$<br>Give your answer ${mixedAns ? 'as a mixed number ' : ''}in its simplest form.`,
       answer: fmt(ans),
       distractors: uniq(wrong.map(fmt), fmt(ans)),
       typed: { kind: 'number', value: ans },
       solution: [
         `First write each mixed number as an improper fraction: $${T(A, true)} = ${T(A)}$${B.isInt ? '' : ` and $${T(B, true)} = ${T(B)}$`}.`,
         div ? `Dividing: flip the second fraction and multiply: $${T(A)} \\times ${T(B.inv())}$` : `Multiply tops and bottoms: $${T(A)} \\times ${T(B)}$`,
-        `$= ${T(ans)}${ans.isInt ? '' : ` = ${T(ans, true)}`}$${naive && !div ? ` (multiplying the whole numbers and fractions separately is wrong – that gives ${fmt(naive)})` : ''}`,
+        `$= ${T(ans)}${mixedAns ? ` = ${T(ans, true)}` : ''}$${naive && !naive.eq(ans) ? (B.isInt ? ` (both the whole part and the fraction part must be multiplied by ${B.n} – multiplying only the whole part gives ${fmt(naive)})` : ` (multiplying the whole numbers and the fractions separately is wrong – that gives ${fmt(naive)})`) : ''}`,
         `Answer: ${fmt(ans)}`,
       ],
     };
@@ -517,19 +540,19 @@ export const fmdReciprocal = gen('num-fmd-reciprocal', 'num-fraction-mul-div', (
 
 // Multi-step "fraction of the rest" problems. Each returns {p, total, f1, f2, ask, labels}
 const REST_CTX = [
-  { who: 'people at a concert', a: 'are adults', b: 'of the rest are teenagers', c: 'children' },
-  { who: 'students in Year 9', a: 'walk to school', b: 'of the rest come by bus', c: 'students who come by car' },
-  { who: 'books in a library box', a: 'are fiction', b: 'of the rest are science books', c: 'books of other kinds' },
-  { who: 'cars in a car park', a: 'are white', b: 'of the rest are black', c: 'cars of other colours' },
-  { who: 'sweets in a jar', a: 'are red', b: 'of the remaining sweets are green', c: 'sweets of other colours' },
-  { who: 'tickets for a show', a: 'are sold online', b: 'of the rest are sold at the box office', c: 'unsold tickets' },
-  { who: 'trees in a wood', a: 'are oak', b: 'of the rest are beech', c: 'trees of other types' },
-  { who: 'emails in Hassan\'s inbox', a: 'are spam', b: 'of the rest are from school', c: 'other emails' },
-  { who: 'animals on a farm', a: 'are sheep', b: 'of the rest are cows', c: 'other animals' },
-  { who: 'seats on a plane', a: 'are economy', b: 'of the rest are business class', c: 'first-class seats' },
-  { who: 'runners in a race', a: 'finish in under an hour', b: 'of the rest finish in under two hours', c: 'runners who take two hours or more' },
-  { who: 'pupils at a sports day', a: 'take part in a race', b: 'of the rest take part in a field event', c: 'pupils who take part in neither' },
-  { who: 'photos on Erin\'s phone', a: 'are of her family', b: 'of the rest are of her friends', c: 'other photos' },
+  { who: 'people at a concert', a: 'are adults', b: 'of the rest are teenagers', c: 'The others are children. How many children are there?' },
+  { who: 'students in Year 9', a: 'walk to school', b: 'of the rest come by bus', c: 'The rest come by car. How many come by car?' },
+  { who: 'books in a library box', a: 'are fiction', b: 'of the rest are science books', c: 'The rest are history books. How many history books are there?' },
+  { who: 'cars in a car park', a: 'are white', b: 'of the rest are black', c: 'The rest are red. How many red cars are there?' },
+  { who: 'sweets in a jar', a: 'are red', b: 'of the remaining sweets are green', c: 'The rest are yellow. How many yellow sweets are there?' },
+  { who: 'tickets for a show', a: 'are sold online', b: 'of the rest are sold at the box office', c: 'The rest are not sold. How many tickets are not sold?' },
+  { who: 'trees in a wood', a: 'are oak', b: 'of the rest are beech', c: 'The rest are birch. How many birch trees are there?' },
+  { who: 'emails in Hassan\'s inbox', a: 'are spam', b: 'of the rest are from school', c: 'The rest are from friends. How many are from friends?' },
+  { who: 'animals on a farm', a: 'are sheep', b: 'of the rest are cows', c: 'The rest are pigs. How many pigs are there?' },
+  { who: 'seats on a plane', a: 'are economy', b: 'of the rest are business class', c: 'The rest are first class. How many first-class seats are there?' },
+  { who: 'runners in a race', a: 'finish in under an hour', b: 'of the rest finish in under two hours', c: 'The rest take two hours or more. How many runners take two hours or more?' },
+  { who: 'pupils at a sports day', a: 'take part in a race', b: 'of the rest take part in a field event', c: 'The rest help to run the day. How many pupils help?' },
+  { who: 'photos on Erin\'s phone', a: 'are of her family', b: 'of the rest are of her friends', c: 'The rest are of her pets. How many photos are of her pets?' },
 ];
 
 export const fpRemaining = gen('num-fp-remaining', 'num-fraction-problems', (rng, d) => {
@@ -540,7 +563,7 @@ export const fpRemaining = gen('num-fp-remaining', 'num-fraction-problems', (rng
   const n1 = total * f1.value(); const rest = total - n1; const n2 = rest * f2.value(); const left = rest - n2;
   if (![n1, n2, left].every(Number.isInteger) || left <= 0) throw new Error('retry');
   return {
-    prompt: `There are ${num(total)} ${ctx.who}. $${T(f1)}$ ${ctx.a}. $${T(f2)}$ ${ctx.b}. How many ${ctx.c} are there?`,
+    prompt: `There are ${num(total)} ${ctx.who}. $${T(f1)}$ ${ctx.a}. $${T(f2)}$ ${ctx.b}. ${ctx.c}`,
     answer: num(left),
     distractors: uniq([total - n1 - total * f2.value(), n2, rest, total * (1 - f1.value() - f2.value()), n1, left + n2 - n1].filter((v) => Number.isInteger(v) && v > 0 && v !== left).map((v) => num(v)), num(left)),
     typed: { kind: 'number', value: left },
@@ -571,9 +594,16 @@ const SPEND_CTX = [
 
 export const fpReverse = gen('num-fp-reverse', 'num-fraction-problems', (rng, d) => {
   const f = size(d, frac(1, pick(rng, [3, 4, 5])), properFrac(rng, [3, 4, 5, 8]), properFrac(rng, [5, 7, 8, 9, 12]));
-  const whole = f.d * int(rng, size(d, 3, 4, 5), size(d, 12, 20, 30));
+  // realistic range for the original amount in each context (same order as SPEND_CTX)
+  const RANGES = [[30, 200], [200, 2000], [40, 300], [6, 40], [200, 1500], [300, 1200], [500, 3000], [30, 150], [1000, 8000], [300, 1500], [500, 5000], [800, 2500], [20, 60]];
+  const ci = int(rng, 0, SPEND_CTX.length - 1);
+  const [lo, hi] = RANGES[ci];
+  const step = f.d * (hi >= 1000 ? 10 : hi >= 200 ? 5 : 1);
+  const kLo = Math.ceil(lo / step); const kHi = Math.floor(hi / step);
+  if (kHi < kLo) throw new Error('retry');
+  const whole = step * int(rng, kLo, kHi);
   const left = whole - whole * f.value();
-  const c = pick(rng, SPEND_CTX)(f, left);
+  const c = SPEND_CTX[ci](f, left);
   const fmt = (x) => (c.m ? money(x) : c.u ? `${num(x)} ${c.u}` : num(x));
   const rem = frac(f.d - f.n, f.d);
   return {
@@ -583,7 +613,7 @@ export const fpReverse = gen('num-fp-reverse', 'num-fraction-problems', (rng, d)
     typed: { kind: 'number', value: whole },
     solution: [
       `If $${T(f)}$ has gone, then $1 - ${T(f)} = ${T(rem)}$ is left.`,
-      `So $${T(rem)}$ of the whole is ${num(left)}, and $\\frac{1}{${f.d}}$ is $${tnum(left)} \\div ${rem.n} = ${tnum(left / rem.n)}$.`,
+      `So $${T(rem)}$ of the whole is ${num(left)}${rem.n > 1 ? `, and $\\frac{1}{${f.d}}$ is $${tnum(left)} \\div ${rem.n} = ${tnum(left / rem.n)}$` : ''}.`,
       `The whole: $${tnum(left / rem.n)} \\times ${f.d} = ${tnum(whole)}$`,
       `Answer: ${fmt(whole)} (not $${tnum(left)} + ${T(f)}$ of ${num(left)} – the fraction is of the <b>original</b> amount)`,
     ],
@@ -612,7 +642,7 @@ export const fpFractionOfFraction = gen('num-fp-fraction-of-fraction', 'num-frac
   const f2 = properFrac(rng, size(d, [2, 3, 4], [3, 4, 5, 6], [4, 5, 6, 9]));
   const askOther = d === 'hard' && chance(rng, 0.5);
   const ans = askOther ? f1.mul(frac(1).sub(f2)) : f1.mul(f2);
-  const q = `What fraction of all the ${group} are ${askOther ? notTarget : target}?`;
+  const q = `What fraction of all the ${group.replace(/ an? /, " the ")} are ${askOther ? notTarget : target}?`;
   return {
     prompt: `$${T(f1)}$ of the ${group} ${p1}. $${T(f2)}$ ${ofWhat} ${p2}. ${q}`,
     answer: F(ans),
