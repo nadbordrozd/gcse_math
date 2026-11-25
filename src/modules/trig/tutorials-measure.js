@@ -5,6 +5,8 @@ import { plane } from '../../svg.js';
 import { fig, rightTriangleFig, FILL, FILL2, ACCENT, ACCENT2 } from './diagrams.js';
 import { cuboidFig, pyramidFig } from './solids.js';
 import { triFig } from './nonright.js';
+import { altitudeFig } from './trigonometry.js';
+import { triPrism, edges } from './diagrams.js';
 
 /* ------------------------------------------------------------------ */
 /* Diagrams                                                            */
@@ -37,8 +39,9 @@ const exactFigs = () => columns(
   fig({
     pts: { A: [0, Math.sqrt(3)], B: [-1, 0], C: [1, 0], M: [0, 0] }, nda: false, width: 240, height: 220, pad: 30,
     draw: (g) => g.poly('ABC') + g.seg('A', 'M', { dash: '5 4', color: ACCENT }) + g.right('M', 'C', 'A', 9)
-      + g.side('A', 'B', '2') + g.side('A', 'C', '2') + g.side('M', 'C', '1') + g.side('B', 'M', '1') + g.side('M', 'A', '√3', { inside: 'C', color: ACCENT })
-      + g.angle('C', 'A', 'B', '60°') + g.angle('A', 'B', 'M', '30°', { r: 26 }),
+      + g.poly(['A', 'M', 'C'], { fill: 'var(--d-fill2, #fde9d9)' }) + g.right('M', 'C', 'A', 9)
+      + g.side('A', 'B', '2') + g.side('A', 'C', '2') + g.side('M', 'C', '1') + g.side('B', 'M', '1') + g.side('M', 'A', '√3', { inside: 'B', color: ACCENT })
+      + g.angle('C', 'A', 'B', '60°') + g.angle('A', 'M', 'C', '30°', { r: 26 }),
   }),
   fig({
     pts: { A: [0, 0], B: [1, 0], C: [0, 1] }, nda: false, width: 220, height: 220, pad: 34,
@@ -54,6 +57,47 @@ const areaFig = () => fig({
     + g.side('A', 'C', 'b') + g.side('A', 'B', 'c') + g.side('B', 'C', 'a') + g.side('C', 'H', 'h', { inside: 'A', color: ACCENT, t: 0.45 })
     + g.angle('A', 'B', 'C') + g.polyNames('ABC'),
 });
+
+// Quadrilateral ABCD with diagonal BD (sine/cosine chain).
+const quadFig = () => {
+  const r = (deg) => (deg * Math.PI) / 180;
+  const A = [0, 0]; const B = [7, 0]; const D = [9 * Math.cos(r(75)), 9 * Math.sin(r(75))];
+  const bd = Math.hypot(D[0] - B[0], D[1] - B[1]); const u = [(D[0] - B[0]) / bd, (D[1] - B[1]) / bd];
+  const rot = (v, t) => [v[0] * Math.cos(r(t)) - v[1] * Math.sin(r(t)), v[0] * Math.sin(r(t)) + v[1] * Math.cos(r(t))];
+  const bc = (bd * Math.sin(r(70))) / Math.sin(r(60)); const w = rot(u, -50);
+  const C = [B[0] + w[0] * bc, B[1] + w[1] * bc];
+  return fig({
+    pts: { A, B, C, D }, width: 360, height: 250,
+    draw: (g) => g.poly('ABCD') + g.seg('B', 'D') + g.angle('A', 'B', 'D', '75°') + g.angle('C', 'D', 'B', '60°') + g.angle('B', 'D', 'C', '50°')
+      + g.side('A', 'B', '7 cm') + g.side('A', 'D', '9 cm') + g.side('C', 'D', 'x') + g.polyNames('ABCD'),
+  });
+};
+
+// A journey A -> B -> C with north lines at A and B.
+const journeyFig = () => {
+  const r = (deg) => (deg * Math.PI) / 180;
+  const A = [0, 0]; const B = [8 * Math.sin(r(60)), 8 * Math.cos(r(60))]; const C = [B[0] + 5 * Math.sin(r(170)), B[1] + 5 * Math.cos(r(170))];
+  return fig({
+    pts: { A, B, C }, width: 360, height: 260, bounds: [[0, 5.8], [B[0], B[1] + 3.8]],
+    draw: (g) => g.seg('A', [0, 5], { dash: '4 4', width: 1.4 }) + g.seg('B', [B[0], B[1] + 3], { dash: '4 4', width: 1.4 }) + g.textAt([0, 5], 0, -10, 'N', { size: 13 }) + g.textAt([B[0], B[1] + 3], 0, -10, 'N', { size: 13 })
+      + g.seg('A', 'B') + g.seg('B', 'C') + g.seg('A', 'C', { dash: '6 4', color: ACCENT })
+      + g.angle('A', [0, 5], 'B', '60°', { r: 30 }) + g.angle('B', 'A', 'C', '70°', { r: 24 })
+      + g.side('A', 'B', '8 km', { inside: 'C' }) + g.side('B', 'C', '5 km', { inside: 'A' }) + g.side('A', 'C', 'd', { inside: 'B', color: ACCENT })
+      + g.name('A', 'A', { dir: [-0.7, 0.7] }) + g.name('B', 'B', { dir: [1, -0.2] }) + g.name('C', 'C', { dir: [0.6, 0.8] }),
+  });
+};
+
+// Triangular prism for the 3D page.
+const prismFig = () => {
+  const pr = triPrism(5, 7, 20 * 0.55);
+  return fig({
+    pts: pr.pts, width: 360, height: 230,
+    draw: (g) => g.poly('ABC', { fillOpacity: 0.55, width: 0 }) + edges(g, pr.visible) + edges(g, pr.hidden, { dash: '5 4', width: 1.4 }) + g.right('B', 'A', 'C', 9)
+      + g.seg('A', 'F', { color: ACCENT, width: 2.2 }) + g.seg('B', 'F', { dash: '5 4', color: ACCENT, width: 1.6 }) + g.angle('F', 'B', 'A', 'x', { r: 30 })
+      + g.side('A', 'B', '7 cm', { inside: 'C' }) + g.side('B', 'C', '5 cm', { inside: 'A' }) + g.side('C', 'F', '20 cm', { inside: 'A' })
+      + ['A', 'B', 'C', 'D', 'F'].map((v) => g.name(v, v, { dir: { A: [-1, -0.2], B: [-0.7, 0.7], C: [0.3, 1], D: [0, -1], F: [1, 0] }[v], size: 14, offset: 4 })).join('') + g.freeName('E', 'E', { size: 14, offset: 3 }),
+  });
+};
 
 // Bearings: two ships leave a harbour.
 const shipsFig = () => {
@@ -108,6 +152,7 @@ export const measureTutorials = [
         ['$y$ is a shorter side, so subtract: $y^2 = 11^2 - 7^2 = 121 - 49 = 72$', '$y = \\sqrt{72} = 8.4852\\ldots$',
           'If the question asks for an <b>exact</b> answer, leave it as a surd: $\\sqrt{72} = \\sqrt{36 \\times 2} = 6\\sqrt{2}$.'],
         '$y = 8.5$ cm (or exactly $6\\sqrt{2}$ cm)'),
+      note('If a side is a surd, square it carefully ([[num-surds-operations]]): $(4\\sqrt{3})^2 = 4^2 \\times (\\sqrt{3})^2 = 16 \\times 3 = 48$, not $4 \\times 3$. So a triangle with hypotenuse $4\\sqrt{3}$ and one side $6$ has third side $\\sqrt{48 - 36} = \\sqrt{12} = 2\\sqrt{3}$.'),
       h('Is it right-angled?'),
       p('The theorem also works backwards: if $a^2 + b^2 = c^2$ for the longest side $c$, the triangle <b>is</b> right-angled. For sides $7$, $24$ and $25$: $7^2 + 24^2 = 49 + 576 = 625 = 25^2$, so it is. For $6$, $8$ and $11$: $36 + 64 = 100$, but $11^2 = 121$, so it is not.'),
       mistake('adding when you want a shorter side. If you add $11^2 + 7^2$ you get $\\sqrt{170} = 13.0\\ldots$, which is longer than the hypotenuse – impossible.'),
@@ -150,7 +195,7 @@ export const measureTutorials = [
       example('Example 4 – two triangles that share a side',
         '$D$, $B$ and $C$ lie on a straight line and $AB$ is perpendicular to it. $AD = 13$ cm, $DB = 5$ cm and $BC = 16$ cm. Find $AC$.',
         ['Triangle $ABD$ first: $AB^2 = 13^2 - 5^2 = 144$, so $AB = 12$ cm.', 'Then triangle $ABC$: $AC^2 = 12^2 + 16^2 = 144 + 256 = 400$', '$AC = 20$'],
-        '$AC = 20$ cm'),
+        '$AC = 20$ cm', { visual: altitudeFig({ db: 5, bc: 16, h: 12, labels: { AD: '13 cm', DB: '5 cm', BC: '16 cm' } }) }),
       mistake('using the whole base of an isosceles triangle. The height meets the base at its midpoint, so use <b>half</b> the base.'),
       note('With coordinates, negative numbers do not matter: the difference is squared, so $(-5)^2 = 25$. From $(-3, 4)$ to $(2, -1)$: across $5$, down $5$, distance $\\sqrt{50} = 7.07\\ldots$'),
       h('What next?'),
@@ -188,6 +233,14 @@ export const measureTutorials = [
         'A pyramid has a square base of side $8$ cm and its top $E$ is $10$ cm vertically above the centre $M$ of the base. Find the angle between the edge $EA$ and the base.',
         ['$M$ is halfway along the diagonal $AC$. $AC = \\sqrt{8^2 + 8^2} = \\sqrt{128}$, so $AM = \\frac{1}{2}\\sqrt{128} = 5.656\\ldots$ cm.', 'Triangle $AME$ has its right angle at $M$: $\\tan\\theta = \\dfrac{10}{5.656\\ldots}$', '$\\theta = 60.503\\ldots^\\circ$'],
         '$60.5^\\circ$', { visual: pyramidFig({ s: 8, h: 10, labels: { AB: '8 cm' }, angle: 'θ' }) }),
+      example('Example 4 – working backwards from the diagonal',
+        'A cuboid has a $14$ cm by $15$ cm base and a space diagonal of $25$ cm. Find its height $h$ to 1 decimal place.',
+        ['Use $d^2 = l^2 + w^2 + h^2$: $25^2 = 14^2 + 15^2 + h^2$', '$h^2 = 625 - 196 - 225 = 204$', '$h = \\sqrt{204} = 14.282\\ldots$'],
+        '$h = 14.3$ cm'),
+      example('Example 5 – a triangular prism',
+        'A triangular prism has a cross-section $ABC$ with a right angle at $B$, $AB = 7$ cm (vertical) and $BC = 5$ cm. The prism is $20$ cm long. Find the angle $x$ between $AF$ and the base $BCFE$.',
+        ['The angle is in triangle $ABF$, with the right angle at $B$. First find $BF$ across the rectangular base: $BF = \\sqrt{5^2 + 20^2} = \\sqrt{425} = 20.615\\ldots$ cm.', '$AB$ is opposite $x$ and $BF$ is adjacent: $\\tan x = \\dfrac{7}{20.615\\ldots}$', '$x = 18.754\\ldots^\\circ$'],
+        '$18.8^\\circ$', { visual: prismFig() }),
       mistake('using half the <b>side</b> of a square base instead of half the <b>diagonal</b> to reach the centre. The centre is $5.66$ cm from a corner here, not $4$ cm.'),
       mistake('using the wrong angle. "The angle between a line and a plane" is the angle between the line and the line directly underneath it on the plane (here $AG$ and $AC$).'),
       note('Sense check: the space diagonal is the longest straight line inside a cuboid, so it must be longer than every edge and every face diagonal.'),
@@ -199,7 +252,7 @@ export const measureTutorials = [
     id: 'trig-exact-values',
     title: 'Exact trig values',
     skills: ['trig-exact-values'],
-    prereqs: ['trig-sohcahtoa-side', 'trig-pythagoras', 'num-surds-simplify'],
+    prereqs: ['trig-sohcahtoa-side', 'trig-pythagoras', 'num-surds-simplify', 'num-surds-rationalise'],
     summary: 'Know sin, cos and tan of 0°, 30°, 45°, 60° and 90° without a calculator, and use them to find exact answers.',
     body: [
       h('Why these angles?'),
@@ -208,13 +261,14 @@ export const measureTutorials = [
       p('<b>Half an equilateral triangle.</b> An equilateral triangle of side 2 has all angles $60^\\circ$. Cut it in half: you get a right-angled triangle with hypotenuse 2, short side 1 and angles $30^\\circ$ and $60^\\circ$. By [[trig-pythagoras|Pythagoras]] the third side is $\\sqrt{2^2 - 1^2} = \\sqrt{3}$.',
         '<b>Half a square.</b> A right-angled isosceles triangle with shorter sides 1 has angles $45^\\circ$, $45^\\circ$, $90^\\circ$, and hypotenuse $\\sqrt{1^2 + 1^2} = \\sqrt{2}$.'),
       figure(exactFigs()),
+      p('<b>$0^\\circ$ and $90^\\circ$.</b> Imagine squashing a right-angled triangle so its angle $\\theta$ shrinks to $0^\\circ$: the opposite side shrinks to $0$ and the adjacent side becomes as long as the hypotenuse. So $\\sin 0^\\circ = 0$, $\\cos 0^\\circ = 1$ and $\\tan 0^\\circ = 0$. At $90^\\circ$ the roles swap: $\\sin 90^\\circ = 1$ and $\\cos 90^\\circ = 0$ (and $\\tan 90^\\circ$ has no value). You can also read these off the [[gr-trig-graphs|graphs]].'),
       p('Now read off [[trig-sohcahtoa-side|SOH CAH TOA]]. For example $\\sin 30^\\circ = \\frac{\\text{O}}{\\text{H}} = \\frac{1}{2}$ and $\\tan 60^\\circ = \\frac{\\sqrt{3}}{1} = \\sqrt{3}$.'),
       key('Exact values', tbl([
         ['', '$0^\\circ$', '$30^\\circ$', '$45^\\circ$', '$60^\\circ$', '$90^\\circ$'],
         ['$\\sin$', '$0$', '$\\frac{1}{2}$', '$\\frac{\\sqrt{2}}{2}$', '$\\frac{\\sqrt{3}}{2}$', '$1$'],
         ['$\\cos$', '$1$', '$\\frac{\\sqrt{3}}{2}$', '$\\frac{\\sqrt{2}}{2}$', '$\\frac{1}{2}$', '$0$'],
         ['$\\tan$', '$0$', '$\\frac{1}{\\sqrt{3}}$', '$1$', '$\\sqrt{3}$', 'no value'],
-      ]) + p('$\\frac{\\sqrt{2}}{2}$ is the same as $\\frac{1}{\\sqrt{2}}$, and $\\frac{1}{\\sqrt{3}}$ is the same as $\\frac{\\sqrt{3}}{3}$.')),
+      ]) + p('$\\frac{\\sqrt{2}}{2}$ is the same as $\\frac{1}{\\sqrt{2}}$, and $\\frac{1}{\\sqrt{3}}$ is the same as $\\frac{\\sqrt{3}}{3}$: multiply top and bottom by the root to [[num-surds-rationalise|rationalise the denominator]], e.g. $\\frac{1}{\\sqrt{3}} = \\frac{1 \\times \\sqrt{3}}{\\sqrt{3} \\times \\sqrt{3}} = \\frac{\\sqrt{3}}{3}$.')),
       note('Patterns help: sin goes up $0, \\frac{1}{2}, \\frac{\\sqrt{2}}{2}, \\frac{\\sqrt{3}}{2}, 1$ and cos is the same list backwards. That is because $\\sin\\theta = \\cos(90^\\circ - \\theta)$: the side opposite one acute angle is adjacent to the other.'),
       example('Example 1 – an expression',
         'Work out the exact value of $\\sin 60^\\circ \\times \\tan 30^\\circ$.',
@@ -232,6 +286,10 @@ export const measureTutorials = [
         'The side opposite a $30^\\circ$ angle is $6$ cm. Find the hypotenuse.',
         ['O and H → sin: $\\sin 30^\\circ = \\dfrac{6}{x}$, so $x = \\dfrac{6}{\\sin 30^\\circ}$.', '$x = 6 \\div \\dfrac{1}{2} = 12$'],
         '$12$ cm'),
+      example('Example 5 – rationalising',
+        'The side opposite a $60^\\circ$ angle is $27$ cm. Find the exact length $x$ of the side adjacent to it.',
+        ['O and A → tan: $\\tan 60^\\circ = \\dfrac{27}{x}$, so $x = \\dfrac{27}{\\tan 60^\\circ} = \\dfrac{27}{\\sqrt{3}}$.', 'Rationalise: $\\dfrac{27}{\\sqrt{3}} = \\dfrac{27\\sqrt{3}}{\\sqrt{3} \\times \\sqrt{3}} = \\dfrac{27\\sqrt{3}}{3} = 9\\sqrt{3}$'],
+        '$9\\sqrt{3}$ cm'),
       mistake('mixing up $\\sin 30^\\circ$ and $\\sin 60^\\circ$. Picture the half-equilateral triangle: the short side (1) is opposite the small angle ($30^\\circ$), so $\\sin 30^\\circ = \\frac{1}{2}$.'),
       note('Sin and cos are never bigger than 1. If you get $\\sin x = \\sqrt{3}$, you have used the tan value.'),
       h('What next?'),
@@ -301,7 +359,11 @@ export const measureTutorials = [
         'A triangle has sides $8$ cm and $10$ cm and an area of $30$ cm². The angle $C$ between those sides is acute. Find $C$ to 1 decimal place.',
         ['$30 = \\frac{1}{2} \\times 8 \\times 10 \\times \\sin C = 40\\sin C$', '$\\sin C = \\dfrac{30}{40} = 0.75$', '$C = \\sin^{-1}(0.75) = 48.590\\ldots^\\circ$'],
         '$C = 48.6^\\circ$'),
-      example('Example 3 – a segment of a circle',
+      example('Example 3 – working backwards to a side',
+        'A triangle has area $84$ cm². Two of its sides are $18$ cm and $x$ cm, with an angle of $58^\\circ$ between them. Find $x$ to 1 decimal place.',
+        ['$84 = \\frac{1}{2} \\times 18 \\times x \\times \\sin 58^\\circ = 7.632\\ldots \\times x$', '$x = \\dfrac{84}{7.632\\ldots} = 11.005\\ldots$'],
+        '$x = 11.0$ cm'),
+      example('Example 4 – a segment of a circle',
         'A circle has radius $6$ cm. Two radii make an angle of $100^\\circ$ at the centre. Find the area of the segment cut off by the chord joining their ends, to 1 decimal place.',
         ['Sector: $\\frac{100}{360} \\times \\pi \\times 6^2 = 31.415\\ldots$ cm² (see [[geo-arcs-sectors]]).', 'Triangle (two radii and the angle between them): $\\frac{1}{2} \\times 6 \\times 6 \\times \\sin 100^\\circ = 17.726\\ldots$ cm²', 'Segment = sector − triangle $= 31.415\\ldots - 17.726\\ldots = 13.689\\ldots$'],
         '$13.7$ cm²'),
@@ -344,8 +406,12 @@ export const measureTutorials = [
       example('Example 2 – a quadrilateral in two steps',
         'Quadrilateral $ABCD$ has $AB = 7$ cm, $AD = 9$ cm and angle $DAB = 75^\\circ$. In triangle $BCD$, angle $BCD = 60^\\circ$ and angle $CBD = 50^\\circ$. Find $CD$ to 1 decimal place.',
         ['Triangle $ABD$ has two sides and the angle between them, so use the cosine rule for the diagonal: $BD^2 = 7^2 + 9^2 - 2 \\times 7 \\times 9 \\times \\cos 75^\\circ = 130 - 32.611\\ldots = 97.388\\ldots$, so $BD = 9.868\\ldots$ cm.', 'Triangle $BCD$ now has an opposite pair: $BD$ is opposite the $60^\\circ$ angle at $C$. $CD$ is opposite the $50^\\circ$ angle at $B$.', 'Sine rule: $CD = \\dfrac{9.868\\ldots \\times \\sin 50^\\circ}{\\sin 60^\\circ} = 8.729\\ldots$'],
-        '$CD = 8.7$ cm'),
-      example('Example 3 – three sides',
+        '$CD = 8.7$ cm', { visual: quadFig() }),
+      example('Example 3 – a journey with a turn',
+        'A boat sails $8$ km from $A$ to $B$ on a bearing of $060^\\circ$, then $5$ km from $B$ to $C$ on a bearing of $170^\\circ$. How far is $C$ from $A$, to 1 decimal place?',
+        ['Find the angle inside the triangle at $B$. The north lines at $A$ and $B$ are parallel, so the angle between north at $B$ and the line $BA$ is $180^\\circ - 60^\\circ = 120^\\circ$ ([[geo-parallel-lines|co-interior angles]]). The bearing of $A$ from $B$ is therefore $060^\\circ + 180^\\circ = 240^\\circ$.', 'Angle $ABC = 240^\\circ - 170^\\circ = 70^\\circ$.', 'Cosine rule: $d^2 = 8^2 + 5^2 - 2 \\times 8 \\times 5 \\times \\cos 70^\\circ = 89 - 27.361\\ldots = 61.638\\ldots$', '$d = 7.851\\ldots$'],
+        '$7.9$ km', { visual: journeyFig() }),
+      example('Example 4 – three sides',
         'A triangular flower bed has sides $6$ m, $9$ m and $11$ m. Find its largest angle.',
         ['No angles are known, so use the cosine rule for an angle. The largest angle is opposite the $11$ m side.', '$\\cos\\theta = \\dfrac{6^2 + 9^2 - 11^2}{2 \\times 6 \\times 9} = \\dfrac{-4}{108}$', '$\\theta = \\cos^{-1}\\left(-\\dfrac{4}{108}\\right) = 92.122\\ldots^\\circ$'],
         '$92.1^\\circ$'),

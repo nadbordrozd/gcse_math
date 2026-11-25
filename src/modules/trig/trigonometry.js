@@ -219,7 +219,7 @@ export const sohSideWord = gen('trig-soh-side-word', 'trig-sohcahtoa-side', (rng
 }, { title: 'Trigonometry in context: find a length', word: true });
 
 /** Altitude figure: D—B—C on a line, A above B, with optional angle labels at D and C. */
-function altitudeFig({ db, bc, h, labels = {}, angles = {} }) {
+export function altitudeFig({ db, bc, h, labels = {}, angles = {} }) {
   const hD = Math.max(h, (db + bc) * 0.32);
   const pts = { D: [-Math.max(db, hD * 0.45), 0], B: [0, 0], C: [Math.max(bc, hD * 0.45), 0], A: [0, hD] };
   return fig({
@@ -674,7 +674,7 @@ export const exactTriangle = gen('trig-exact-triangle', 'trig-exact-values', (rn
       `Answer: ${tex(ans)}`,
     ],
   };
-}, { title: 'Exact sides with 30°, 45° and 60°', learn: ['trig-exact-values', 'trig-sohcahtoa-side'] });
+}, { title: 'Exact sides with 30°, 45° and 60°', learn: ['trig-exact-values', 'trig-sohcahtoa-side', 'num-surds-rationalise'] });
 
 export const sohcahtoaSideGenerators = [sohSide, sohWhich, sohSideWord, sohTwoStep];
 export const sohcahtoaAngleGenerators = [sohAngle, sohAngleWord, sohAngleTwoStep];

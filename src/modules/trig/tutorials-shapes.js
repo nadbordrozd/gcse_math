@@ -1,6 +1,6 @@
 // Learn pages: similarity, congruence, circles and vectors. Numbers in worked examples checked with node.
 import { h, p, list, steps, key, display, note, mistake, figure, columns, example, tbl } from '../../tutorial-kit.js';
-import { path as svgPath, svg, rect, line, text } from '../../svg.js';
+import { path as svgPath, svg, rect, line, text, arrow } from '../../svg.js';
 import { fig, onCircle, placeBeside, vectorGrid, FILL, FILL2, ACCENT, ACCENT2 } from './diagrams.js';
 import { circleFig, altSegFig } from './circles.js';
 import { nestedFig } from './similarity.js';
@@ -42,8 +42,8 @@ function scaleSquaresFig() {
   let out = rect(20, 90, 30, 30, { fill: FILL }) + text(35, 140, '1 × 1', { size: 13 });
   for (let i = 0; i < 3; i += 1) for (let j = 0; j < 3; j += 1) out += rect(90 + 30 * i, 30 + 30 * j, 30, 30, { fill: FILL2 });
   out += text(135, 140, '3 × 3 = 9 squares', { size: 13 });
-  out += text(250, 60, 'lengths × 3', { size: 13, anchor: 'start' }) + text(250, 82, 'areas × 3² = 9', { size: 13, anchor: 'start' }) + text(250, 104, 'volumes × 3³ = 27', { size: 13, anchor: 'start' });
-  return svg(390, 155, out + line(60, 105, 82, 105, { width: 1.4 }), { label: 'Scale factor 3 multiplies area by 9' });
+  out += text(250, 70, 'lengths × 3', { size: 13, anchor: 'start' }) + text(250, 94, 'area × 3² = 9', { size: 13, anchor: 'start' });
+  return svg(390, 155, out + arrow(56, 105, 84, 105, { width: 1.4, head: 7 }), { label: 'Scale factor 3 multiplies area by 9' });
 }
 
 // Parts of a circle: lines (left) and regions (right).
@@ -72,11 +72,23 @@ function partsFigs() {
 }
 
 const deg = (x) => `${x}°`;
+
+// Hourglass: AB parallel to DE, AE and BD crossing at C.
+const hourglassFig = (labels) => fig({
+  pts: { C: [0, 0], A: [-0.9, 0.55], B: [0.55, 0.75], E: [1.35, -0.825], D: [-0.825, -1.125] }, width: 340, height: 230,
+  draw: (g) => {
+    let out = g.poly('ABC', { fillOpacity: 0.7 }) + g.poly('CDE', { fillOpacity: 0.7 }) + g.arrows('A', 'B') + g.arrows('D', 'E');
+    for (const [k, v] of Object.entries(labels)) out += g.side(k[0], k[1], v, { inside: k.includes('C') ? (k.includes('A') || k.includes('B') ? (k.includes('A') ? 'B' : 'A') : (k.includes('E') ? 'D' : 'E')) : 'C' });
+    return out + ['A', 'B', 'D', 'E'].map((n) => g.name(n, n, { away: 'C' })).join('') + g.name('C', 'C', { dir: [1, 0] });
+  },
+});
+const thmChord = () => circleFig({ on: { A: 210, B: 300 }, ext: { M: [(Math.cos(3.665) + Math.cos(5.236)) / 2, (Math.sin(3.665) + Math.sin(5.236)) / 2] }, width: 230, height: 210, nameDirs: { M: [0.5, 1] },
+  draw: (g) => g.seg('A', 'B') + g.seg('O', 'M') + g.right('M', 'B', 'O', 9) + g.ticks('A', 'M') + g.ticks('M', 'B') });
 // Small theorem diagrams (all built from the stated angles).
 const thmCentre = () => circleFig({ on: { A: 232, B: 308, C: 90 }, width: 230, height: 210, draw: (g) => g.seg('C', 'A') + g.seg('C', 'B') + g.seg('O', 'A') + g.seg('O', 'B') + g.angle('C', 'A', 'B', 'x') + g.angle('O', 'A', 'B', '2x') });
 const thmSemi = () => circleFig({ on: { A: 180, B: 0, C: 54 }, width: 230, height: 210, draw: (g) => g.seg('A', 'B') + g.seg('A', 'C') + g.seg('B', 'C') + g.right('C', 'A', 'B', 10) });
 const thmSegment = () => circleFig({ on: { A: 209, B: 291, C: 0, D: 126 }, showO: false, width: 230, height: 210, draw: (g) => g.seg('A', 'C') + g.seg('B', 'C') + g.seg('A', 'D') + g.seg('B', 'D') + g.angle('C', 'A', 'B', 'x') + g.angle('D', 'A', 'B', 'x') });
-const thmCyclic = () => circleFig({ on: { A: 272, B: -20, C: 92, D: 204 }, showO: false, width: 230, height: 210, draw: (g) => g.poly('ABCD', { fillOpacity: 0.6 }) + g.angle('A', 'B', 'D', 'x') + g.angle('C', 'D', 'B', '180° − x') });
+const thmCyclic = () => circleFig({ on: { A: 272, B: -20, C: 92, D: 204 }, showO: false, width: 230, height: 210, draw: (g) => g.poly('ABCD', { fillOpacity: 0.6 }) + g.angle('A', 'B', 'D', 'x') + g.angle('C', 'D', 'B', 'y') });
 const thmTangent = () => {
   const A = onCircle([0, 0], 1, 300); const t = [Math.sin((300 * Math.PI) / 180), -Math.cos((300 * Math.PI) / 180)];
   return circleFig({ on: { A: 300 }, ext: { P: [A[0] + 1.1 * t[0], A[1] + 1.1 * t[1]] }, width: 230, height: 210, draw: (g) => g.seg([A[0] - 0.9 * t[0], A[1] - 0.9 * t[1]], 'P') + g.seg('O', 'A') + g.right('A', 'O', 'P', 10) });
@@ -92,7 +104,7 @@ export const shapeTutorials = [
     id: 'trig-similar-lengths',
     title: 'Similar shapes: lengths',
     skills: ['trig-similar-lengths'],
-    prereqs: ['geo-enlargement', 'rat-simplify', 'geo-angles-triangles'],
+    prereqs: ['geo-enlargement', 'geo-parallel-lines', 'geo-angles-triangles'],
     summary: 'Use a scale factor to find missing lengths in similar triangles and shapes.',
     body: [
       h('The big idea'),
@@ -107,17 +119,20 @@ export const shapeTutorials = [
       ]),
       figure(similarPairFig(), 'Equal angles are marked. Side $AB$ matches $DE$, $BC$ matches $EF$, $AC$ matches $DF$.'),
       example('Example 1 – two separate triangles',
-        'Triangles $ABC$ and $DEF$ are similar. $AB = 4$ cm, $BC = 6$ cm, $AC = 7$ cm and $DE = 10$ cm. Find $EF$ and $DF$.',
-        ['$AB$ matches $DE$: scale factor $k = \\dfrac{10}{4} = 2.5$', '$EF = 6 \\times 2.5 = 15$', '$DF = 7 \\times 2.5 = 17.5$'],
-        '$EF = 15$ cm and $DF = 17.5$ cm'),
+        'Triangles $ABC$ and $DEF$ are similar. $AB = 4$ cm, $BC = 6$ cm, $AC = 7$ cm and $DE = 10$ cm. Find $x = EF$ and $y = DF$.',
+        ['$AB$ matches $DE$: scale factor $k = \\dfrac{10}{4} = 2.5$', '$x = EF = 6 \\times 2.5 = 15$', '$y = DF = 7 \\times 2.5 = 17.5$'],
+        '$x = 15$ cm and $y = 17.5$ cm'),
       example('Example 2 – a triangle inside a triangle',
-        '$DE$ is parallel to $BC$, with $D$ on $AB$ and $E$ on $AC$. $AD = 6$ cm, $DB = 4$ cm and $DE = 9$ cm. Find $BC$.',
+        '$DE$ is parallel to $BC$, with $D$ on $AB$ and $E$ on $AC$. $AD = 6$ cm, $DB = 4$ cm and $DE = 9$ cm. Find $x = BC$.',
         ['Because $DE \\parallel BC$, the [[geo-parallel-lines|corresponding angles]] are equal, so triangles $ADE$ and $ABC$ are similar.', 'Use the <b>whole</b> side: $AB = 6 + 4 = 10$ cm. Scale factor $= \\dfrac{10}{6} = \\dfrac{5}{3}$', '$BC = 9 \\times \\dfrac{5}{3} = 15$'],
         '$BC = 15$ cm', { visual: nestedFig({ k: 10 / 6, labels: { 'A-D': '6 cm', 'D-B': '4 cm', 'D-E': '9 cm', 'B-C': 'x' } }) }),
       example('Example 3 – crossing lines',
         'Lines $AE$ and $BD$ cross at $C$, and $AB$ is parallel to $DE$. $AB = 6$ cm, $DE = 9$ cm and $AC = 4$ cm. Find $CE$.',
-        ['The angles at $C$ are vertically opposite, and alternate angles are equal, so triangles $ABC$ and $EDC$ are similar.', '$DE$ matches $AB$: scale factor $= \\dfrac{9}{6} = 1.5$', '$CE$ matches $AC$: $CE = 4 \\times 1.5 = 6$'],
-        '$CE = 6$ cm'),
+        ['The angles at $C$ are [[geo-angle-basics|vertically opposite]], and [[geo-parallel-lines|alternate angles]] are equal, so triangles $ABC$ and $EDC$ are similar. Note that $A$ matches $E$ and $B$ matches $D$.', '$DE$ matches $AB$: scale factor $= \\dfrac{9}{6} = 1.5$', '$CE$ matches $AC$: $CE = 4 \\times 1.5 = 6$'],
+        '$CE = 6$ cm', { visual: hourglassFig({ AB: '6 cm', DE: '9 cm', AC: '4 cm', CE: 'x' }) }),
+      h('Parallel lines cut sides in the same ratio'),
+      p('Because the matching sides are in the same ratio, a parallel line cuts the two sides of a triangle in the same ratio. In Example 2, $AD : DB = 6 : 4$, so $AE : EC$ is also $6 : 4$. If $AE = 7.5$ cm, then $EC = 5$ cm.',
+        'This also helps when you are given a whole length. In the crossing-lines shape, $AC : CE = AB : DE$. If $AB = 6$, $DE = 9$ and the whole line $AE = 35$ cm, then $AC : CE = 6 : 9 = 2 : 3$, and [[rat-share|sharing]] $35$ in the ratio $2 : 3$ gives $AC = 14$ cm and $CE = 21$ cm.'),
       mistake('<b>adding</b> instead of multiplying. If one side grows from $4$ to $10$ (add $6$), the others do not all grow by $6$ – they are multiplied by $2.5$.'),
       mistake('in Example 2, using $DB = 4$ instead of the whole side $AB = 10$. The triangles are $ADE$ and $ABC$, so compare $AD$ with $AB$.'),
       note('Sense check: the bigger shape must have the bigger lengths. If your scale factor is bigger than 1 but your answer got smaller, you divided when you should have multiplied.'),
@@ -129,7 +144,7 @@ export const shapeTutorials = [
     id: 'trig-congruence',
     title: 'Congruent triangles',
     skills: ['trig-congruence'],
-    prereqs: ['geo-2d-properties', 'geo-angles-triangles', 'trig-similar-lengths'],
+    prereqs: ['geo-angle-basics', 'geo-angles-triangles', 'trig-similar-lengths'],
     summary: 'Know the four conditions SSS, SAS, ASA and RHS, and use them to show two triangles are identical.',
     body: [
       h('The big idea'),
@@ -168,6 +183,10 @@ export const shapeTutorials = [
         'Which set proves triangles $ABC$ and $PQR$ congruent: (i) $\\angle A = \\angle P$, $\\angle B = \\angle Q$, $\\angle C = \\angle R$; (ii) $AB = PQ$, $BC = QR$, $\\angle A = \\angle P$; (iii) $\\angle A = \\angle P$, $AB = PQ$, $\\angle B = \\angle Q$?',
         ['(i) is AAA – only similar.', '(ii) has the angle at $A$, which is <b>not</b> between $AB$ and $BC$ (they meet at $B$) – SSA, not enough.', '(iii) has side $AB$ between angles $A$ and $B$ – ASA.'],
         '(iii)'),
+      example('Example 4 – a short proof',
+        '$ABCD$ is a kite with $AB = AD$ and $CB = CD$. Prove that triangles $ABC$ and $ADC$ are congruent.',
+        ['$AB = AD$ (given).', '$CB = CD$ (given).', '$AC = AC$ (a common side – it belongs to both triangles).', 'All three pairs of sides are equal.'],
+        'Triangles $ABC$ and $ADC$ are congruent (SSS)'),
       mistake('saying SAS when the angle is not between the two sides. Check that the angle is at the corner where the two sides meet.'),
       note('Congruent triangles can be reflections of each other – that still counts.'),
       h('What next?'),
@@ -247,6 +266,7 @@ export const shapeTutorials = [
     body: [
       h('The big idea'),
       p('Draw lines inside a circle and the angles they make obey a few fixed rules – the circle theorems. Exam questions ask you to find an angle <b>and give the reason</b>, so learn the wording too. Alongside them you still use the basic facts: [[geo-angles-triangles|angles in a triangle]] add up to $180^\\circ$, [[geo-angle-basics|angles on a straight line]] add up to $180^\\circ$, and a triangle with two radii as sides is isosceles.'),
+      p('An angle <b>stands on</b> an arc (or chord) when the two lines that make the angle go to the two ends of that arc.'),
       key('The theorems', list([
         '<b>The angle at the centre is twice the angle at the circumference</b> (both standing on the same arc).',
         '<b>The angle in a semicircle is a right angle</b> (an angle standing on a diameter is $90^\\circ$).',
@@ -257,7 +277,8 @@ export const shapeTutorials = [
         '<b>The perpendicular from the centre to a chord bisects the chord.</b>',
       ])),
       columns(figure(thmCentre(), 'Angle at the centre $= 2x$'), figure(thmSemi(), 'Angle in a semicircle'), figure(thmSegment(), 'Same segment')),
-      columns(figure(thmCyclic(), 'Cyclic quadrilateral'), figure(thmTangent(), 'Tangent ⟂ radius'), figure(thmTwoTangents(), 'Equal tangents')),
+      columns(figure(thmCyclic(), 'Cyclic quadrilateral: $x + y = 180^\\circ$'), figure(thmTangent(), 'Tangent ⟂ radius'), figure(thmTwoTangents(), 'Equal tangents')),
+      figure(thmChord(), 'The perpendicular from the centre bisects the chord: $AM = MB$.'),
       h('Where they come from'),
       p('Most of them follow from the first one. A semicircle is the case where the angle at the centre is a straight line, $180^\\circ$, so the angle at the circumference is half of that, $90^\\circ$. Two angles standing on the same chord are both half of the same angle at the centre, so they are equal. And the two opposite angles of a cyclic quadrilateral are halves of the two angles at the centre, which add up to $360^\\circ$ – so they add up to $180^\\circ$.'),
       h('Method'),
@@ -278,6 +299,14 @@ export const shapeTutorials = [
         '$PA$ is a tangent at $A$ to a circle with centre $O$. Angle $AOP = 52^\\circ$. Find angle $APO$.',
         ['A tangent and a radius meet at $90^\\circ$, so angle $OAP = 90^\\circ$.', 'Angles in triangle $OAP$: $180^\\circ - 90^\\circ - 52^\\circ = 38^\\circ$.'],
         '$38^\\circ$'),
+      example('Example 5 – equal tangents',
+        '$PA$ and $PB$ are tangents from $P$ to a circle, and angle $APB = 40^\\circ$. Find angle $PAB$.',
+        ['Tangents from the same point are equal, so $PA = PB$ and triangle $PAB$ is isosceles.', 'The base angles are equal: angle $PAB = (180^\\circ - 40^\\circ) \\div 2 = 70^\\circ$.'],
+        '$70^\\circ$'),
+      example('Example 6 – angles given as expressions',
+        '$AB$ is a diameter and $C$ is on the circle. Angle $CAB = (3x + 18)^\\circ$ and angle $ABC = (x + 28)^\\circ$. Find $x$.',
+        ['The angle in a semicircle is $90^\\circ$, so the other two angles add up to $90^\\circ$.', '$(3x + 18) + (x + 28) = 90$, so $4x + 46 = 90$.', '[[alg-solve-one-two-step|Solve]]: $4x = 44$, so $x = 11$. (Check: the angles are $51^\\circ$ and $39^\\circ$, which add to $90^\\circ$.)'],
+        '$x = 11$'),
       mistake('halving when you should double (or the other way round). The angle at the <b>centre</b> is the <b>bigger</b> one.'),
       mistake('saying opposite angles of a cyclic quadrilateral are <b>equal</b>. They add up to $180^\\circ$.'),
       note('In the centre theorem both angles must stand on the same arc. If the point on the circumference is on the small arc, the matching angle at the centre is the <b>reflex</b> one.'),
@@ -289,7 +318,7 @@ export const shapeTutorials = [
     id: 'trig-circle-theorems-multi',
     title: 'Multi-step circle theorems',
     skills: ['trig-circle-theorems-multi'],
-    prereqs: ['trig-circle-theorems', 'geo-parallel-lines'],
+    prereqs: ['trig-circle-theorems', 'geo-angles-triangles', 'geo-angle-basics'],
     summary: 'The alternate segment theorem, and how to chain circle theorems with isosceles triangles and tangents.',
     body: [
       h('One more theorem'),
@@ -322,7 +351,7 @@ export const shapeTutorials = [
       mistake('using the alternate segment theorem with the wrong angle. The equal angle is on the <b>far</b> side of the chord from the tangent angle you started with.'),
       note('Example 4 shows a useful shortcut: the exterior angle of a cyclic quadrilateral equals the interior angle opposite.'),
       h('What next?'),
-      p('Check the basics again in [[trig-circle-theorems]]; parallel-line angle facts are in [[geo-parallel-lines]].'),
+      p('Check the basics again in [[trig-circle-theorems]]; isosceles triangles and angles in quadrilaterals are in [[geo-angles-triangles]].'),
     ].join(''),
   },
   {
@@ -353,6 +382,10 @@ export const shapeTutorials = [
         'Which vector translates the point $(-2, 7)$ to the point $(3, -1)$?',
         ['Vector = end − start. Across: $3 - (-2) = 5$. Up: $-1 - 7 = -8$.'],
         '$\\begin{pmatrix} 5 \\\\ -8 \\end{pmatrix}$'),
+      example('Example 4 – finding the multiples',
+        '$\\mathbf{a} = \\begin{pmatrix} 2 \\\\ 1 \\end{pmatrix}$ and $\\mathbf{b} = \\begin{pmatrix} -1 \\\\ 3 \\end{pmatrix}$. Find $m$ and $n$ so that $m\\mathbf{a} + n\\mathbf{b} = \\begin{pmatrix} -8 \\\\ 10 \\end{pmatrix}$.',
+        ['Top row: $2m - n = -8$. Bottom row: $m + 3n = 10$. These are [[alg-simultaneous-linear|simultaneous equations]].', 'From the top row, $n = 2m + 8$. Substitute: $m + 3(2m + 8) = 10$, so $7m + 24 = 10$ and $m = -2$.', 'Then $n = 2(-2) + 8 = 4$. Check: $-2\\begin{pmatrix} 2 \\\\ 1 \\end{pmatrix} + 4\\begin{pmatrix} -1 \\\\ 3 \\end{pmatrix} = \\begin{pmatrix} -8 \\\\ 10 \\end{pmatrix}$ ✓'],
+        '$m = -2$, $n = 4$'),
       mistake('swapping the numbers: the top number is always the movement <b>across</b>.'),
       note('The vector that undoes a movement is the negative: if $\\begin{pmatrix} 4 \\\\ -3 \\end{pmatrix}$ takes $A$ to $B$, then $\\begin{pmatrix} -4 \\\\ 3 \\end{pmatrix}$ takes $B$ back to $A$.'),
       h('What next?'),
@@ -373,6 +406,7 @@ export const shapeTutorials = [
         'Going against an arrow changes the sign: $\\overrightarrow{AO} = -\\overrightarrow{OA} = -\\mathbf{a}$.',
         'A fraction of the way along a line is that fraction of its vector: if $P$ is $\\frac{1}{4}$ of the way from $A$ to $B$, then $\\overrightarrow{AP} = \\frac{1}{4}\\overrightarrow{AB}$.',
         'Two vectors are <b>parallel</b> if one is a multiple of the other.',
+        'In a parallelogram, opposite sides are the same vector (same length, same direction): if $OABC$ is a parallelogram with $\\overrightarrow{OA} = \\mathbf{a}$ and $\\overrightarrow{OC} = \\mathbf{c}$, then $\\overrightarrow{CB} = \\mathbf{a}$ and $\\overrightarrow{AB} = \\mathbf{c}$.',
       ])),
       figure(fig({
         pts: { O: [0, 0], A: [3.2, 0], B: [1, 2.2], M: [2.1, 1.1] }, width: 340, height: 210,
@@ -396,7 +430,15 @@ export const shapeTutorials = [
       example('Example 4 – parallel and on a straight line',
         '$\\overrightarrow{OP} = 2\\mathbf{a} + \\mathbf{b}$ and $\\overrightarrow{OQ} = 6\\mathbf{a} + 3\\mathbf{b}$. Show that $O$, $P$ and $Q$ lie on a straight line.',
         ['$6\\mathbf{a} + 3\\mathbf{b} = 3(2\\mathbf{a} + \\mathbf{b})$, so $\\overrightarrow{OQ} = 3\\overrightarrow{OP}$.', 'The vectors are parallel and both start at $O$, so the points are on one straight line.'],
-        '$\\overrightarrow{OQ} = 3\\overrightarrow{OP}$, so they are collinear'),
+        '$\\overrightarrow{OQ} = 3\\overrightarrow{OP}$, so $O$, $P$ and $Q$ are <b>collinear</b> (they lie on one straight line)'),
+      example('Example 5 – a parallelogram',
+        '$OABC$ is a parallelogram with $\\overrightarrow{OA} = \\mathbf{a}$ and $\\overrightarrow{OC} = \\mathbf{c}$. $M$ is the midpoint of $AB$. Find $\\overrightarrow{CM}$.',
+        ['Opposite sides: $\\overrightarrow{CB} = \\mathbf{a}$ and $\\overrightarrow{BA} = -\\mathbf{c}$, so $\\overrightarrow{BM} = -\\frac{1}{2}\\mathbf{c}$.', 'Route $C \\to B \\to M$: $\\overrightarrow{CM} = \\mathbf{a} - \\frac{1}{2}\\mathbf{c}$'],
+        '$\\mathbf{a} - \\frac{1}{2}\\mathbf{c}$'),
+      example('Example 6 – find k',
+        '$\\overrightarrow{XY} = 4\\mathbf{a} + 6\\mathbf{b}$ and $\\overrightarrow{XZ} = 2\\mathbf{a} + k\\mathbf{b}$. $X$, $Y$ and $Z$ are collinear. Find $k$.',
+        ['Collinear means $\\overrightarrow{XY}$ is a multiple of $\\overrightarrow{XZ}$. Comparing the $\\mathbf{a}$ parts, $4 = 2 \\times 2$, so $\\overrightarrow{XY} = 2\\overrightarrow{XZ}$.', 'The $\\mathbf{b}$ parts must match too: $6 = 2k$.'],
+        '$k = 3$'),
       mistake('getting the direction the wrong way round: $\\overrightarrow{AB} = \\mathbf{b} - \\mathbf{a}$, but $\\overrightarrow{BA} = \\mathbf{a} - \\mathbf{b}$.'),
       mistake('using $\\frac{1}{3}$ for the ratio $1 : 3$. A ratio $m : n$ splits the line into $m + n$ parts.'),
       note('Sense check with numbers: if $\\mathbf{a}$ and $\\mathbf{b}$ were column vectors, your answer should give the same movement as following the route.'),

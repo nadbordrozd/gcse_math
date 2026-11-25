@@ -1,6 +1,8 @@
 // Tutorials ("Learn" pages) for the trig module. See docs/TUTORIAL_GUIDELINES.md.
 import { h, p, list, steps, key, display, note, mistake, figure, example } from '../../tutorial-kit.js';
 import { measureTutorials } from './tutorials-measure.js';
+import { fig } from './diagrams.js';
+import { altitudeFig } from './trigonometry.js';
 import { shapeTutorials } from './tutorials-shapes.js';
 import { svg, polygon, text, rightAngleMark, angleMark, line, sideLabel, vertexLabel, centroid, ACCENT, ACCENT2 } from '../../svg.js';
 
@@ -10,14 +12,25 @@ import { svg, polygon, text, rightAngleMark, angleMark, line, sideLabel, vertexL
 
 // Right-angled triangle with the right angle bottom-left and the marked angle at bottom-right.
 function rightTriangle({ hyp = 'hypotenuse', opp = 'opposite', adj = 'adjacent', angle = 'θ', colours = true } = {}) {
-  const A = [60, 190]; const B = [300, 190]; const C = [60, 50];
+  const A = [110, 190]; const B = [350, 190]; const C = [110, 50];
   const mid = centroid([A, B, C]);
-  return svg(360, 230, polygon([A, B, C])
+  return svg(400, 230, polygon([A, B, C])
     + rightAngleMark(A, B, C)
     + angleMark(B, A, C, { r: 34, label: angle, labelR: 52 })
     + sideLabel(B, C, hyp, mid, { color: colours ? ACCENT : 'currentColor', offset: 18 })
     + sideLabel(C, A, opp, mid, { color: colours ? ACCENT2 : 'currentColor', offset: 14 })
-    + sideLabel(A, B, adj, mid, { offset: 16 }), { maxWidth: 360, label: 'Right-angled triangle with sides labelled' });
+    + sideLabel(A, B, adj, mid, { offset: 16 }), { maxWidth: 400, label: 'Right-angled triangle with sides labelled' });
+}
+
+// Lighthouse and boat: angle of depression from the top, angle of elevation from the boat.
+function elevationFig() {
+  return fig({
+    pts: { T: [0, 4], L: [0, 0], B: [9.4, 0], H: [9.4, 4] }, nda: false, width: 420, height: 200, pad: 30, padX: 52,
+    draw: (g) => g.seg('L', 'T', { width: 4 }) + g.seg('L', [10.5, 0], { width: 1.4 }) + g.seg('T', 'H', { dash: '5 4', width: 1.4 }) + g.seg('T', 'B', { color: ACCENT })
+      + g.angle('T', 'H', 'B', '23°', { r: 40 }) + g.angle('B', 'L', 'T', '23°', { r: 40 })
+      + g.textAt('H', -70, -14, 'angle of depression', { size: 13, italic: false }) + g.textAt('B', -60, 16, 'angle of elevation', { size: 13, italic: false })
+      + g.side('L', 'T', '40 m', { inside: 'B' }) + g.side('L', 'B', 'd', { inside: 'T' }) + g.name('T', 'top', { dir: [-1, -0.3], size: 13 }) + g.name('B', 'boat', { dir: [0.6, 1], size: 13 }),
+  });
 }
 
 // A general (non-right) triangle ABC with sides a, b, c opposite the vertices.
@@ -82,6 +95,22 @@ export const tutorials = [
           '$\\cos 40^\\circ = \\dfrac{8}{h}$',
           '$h$ is on the bottom, so rearrange: $h = \\dfrac{8}{\\cos 40^\\circ} = 10.443\\ldots$'],
         '$h = 10.4$ cm'),
+      example('Example 3 – tan, with the unknown on the bottom',
+        'The side opposite an angle of $62^\\circ$ is $9$ cm. Find the adjacent side $y$ to 1 decimal place.',
+        ['O and A → <b>tan</b>.', '$\\tan 62^\\circ = \\dfrac{9}{y}$', '$y = \\dfrac{9}{\\tan 62^\\circ} = 4.785\\ldots$'],
+        '$y = 4.8$ cm'),
+      h('Angles of elevation and depression'),
+      p('Word problems often describe angles from the horizontal. The <b>angle of elevation</b> is the angle you look <b>up</b> from the horizontal to see something above you. The <b>angle of depression</b> is the angle you look <b>down</b> from the horizontal.',
+        'Looking up from the boat to the top of a lighthouse and looking down from the top to the boat give the same angle: the horizontal line at the top and the sea are parallel, so the two angles are [[geo-parallel-lines|alternate angles]].'),
+      figure(elevationFig(), 'The angle of depression from the top equals the angle of elevation from the boat.'),
+      example('Example 4 – angle of depression',
+        'From the top of a lighthouse $40$ m high, the angle of depression of a boat is $23^\\circ$. How far is the boat from the foot of the lighthouse, to the nearest metre?',
+        ['The angle at the boat is also $23^\\circ$ (alternate angles). From that angle, the $40$ m height is <b>opposite</b> and the distance $d$ is <b>adjacent</b>: tan.', '$\\tan 23^\\circ = \\dfrac{40}{d}$, so $d = \\dfrac{40}{\\tan 23^\\circ} = 94.234\\ldots$'],
+        '$94$ m'),
+      example('Example 5 – two triangles sharing a side',
+        '$D$, $B$ and $C$ lie on a straight line and $AB$ is perpendicular to it. $AD = 12$ cm, angle $ADB = 55^\\circ$ and angle $ACB = 38^\\circ$. Find $BC$ to 1 decimal place.',
+        ['Triangle $ABD$ first: $AB$ is opposite the $55^\\circ$ angle and $AD$ is the hypotenuse, so $AB = 12 \\sin 55^\\circ = 9.829\\ldots$ cm. Keep the full value.', 'Triangle $ABC$: $AB$ is opposite the $38^\\circ$ angle and $BC$ is adjacent, so use tan: $\\tan 38^\\circ = \\dfrac{9.829\\ldots}{BC}$', '$BC = \\dfrac{9.829\\ldots}{\\tan 38^\\circ} = 12.581\\ldots$'],
+        '$BC = 12.6$ cm', { visual: altitudeFig({ db: 6.88, bc: 12.58, h: 9.83, labels: { AD: '12 cm', BC: 'x' }, angles: { D: '55°', C: '38°' } }) }),
       note('Check your calculator is in <b>degrees</b> mode (a small D or DEG on the screen). In degrees, $\\sin 30^\\circ = 0.5$. If you get $-0.988\\ldots$ you are in radians.'),
       note('A quick sense check: the hypotenuse is always the longest side. If your answer for a shorter side comes out bigger than the hypotenuse, you have used the wrong ratio or divided instead of multiplied.'),
       h('What next?'),
@@ -117,6 +146,14 @@ export const tutorials = [
         'The hypotenuse is $15$ m and the side adjacent to $\\theta$ is $11$ m. Find $\\theta$ to 1 decimal place.',
         ['A and H → <b>cos</b>.', '$\\cos\\theta = \\dfrac{11}{15}$', '$\\theta = \\cos^{-1}\\left(\\dfrac{11}{15}\\right) = 42.833\\ldots^\\circ$'],
         '$\\theta = 42.8^\\circ$'),
+      example('Example 3 – a slide (sin)',
+        'A straight slide is $4.5$ m long and its top is $2.1$ m above the ground. Find the angle between the slide and the ground, to 1 decimal place.',
+        ['The slide is the hypotenuse; the height is opposite the angle. O and H → <b>sin</b>.', '$\\sin\\theta = \\dfrac{2.1}{4.5}$', '$\\theta = \\sin^{-1}\\left(\\dfrac{2.1}{4.5}\\right) = 27.818\\ldots^\\circ$'],
+        '$27.8^\\circ$'),
+      example('Example 4 – two steps',
+        '$D$, $B$ and $C$ lie on a straight line and $AB$ is perpendicular to it. $AD = 13$ cm, $DB = 5$ cm and $BC = 9$ cm. Find angle $ACB$.',
+        ['First find the shared side $AB$ with [[trig-pythagoras|Pythagoras]] in triangle $ABD$: $AB = \\sqrt{13^2 - 5^2} = 12$ cm.', 'In triangle $ABC$, $AB = 12$ is opposite the angle and $BC = 9$ is adjacent: $\\tan x = \\dfrac{12}{9}$', '$x = \\tan^{-1}\\left(\\dfrac{12}{9}\\right) = 53.130\\ldots^\\circ$'],
+        '$53.1^\\circ$', { visual: altitudeFig({ db: 5, bc: 9, h: 12, labels: { AD: '13 cm', DB: '5 cm', BC: '9 cm' }, angles: { C: 'x' } }) }),
       mistake('if the calculator says <b>Math ERROR</b> for $\\sin^{-1}$ or $\\cos^{-1}$, you have put the hypotenuse on top. Sin and cos of an angle are never bigger than 1, because the hypotenuse is the longest side.'),
       note('Sense check: the two acute angles of a right-angled triangle add up to $90^\\circ$, and the bigger angle is opposite the longer side.'),
       h('What next?'),
@@ -174,6 +211,7 @@ export const tutorials = [
           'Opposite pair known: $c = 12$ with $C = 71^\\circ$.',
           '$\\dfrac{a}{\\sin 48^\\circ} = \\dfrac{12}{\\sin 71^\\circ}$, so $a = \\dfrac{12 \\sin 48^\\circ}{\\sin 71^\\circ} = 9.431\\ldots$'],
         '$a = 9.4$ cm'),
+      note('$\\sin^{-1}$ always gives an <b>acute</b> angle. Another angle has the same sine: $180^\\circ$ minus it. If the diagram (or the question) tells you the angle is obtuse, the answer is $180^\\circ$ minus your calculator value.'),
       mistake('pairing a side with an angle that is <b>not</b> opposite it. Check each fraction: the side on top must be across the triangle from the angle underneath.'),
       note('In any triangle the longest side is opposite the biggest angle. Use this to check your answer is sensible.'),
       h('What next?'),

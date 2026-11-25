@@ -122,7 +122,7 @@ export const cvSolve = gen('trig-cv-solve', 'trig-column-vectors', (rng, d) => {
       `Answer: ${cvo(c)}`,
     ],
   };
-}, { title: 'Solve vector equations' });
+}, { title: 'Solve vector equations', learn: ['trig-column-vectors', 'alg-simultaneous-linear'] });
 
 export const cvTranslate = gen('trig-cv-translate', 'trig-column-vectors', (rng, d) => {
   const mode = d === 'easy' ? 'reverse' : d === 'medium' ? pick(rng, ['reverse', 'points']) : 'points';
