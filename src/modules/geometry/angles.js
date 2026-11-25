@@ -45,7 +45,7 @@ const sumT = (vals) => vals.map((v) => tnum(v)).join(' + ');
  * Draw rays from O in the given maths directions (degrees) and label the regions between consecutive rays.
  * regions: [{ from, to, label, right }] where from/to are directions, region is swept anticlockwise from `from` to `to`.
  */
-function raysBody(O, R, dirs, regions, { lens = null } = {}) {
+export function raysBody(O, R, dirs, regions, { lens = null } = {}) {
   let out = '';
   dirs.forEach((dg, i) => { const E = polar(O, lens ? lens[i] : R, dg); out += line(O[0], O[1], E[0], E[1], { width: 2 }); });
   for (const g of regions) {
@@ -387,7 +387,7 @@ export const angleEstimate = ggen('geo-angle-estimate', 'geo-angle-basics', (rng
 /* ================================================================== */
 
 /** Draw a triangle (maths coords from triFromAngles), with optional angle labels at A,B,C and vertex letters. */
-function drawTriangle(pts, { labels = [null, null, null], letters = null, right = [false, false, false], ticks = null, extendSide = null, extraLabel = null, W = 400, H = 260, nda = true, pad = 44 } = {}) {
+export function drawTriangle(pts, { labels = [null, null, null], letters = null, right = [false, false, false], ticks = null, extendSide = null, extraLabel = null, W = 400, H = 260, nda = true, pad = 44 } = {}) {
   let Em = null;
   if (extendSide) {
     const [i, j] = extendSide;
@@ -764,7 +764,7 @@ export const triMultiStep = ggen('geo-tri-multistep', 'geo-angles-triangles', (r
       `Answer: ${degT(x)}`,
     ],
   };
-}, { title: 'Multi-step angle problems' });
+}, { title: 'Multi-step angle problems', learn: ['geo-angles-triangles', 'geo-angle-basics'] });
 
 /* ================================================================== */
 /* geo-parallel-lines                                                  */
@@ -794,7 +794,7 @@ const REASON = {
 const REL_NAME = { vert: 'vertically opposite', corr: 'corresponding', alt: 'alternate', coint: 'co-interior', straight: 'on a straight line with' };
 
 /** Two horizontal parallel lines and a transversal with angle t at UR. labels: {PUR: 'x', ...}. */
-function parallelFigure(t, labels, { W = 420, H = 270, letters = false } = {}) {
+export function parallelFigure(t, labels, { W = 420, H = 270, letters = false } = {}) {
   const yP = 100; const yQ = 190; const gap = yQ - yP;
   const dx = gap / Math.tan((t * Math.PI) / 180);
   const P = [W / 2 + dx / 2, yP]; const Q = [W / 2 - dx / 2, yQ];
@@ -978,7 +978,7 @@ export const parallelTriangle = ggen('geo-par-triangle', 'geo-parallel-lines', (
     typed: { kind: 'number', value: x },
     solution: [...c.steps, `Answer: ${degT(x)}`],
   };
-}, { title: 'Triangle between parallel lines' });
+}, { title: 'Triangle between parallel lines', learn: ['geo-parallel-lines', 'geo-angles-triangles'] });
 
 export const parallelAlgebra = ggen('geo-par-algebra', 'geo-parallel-lines', (rng, d) => {
   for (let k = 0; k < 300; k += 1) {
@@ -1026,7 +1026,7 @@ export const parallelAlgebra = ggen('geo-par-algebra', 'geo-parallel-lines', (rn
     };
   }
   throw new Error('no algebra');
-}, { title: 'Parallel lines with algebra' });
+}, { title: 'Parallel lines with algebra', learn: ['geo-parallel-lines', 'alg-solve-brackets-both-sides'] });
 
 /* ================================================================== */
 /* geo-polygon-angles                                                  */
@@ -1036,7 +1036,7 @@ const POLY_NAMES = { 3: 'equilateral triangle', 4: 'square', 5: 'regular pentago
 const polyName = (n) => POLY_NAMES[n] || `regular polygon with ${n} sides`;
 
 /** Regular polygon figure with one exterior or interior angle marked. */
-function regularFigure(n, mark, label, { W = 360, H = 260, full = true, rot = 0 } = {}) {
+export function regularFigure(n, mark, label, { W = 360, H = 260, full = true, rot = 0 } = {}) {
   const R = Math.min(105, 330 / (2 * Math.sin(Math.PI / n)) / (n > 10 ? 1.6 : 2.4));
   const c = [W / 2 - (mark === 'ext' ? 20 : 0), H / 2 + 5];
   // bottom edge horizontal (before rotation)
@@ -1267,7 +1267,7 @@ export const polyComposite = ggen('geo-poly-composite', 'geo-polygon-angles', (r
       `Answer: ${degT(x)}`,
     ],
   };
-}, { title: 'Regular polygons combined' });
+}, { title: 'Regular polygons combined', learn: ['geo-polygon-angles', 'geo-angles-triangles'] });
 
 /* ================================================================== */
 /* geo-bearings                                                        */
@@ -1393,7 +1393,7 @@ export const bearingBack = ggen('geo-bear-back', 'geo-bearings', (rng, d) => {
     typed: { kind: 'number', value: ans },
     solution: [
       ...(hard ? [`The marked angle at $A$ is measured anticlockwise from North, so the bearing of $B$ from $A$ is $360 - ${360 - b} = ${b}^\circ$.`] : []),
-      'The two North lines are parallel, so the bearing back the other way differs by exactly $180^\circ$.',
+      'The two North lines are [[geo-parallel-lines|parallel]], so the bearing back the other way differs by exactly $180^\circ$.',
       `$${b} ${b < 180 ? '+' : '-'} 180 = ${ans}$`,
       `Answer: ${bearingT(ans)}`,
     ],
@@ -1496,7 +1496,7 @@ export const bearingProblem = ggen('geo-bear-problem', 'geo-bearings', (rng, d) 
     };
   }
   throw new Error('no bearing angle');
-}, { title: 'Bearings problems' });
+}, { title: 'Bearings problems', learn: ['geo-bearings', 'geo-parallel-lines'] });
 
 export const angleGenerators = [
   angleStraightLine, angleAroundPoint, angleVertOpp, angleTypes, angleEstimate,

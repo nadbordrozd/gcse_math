@@ -110,7 +110,7 @@ export function cylinderFig({ rLabel = null, dLabel = null, hLabel = null, ratio
   body += ell(cx, top, rx, ry, 'full', { fill: open ? 'var(--surface, #fff)' : 'var(--d-fill, #e8eefc)', width: 2 });
   if (rLabel) {
     body += dot(cx, top, 2.5) + line(cx, top, cx + rx, top, { width: 1.6 });
-    body += htext(cx + rx / 2, top - ry - 10, rLabel, { size: 14 });
+    body += htext(cx + rx / 2, top - ry - 10, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   }
   if (dLabel) {
     body += line(cx - rx, top, cx + rx, top, { width: 1.6 });
@@ -136,11 +136,11 @@ export function coneFig({ rLabel = null, hLabel = null, lLabel = null, ratio = 1
   }
   if (rLabel) {
     body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 });
-    body += text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14 });
+    body += text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   }
   if (lLabel) {
     const m = mid(apex, [cx + rx, bot]);
-    body += text(m[0] + 12 + textWidth(lLabel, 14) / 2, m[1] - 4, lLabel, { size: 14 });
+    body += text(m[0] + 12 + textWidth(lLabel, 14) / 2, m[1] - 4, lLabel, { size: 14, italic: /^[a-z]$/.test(lLabel) });
   }
   return figure(W, H, body, { nda });
 }
@@ -150,7 +150,7 @@ export function sphereFig({ rLabel = null, W = 300, H = 250, nda = true } = {}) 
   const c = [W / 2, H / 2]; const R = 95;
   let body = `<circle cx="${c[0]}" cy="${c[1]}" r="${R}" fill="${FILL}" stroke="currentColor" stroke-width="2"/>`;
   body += ell(c[0], c[1], R, R * 0.28, 'back', { dash: '5 4', width: 1.3, color: MUTED }) + ell(c[0], c[1], R, R * 0.28, 'front', { width: 1.5 });
-  if (rLabel) body += dot(...c, 3) + line(...c, c[0] + R, c[1], { width: 1.8 }) + htext(c[0] + R / 2, c[1] - 14, rLabel, { size: 14 });
+  if (rLabel) body += dot(...c, 3) + line(...c, c[0] + R, c[1], { width: 1.8 }) + htext(c[0] + R / 2, c[1] - 14, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   return figure(W, H, body, { nda });
 }
 
@@ -165,7 +165,7 @@ export function hemisphereFig({ rLabel = null, W = 320, H = 220, nda = true, fla
     body = path(`M ${cx - R} ${base} A ${R} ${R} 0 0 0 ${cx + R} ${base} Z`, { fill: FILL, width: 2 });
     body += ell(cx, base, R, R * 0.28, 'full', { fill: 'var(--d-fill, #e8eefc)', width: 2 });
   }
-  if (rLabel) body += dot(cx, base, 2.5) + line(cx, base, cx + R, base, { width: 1.8 }) + htext(cx + R / 2, base + (flatUp ? -14 : 16), rLabel, { size: 14 });
+  if (rLabel) body += dot(cx, base, 2.5) + line(cx, base, cx + R, base, { width: 1.8 }) + htext(cx + R / 2, base + (flatUp ? -14 : 16), rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   return figure(W, H, body, { nda });
 }
 
@@ -249,7 +249,7 @@ export function compositeFig(mode, { rLabel = null, hLabel = null, h2Label = nul
     const join = (H - hc - rx) / 2 + rx; const apexY = join + hc;
     body += path(`M ${cx - rx} ${join} A ${rx} ${rx} 0 0 1 ${cx + rx} ${join} L ${cx} ${apexY} Z`, { fill: FILL, width: 2 });
     body += ell(cx, join, rx, ry, 'back', { dash: '5 4', width: 1.3, color: MUTED }) + ell(cx, join, rx, ry, 'front', { width: 1.5 });
-    if (rLabel) body += dot(cx, join, 2.5) + line(cx, join, cx + rx, join, { width: 1.6 }) + htext(cx + rx / 2, join - 12, rLabel, { size: 14 });
+    if (rLabel) body += dot(cx, join, 2.5) + line(cx, join, cx + rx, join, { width: 1.6 }) + htext(cx + rx / 2, join - 12, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
     if (hLabel) body += line(cx, join, cx, apexY, { width: 1.3, dash: '5 4' }) + vDim(cx + rx + 18, join, apexY, hLabel, 1, { from1: cx + rx, from2: cx });
     return figure(W, H, body, { nda });
   }
@@ -261,7 +261,7 @@ export function compositeFig(mode, { rLabel = null, hLabel = null, h2Label = nul
   if (mode === 'cylHemi') body += path(`M ${cx - rx} ${top} A ${rx} ${rx} 0 0 1 ${cx + rx} ${top} Z`, { fill: FILL, width: 2 });
   else body += path(`M ${cx - rx} ${top} L ${cx} ${top - capH} L ${cx + rx} ${top} Z`, { fill: FILL, width: 2 });
   body += ell(cx, top, rx, ry, 'back', { dash: '5 4', width: 1.3, color: MUTED }) + ell(cx, top, rx, ry, 'front', { width: 1.5 });
-  if (rLabel) body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 }) + text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14 });
+  if (rLabel) body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 }) + text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   if (hLabel) body += text(cx + rx + 10 + textWidth(hLabel, 14) / 2, (top + bot) / 2, hLabel, { size: 14 });
   if (h2Label) body += line(cx, top, cx, top - capH, { width: 1.3, dash: '5 4' }) + vDim(cx + rx + 18, top - capH, top - 3, h2Label, 1, { from1: cx });
   return figure(W, H, body, { nda });

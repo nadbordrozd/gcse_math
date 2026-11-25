@@ -169,7 +169,7 @@ export const volCapacity = ggen('geo-vol-capacity', 'geo-volume-cuboid', (rng, d
     typed: { kind: 'number', value: mins },
     solution: [`Volume $= ${l} \\times ${w} \\times ${h} = ${tnum(V)}$ cm³ $= ${tnum(litres)}$ litres`, `Time $= ${tnum(litres)} \\div ${rate} = ${mins}$ minutes`, `Answer: $${mins}$ minutes`],
   };
-}, { title: 'Capacity of a cuboid tank' });
+}, { title: 'Capacity of a cuboid tank', learn: ['geo-volume-cuboid', 'rat-unit-conversion'] });
 
 /* ================================================================== */
 /* geo-volume-prism                                                    */
@@ -385,14 +385,14 @@ export const saTriPrism = ggen('geo-sa-tri-prism', 'geo-surface-area', (rng, d) 
     distractors: wrongs(SA, [(a * b * len) / 2, a * b / 2 + (a + b + c) * len, 2 * a * b + (a + b + c) * len, a * b + (a + b) * len, (a + b + c) * len, SA + c * len]).map((v) => A2(v)),
     typed: { kind: 'number', value: SA },
     solution: [
-      ...(showHyp ? [] : [`Hypotenuse: $\\sqrt{${a}^2 + ${b}^2} = \\sqrt{${a * a + b * b}} = ${c}$ cm`]),
+      ...(showHyp ? [] : [`Hypotenuse by [[trig-pythagoras|Pythagoras]]: $\\sqrt{${a}^2 + ${b}^2} = \\sqrt{${a * a + b * b}} = ${c}$ cm`]),
       `Two triangles: $2 \\times \\frac{1}{2} \\times ${a} \\times ${b} = ${a * b}$`,
       `Three rectangles: $(${a} + ${b} + ${c}) \\times ${len} = ${(a + b + c) * len}$`,
       `Total $= ${a * b} + ${(a + b + c) * len} = ${SA}$`,
       `Answer: ${A2(SA)}`,
     ],
   };
-}, { title: 'Surface area of a triangular prism' });
+}, { title: 'Surface area of a triangular prism', learn: ['geo-surface-area', 'trig-pythagoras'] });
 
 export const saCylinder = ggen('geo-sa-cylinder', 'geo-surface-area', (rng, d) => {
   const r = int(rng, 2, 10); const h = int(rng, 3, 20); const u = 'cm';
@@ -541,7 +541,7 @@ export const csConeVol = ggen('geo-cs-cone-vol', 'geo-cones-spheres', (rng, d) =
   const k = frac(r * r * h, 3);
   const exact = d === 'easy' || (k.isInt && chance(rng, 0.5));
   const visual = coneFig({ rLabel: lab(r), hLabel: useSlant ? null : lab(h), lLabel: useSlant ? lab(l) : null, ratio: Math.max(1, h / r) });
-  const pre = useSlant ? [`The perpendicular height, slant height and radius make a right-angled triangle: $h = \\sqrt{${l}^2 - ${r}^2} = \\sqrt{${l * l - r * r}} = ${h}$`] : [];
+  const pre = useSlant ? [`The perpendicular height, slant height and radius make a right-angled triangle, so use [[trig-pythagoras|Pythagoras]]: $h = \\sqrt{${l}^2 - ${r}^2} = \\sqrt{${l * l - r * r}} = ${h}$`] : [];
   if (exact) {
     const ans = `$${k.isInt ? (k.n === 1 ? '' : k.n) : k.tex()}\\pi$ cm³`;
     return {
@@ -561,7 +561,7 @@ export const csConeVol = ggen('geo-cs-cone-vol', 'geo-cones-spheres', (rng, d) =
     typed: typed1(V), calculator: true,
     solution: [...pre, CONE_V, `$\\frac{1}{3} \\times \\pi \\times ${r}^2 \\times ${h} = ${tnum(dec3(V))}\\ldots$`, useSlant ? 'Use the perpendicular height, not the slant height.' : 'Remember the $\\frac{1}{3}$ — a cone is a third of the cylinder with the same base and height.', `Answer: ${dp1(V, 'cm³')}`],
   };
-}, { title: 'Volume of a cone' });
+}, { title: 'Volume of a cone', learn: ['geo-cones-spheres', 'trig-pythagoras'] });
 
 export const csConeSA = ggen('geo-cs-cone-sa', 'geo-cones-spheres', (rng, d) => {
   const t = pick(rng, CONE_TRIPLES); const swap = chance(rng, 0.5);
@@ -571,7 +571,7 @@ export const csConeSA = ggen('geo-cs-cone-sa', 'geo-cones-spheres', (rng, d) => 
   const k = r * l + (total ? r * r : 0);
   const visual = coneFig({ rLabel: lab(r), hLabel: needL ? lab(h) : null, lLabel: needL ? null : lab(l), ratio: Math.max(1, h / r) });
   const exact = d !== 'hard' || chance(rng, 0.5);
-  const steps = [...(needL ? [`Slant height: $l = \\sqrt{${r}^2 + ${h}^2} = \\sqrt{${r * r + h * h}} = ${l}$`] : []), `Curved surface: $\\pi \\times ${r} \\times ${l} = ${r * l}\\pi$`, ...(total ? [`Base: $\\pi \\times ${r}^2 = ${r * r}\\pi$; total $= ${k}\\pi$`] : [])];
+  const steps = [...(needL ? [`Slant height by [[trig-pythagoras|Pythagoras]]: $l = \\sqrt{${r}^2 + ${h}^2} = \\sqrt{${r * r + h * h}} = ${l}$`] : []), `Curved surface: $\\pi \\times ${r} \\times ${l} = ${r * l}\\pi$`, ...(total ? [`Base: $\\pi \\times ${r}^2 = ${r * r}\\pi$; total $= ${k}\\pi$`] : [])];
   const what = total ? 'total surface area (curved surface and base)' : 'curved surface area';
   if (exact) {
     return {
@@ -592,7 +592,7 @@ export const csConeSA = ggen('geo-cs-cone-sa', 'geo-cones-spheres', (rng, d) => 
     typed: typed1(val), calculator: true,
     solution: [CONE_SA, ...steps, `$= ${tnum(dec3(val))}\\ldots$`, `Answer: ${dp1(val, 'cm²')}`],
   };
-}, { title: 'Surface area of a cone' });
+}, { title: 'Surface area of a cone', learn: ['geo-cones-spheres', 'trig-pythagoras'] });
 
 export const csPyramid = ggen('geo-cs-pyramid', 'geo-cones-spheres', (rng, d) => {
   const sq = d === 'easy' || chance(rng, 0.6);

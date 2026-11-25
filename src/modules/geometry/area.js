@@ -34,7 +34,7 @@ const signedArea = (pts) => pts.reduce((s, p, i) => { const q = pts[(i + 1) % pt
  * Label edges of a polygon given in maths coords (y up). labels[i] labels edge i (pts[i] -> pts[i+1]); null skips.
  * Returns markup. Labels sit outside the polygon.
  */
-function edgeLabels(ptsM, map, labels, { size: fs = 14 } = {}) {
+export function edgeLabels(ptsM, map, labels, { size: fs = 14 } = {}) {
   const ccw = signedArea(ptsM) > 0;
   let out = '';
   ptsM.forEach((p, i) => {
@@ -235,7 +235,7 @@ export const perimMissingSide = ggen('geo-perim-missing', 'geo-perimeter', (rng,
       `Answer: $x = ${x}$`,
     ],
   };
-}, { title: 'Missing side from the perimeter' });
+}, { title: 'Missing side from the perimeter', learn: ['geo-perimeter', 'alg-solve-brackets-both-sides'] });
 
 export const perimJoined = ggen('geo-perim-joined', 'geo-perimeter', (rng, d) => {
   const mode = d === 'easy' ? 'rects' : d === 'medium' ? pick(rng, ['rects', 'pentagon']) : pick(rng, ['pentagon', 'rectsL']);
@@ -785,14 +785,14 @@ export const areaCompoundTri = ggen('geo-area-compound-tri', 'geo-area-trapezium
     answer: A2(ar, u), distractors: wrongs(ar, [c * h + p * q, (p + q) * h + (p * q) / 2, p * h + (p * q) / 2, q * h + (p * q) / 2, c * h, ar + c]).map((v) => A2(v, u)),
     typed: { kind: 'number', value: ar },
     solution: [
-      `The width of the rectangle is the hypotenuse of the triangle. Pythagoras: $\\sqrt{${p}^2 + ${q}^2} = \\sqrt{${p * p + q * q}} = ${c}$`,
+      `The width of the rectangle is the hypotenuse of the triangle. [[trig-pythagoras|Pythagoras]]: $\\sqrt{${p}^2 + ${q}^2} = \\sqrt{${p * p + q * q}} = ${c}$`,
       `Rectangle: $${c} \\times ${h} = ${c * h}$`,
       `Triangle: $\\frac{1}{2} \\times ${p} \\times ${q} = ${tnum((p * q) / 2)}$ (the two shorter sides are perpendicular)`,
       `Total: $${c * h} + ${tnum((p * q) / 2)} = ${tnum(ar)}$`,
       `Answer: ${A2(ar, u)}`,
     ],
   };
-}, { title: 'Compound shapes with triangles' });
+}, { title: 'Compound shapes with triangles', learn: ['geo-area-trapezium-compound', 'trig-pythagoras'] });
 
 const SHADED_CONTEXTS = [
   { outer: 'garden', inner: 'pond', triName: 'flower bed', verb: 'The rest of the garden is grass.', u: 'm', Wo: [8, 20], Ho: [6, 14], wi: [2, 5], hi: [2, 4], tri: true, cost: { prices: [3, 4, 5, 6, 8], what: 'Turf for the grass costs' } },
@@ -867,7 +867,7 @@ export const areaShaded = ggen('geo-area-shaded', 'geo-area-trapezium-compound',
 /* geo-circles                                                         */
 /* ================================================================== */
 
-function circleFig(r, label, { mode = 'radius', W = 300, H = 250, fill = FILL, ang = null } = {}) {
+export function circleFig(r, label, { mode = 'radius', W = 300, H = 250, fill = FILL, ang = null } = {}) {
   const c = [W / 2, H / 2]; const R = 95;
   let body = circle(...c, R, { fill, width: 2 }) + dot(...c, 3);
   const a = ang ?? 20;
@@ -1179,7 +1179,7 @@ export const circleCompound = ggen('geo-circle-compound', 'geo-circles', (rng, d
 
 const SECTOR_ANGLES = [30, 36, 40, 45, 60, 72, 80, 90, 100, 120, 135, 140, 150, 160, 210, 225, 240, 270, 300];
 
-function sectorFig(r, theta, { rLabel, thetaLabel, u = 'cm', W = 340, H = 270, rot = null, arcHL = false }) {
+export function sectorFig(r, theta, { rLabel, thetaLabel, u = 'cm', W = 340, H = 270, rot = null, arcHL = false }) {
   const R = 110;
   const start = rot ?? 0;
   // centre placed so the sector fits: compute bounding points
@@ -1383,7 +1383,7 @@ export const sectorCompound = ggen('geo-sector-compound', 'geo-arcs-sectors', (r
     typed: typed1(val), calculator: true,
     solution: [`The outer radius is $${r} + ${R - r} = ${R}$ cm.`, `Shaded = big sector − small sector $= ${f.tex()} \\times \\pi \\times (${R}^2 - ${r}^2)$`, `$= ${tnum(roundTo(val, 3))}\\ldots$`, `Answer: ${dp1(val, 'cm²')}`],
   };
-}, { title: 'Compound sector shapes' });
+}, { title: 'Compound sector shapes', learn: ['geo-arcs-sectors', 'geo-area-trapezium-compound'] });
 
 export const areaGenerators = [
   perimCompound, perimMissingSide, perimJoined, perimGrid,

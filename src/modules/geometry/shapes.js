@@ -24,7 +24,7 @@ function drawPolys(polys, x0, y0, w, h, { fill = FILL, pad = 14, marks = null } 
 /* geo-2d-properties                                                   */
 /* ================================================================== */
 
-const QUAD_DRAW = {
+export const QUAD_DRAW = {
   Square: { pts: [[0, 0], [3, 0], [3, 3], [0, 3]], ticks: [[0, 1], [1, 2], [2, 3], [3, 0]], rights: [0, 1, 2, 3] },
   Rectangle: { pts: [[0, 0], [4.5, 0], [4.5, 2.5], [0, 2.5]], ticks2: [[[0, 1], [2, 3]], [[1, 2], [3, 0]]], rights: [0, 1, 2, 3] },
   Rhombus: { pts: [[0, 0], [3, 0], [4.6, 2.5], [1.6, 2.5]], ticks: [[0, 1], [1, 2], [2, 3], [3, 0]], arrows: [[[0, 1], [3, 2]], [[0, 3], [1, 2]]] },
@@ -236,7 +236,7 @@ export const fourthVertex = ggen('geo-2d-fourth-vertex', 'geo-2d-properties', (r
   const { plane: pl } = { plane: null };
   void pl;
   return fourthVertexQ(kind, A, B, Cc, Dd, w);
-}, { title: 'Missing vertex of a quadrilateral' });
+}, { title: 'Missing vertex of a quadrilateral', learn: ['geo-2d-properties', 'gr-coordinates'] });
 
 function fourthVertexQ(kind, A, B, Cc, Dd, w) {
   const pl = plane({ ...w, unitPx: 28 });
@@ -526,7 +526,7 @@ function randomHexomino(rng) {
 }
 const netKey = (cells) => cells.map((c) => c.join(',')).sort().join(';');
 
-function drawNet(cells, x0, y0, w, h) {
+export function drawNet(cells, x0, y0, w, h) {
   const xs = cells.map((c) => c[0]); const ys = cells.map((c) => c[1]);
   const cw = Math.max(...xs) + 1; const ch = Math.max(...ys) + 1;
   const s = Math.min((w - 16) / cw, (h - 12) / ch, 24);
@@ -692,14 +692,14 @@ function randomStack(rng, d) {
   }
   throw new Error('stack');
 }
-const plan = (h) => { const cells = []; h.forEach((row, r) => row.forEach((v, c) => { if (v > 0) cells.push([c, h.length - 1 - r]); })); return cells; };
-const frontElev = (h) => { const cells = []; for (let c = 0; c < h[0].length; c += 1) { const m = Math.max(...h.map((row) => row[c])); for (let k = 0; k < m; k += 1) cells.push([c, k]); } return cells; };
-const sideElev = (h) => { const cells = []; const rows = h.length; for (let i = 0; i < rows; i += 1) { const r = rows - 1 - i; const m = Math.max(...h[r]); for (let k = 0; k < m; k += 1) cells.push([i, k]); } return cells; };
+export const plan = (h) => { const cells = []; h.forEach((row, r) => row.forEach((v, c) => { if (v > 0) cells.push([c, h.length - 1 - r]); })); return cells; };
+export const frontElev = (h) => { const cells = []; for (let c = 0; c < h[0].length; c += 1) { const m = Math.max(...h.map((row) => row[c])); for (let k = 0; k < m; k += 1) cells.push([c, k]); } return cells; };
+export const sideElev = (h) => { const cells = []; const rows = h.length; for (let i = 0; i < rows; i += 1) { const r = rows - 1 - i; const m = Math.max(...h[r]); for (let k = 0; k < m; k += 1) cells.push([i, k]); } return cells; };
 const mirrorCells = (cells) => { const mx = Math.max(...cells.map((c) => c[0])); return cells.map(([x, y]) => [mx - x, y]); };
 const flipCells = (cells) => { const my = Math.max(...cells.map((c) => c[1])); return cells.map(([x, y]) => [x, my - y]); };
 const cellKey = (cells) => { const mx = Math.min(...cells.map((c) => c[0])); const my = Math.min(...cells.map((c) => c[1])); return cells.map(([x, y]) => `${x - mx},${y - my}`).sort().join(';'); };
 
-function drawCells(cells, x0, y0, w, h, s0 = 26) {
+export function drawCells(cells, x0, y0, w, h, s0 = 26) {
   const xs = cells.map((c) => c[0]); const ys = cells.map((c) => c[1]);
   const cw = Math.max(...xs) + 1; const ch = Math.max(...ys) + 1;
   const s = Math.min(s0, (w - 10) / cw, (h - 10) / ch);
@@ -828,7 +828,7 @@ const LOCI = [
   { key: 'stadium', q: (r) => `the locus of points exactly ${r} cm from the line segment $AB$` },
   { key: 'parallel', q: (r) => `the locus of points exactly ${r} cm from the (infinitely long) straight line $L$` },
 ];
-function lociPanel(key, x0, y0, w, h) {
+export function lociPanel(key, x0, y0, w, h) {
   const cx = x0 + w / 2; const cy = y0 + h / 2;
   const A = [cx - 26, cy + 8]; const B = [cx + 26, cy + 8];
   const L = (s) => htext(...s, ...[]);
@@ -948,7 +948,7 @@ export const lociRegion = ggen('geo-loci-region', 'geo-constructions-loci', (rng
   };
 }, { title: 'Regions defined by loci' });
 
-function constructionPanel(kind, letters, rng) {
+export function constructionPanel(kind, letters, rng) {
   const W = 300; const H = 230; let body = '';
   const arc = (c, r, a0, a1) => {
     const [s, e] = a0 < a1 ? [a0, a1] : [a1, a0];
@@ -1060,7 +1060,7 @@ export const lociScale = ggen('geo-loci-scale', 'geo-constructions-loci', (rng, 
     typed: { kind: 'number', value: rcm },
     solution: [`Points within ${num(L)} ${u} of a fixed point make a circle of radius ${num(L)} ${u}.`, `On the drawing: $${tnum(L)} \\div ${k} = ${tnum(rcm)}$ cm`, `Answer: $${tnum(rcm)}$ cm`],
   };
-}, { title: 'Loci with scale drawings' });
+}, { title: 'Loci with scale drawings', learn: ['geo-constructions-loci', 'rat-scales-maps'] });
 
 export const triangleConstruct = ggen('geo-construct-triangle', 'geo-constructions-loci', (rng, d) => {
   if (d === 'easy' || (d === 'medium' && chance(rng, 0.4))) {

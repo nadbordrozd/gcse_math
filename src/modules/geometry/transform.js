@@ -25,7 +25,7 @@ const VEC = (v) => `$${vecT(v)}$`;
 const plusT = (a, b) => `${tnum(a)} ${b < 0 ? '-' : '+'} ${tnum(Math.abs(b))}`;
 const key = (pts) => pts.map((p) => `${p[0]},${p[1]}`).sort().join(';');
 
-const T = {
+export const T = {
   translate: (v) => (p) => [p[0] + v[0], p[1] + v[1]],
   reflect: (ln) => (p) => (ln.t === 'x' ? [2 * ln.v - p[0], p[1]] : ln.t === 'y' ? [p[0], 2 * ln.v - p[1]] : ln.t === 'yx' ? [p[1], p[0]] : [-p[1], -p[0]]),
   rotate: (ang, c) => (p) => {
@@ -88,7 +88,7 @@ function shapeAt(rng, w, { small = false, margin = 0 } = {}) {
 const centroidOf = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
 
 /** Draw shapes on a coordinate grid. shapes: [{ pts, label, fill }]; lines: mirror lines; points: [{p, label}]. */
-function gridFig(w, shapes, { lines = [], points = [], unitPx = 26 } = {}) {
+export function gridFig(w, shapes, { lines = [], points = [], unitPx = 26 } = {}) {
   const pl = plane({ ...w, unitPx });
   let extra = '';
   for (const ln of lines) {
@@ -524,7 +524,7 @@ export const enlLengths = ggen('geo-enl-lengths', 'geo-enlargement', (rng, d) =>
     typed: { kind: 'number', value: ans },
     solution: [`The enlarged rectangle measures $${tnum(a * k)}$ cm by $${tnum(b * k)}$ cm.`, `Area $= ${tnum(a * k)} \\times ${tnum(b * k)} = ${tnum(ans)}$ cm²`, `(The area is multiplied by $${kT}^2 = ${tnum(k * k)}$, not by $${kT}$.)`, `Answer: $${tnum(ans)}$ cm²`],
   };
-}, { title: 'Lengths, perimeter and area after enlargement' });
+}, { title: 'Lengths, perimeter and area after enlargement', learn: ['geo-enlargement', 'trig-similar-area-volume'] });
 
 /* ================================================================== */
 /* geo-describe-transformations                                        */
@@ -642,7 +642,7 @@ export const descCombined = ggen('geo-desc-combined', 'geo-describe-transformati
     };
   }
   throw new Error('no combined transformation');
-}, { title: 'Combined transformations' });
+}, { title: 'Combined transformations', learn: ['geo-describe-transformations', 'geo-reflection', 'geo-rotation'] });
 
 export const descInvariant = ggen('geo-desc-invariant', 'geo-describe-transformations', (rng, d) => {
   const A = shapeAt(rng, W5, { small: false });
