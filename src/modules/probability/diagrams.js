@@ -393,6 +393,11 @@ export function cards(items, { perRow = 11, w = 38, h = 52, size = 18 } = {}) {
   return svg(width, height, body, { maxWidth: Math.max(width, 120), label: 'Cards' });
 }
 
+/** Pale versions of counter colours (kept light so the dark letter on top stays readable). */
+export const COUNTER_COLOURS = {
+  red: '#f8c9c9', blue: '#c9dbf8', green: '#cdeccf', yellow: '#fbeeb0', white: '#ffffff', black: '#b9bec7', orange: '#fbd9b4', purple: '#e2cdf3', pink: '#f9d3e6',
+};
+
 /** A bag holding counters: groups [{ label: 'R', count: 5 }], with a key beneath. */
 export function bag(groups, { key = null } = {}) {
   const items = groups.flatMap((g) => Array(g.count).fill(g.label));
@@ -404,12 +409,17 @@ export function bag(groups, { key = null } = {}) {
   const height = top + innerH + 30 + (key ? 26 : 0);
   const left = (width - innerW) / 2;
   let body = path(`M ${left - 20} ${top - 6} C ${left - 36} ${top + innerH * 0.4} ${left - 30} ${top + innerH + 16} ${left + 10} ${top + innerH + 20} L ${left + innerW - 10} ${top + innerH + 20} C ${left + innerW + 30} ${top + innerH + 16} ${left + innerW + 36} ${top + innerH * 0.4} ${left + innerW + 20} ${top - 6}`, { width: 1.8 });
-  const fills = {}; const palette = [FILL, FILL2, 'var(--d-fill3, #e3f4ea)', 'var(--d-fill4, #f6e8f6)', '#ffffff'];
-  groups.forEach((g, i) => { fills[g.label] = palette[i % palette.length]; });
+  // A group may name its colour (fill: 'red'); counters are then painted that colour, with dark text.
+  const fills = {}; const named = {}; const palette = [FILL, FILL2, 'var(--d-fill3, #e3f4ea)', 'var(--d-fill4, #f6e8f6)', '#ffffff'];
+  groups.forEach((g, i) => {
+    const c = g.fill && COUNTER_COLOURS[String(g.fill).toLowerCase()];
+    fills[g.label] = c || g.fill || palette[i % palette.length];
+    named[g.label] = Boolean(g.fill);
+  });
   items.forEach((lab, i) => {
     const cx = left + (i % perRow) * gap + gap / 2; const cy = top + Math.floor(i / perRow) * gap + gap / 2 + 4;
     body += circle(cx, cy, r, { fill: fills[lab], width: 1.4 });
-    body += text(cx, cy, lab, { size: 13, bold: true });
+    body += text(cx, cy, lab, { size: 13, bold: true, color: named[lab] ? '#1f2328' : 'currentColor' });
   });
   if (key) body += text(width / 2, height - 14, key, { size: 13, color: MUTED });
   return svg(width, height, body, { maxWidth: width, label: 'Bag of counters' });

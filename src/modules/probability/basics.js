@@ -354,7 +354,7 @@ export const singleCollection = gen('prob-single-bag', 'prob-single-event', (rng
   const showBag = ctx.noun === 'counters' && total <= 24 && new Set(initials).size === k;
   return {
     prompt: `${ctx.intro(list)}<br>${ctx.pickTxt}<br>What is the probability that ${event}?`,
-    visual: showBag ? bag(kinds.map((kd, t) => ({ label: initials[t], count: counts[t] })), { key: kinds.map((kd, t) => `${initials[t]} = ${kd}`).join(', ') }) : undefined,
+    visual: showBag ? bag(kinds.map((kd, t) => ({ label: initials[t], count: counts[t], fill: kd })), { key: kinds.map((kd, t) => `${initials[t]} = ${kd}`).join(', ') }) : undefined,
     answer: ft(p),
     distractors: probOpts(p, [
       frac(fav, total - fav), // compared with the rest (odds)

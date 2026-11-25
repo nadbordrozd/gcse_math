@@ -352,7 +352,7 @@ export const indGame = gen('prob-tree-ind-game', 'prob-tree-independent', (rng, 
       `Answer: ${pf(ans)}`,
     ],
   };
-}, { title: 'Games with a tree diagram: expected winners, roll again' });
+}, { title: 'Games with a tree diagram: expected winners, roll again', learn: ['prob-tree-independent', 'prob-expected-frequency'] });
 
 export const indReverse = gen('prob-tree-ind-reverse', 'prob-tree-independent', (rng, d) => {
   const ctx = pick(rng, IND_CTX.filter((c) => (d === 'hard' ? true : !c.same)));
