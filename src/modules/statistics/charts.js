@@ -278,7 +278,12 @@ export function pieChart({ sectors, r = 104, title = null, notAccurate = false }
       marks += path(`M ${r2(px)} ${r2(py)} A ${ar} ${ar} 0 ${s.angle > 180 ? 1 : 0} 1 ${r2(qx)} ${r2(qy)}`, { width: 1.4 });
       const lr = s.angle < 40 ? 52 : s.angle < 70 ? 44 : 40;
       const [lx, ly] = P(mid, lr);
-      marks += text(lx, ly, s.angleLabel, { size: 13 });
+      // near-horizontal sector with its name inside: nudge the angle label away from where the name goes
+      const sideA = Math.abs(Math.sin((mid * Math.PI) / 180));
+      const nameInside = s.label && s.angle >= 50;
+      const downA = Math.cos((mid * Math.PI) / 180) < 0.35;
+      const nudge = nameInside && sideA > 0.5 ? (downA ? -1 : 1) * 9 * sideA : 0;
+      marks += text(lx, ly + nudge, s.angleLabel, { size: 13 });
     }
     if (s.label) {
       if (s.angle >= 50 || (s.angle >= 34 && !s.angleLabel)) {
@@ -290,7 +295,7 @@ export function pieChart({ sectors, r = 104, title = null, notAccurate = false }
         if (s.angleLabel && side > 0.5) {
           const down = Math.cos((mid * Math.PI) / 180) < 0.35;
           [lx, ly] = P(mid, Math.min(r * 0.62, r - half - 10));
-          ly += (down ? 1 : -1) * 18 * side;
+          ly += (down ? 1 : -1) * 16 * side;
         }
         marks += text(lx, ly, s.label, { size: 14 });
       } else {

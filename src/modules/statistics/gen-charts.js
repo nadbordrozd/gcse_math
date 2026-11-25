@@ -2,7 +2,7 @@
 import {
   pick, int, size, shuffle, sample, num, tnum, money, roundTo, tidy, table, chance, frac, gcd,
 } from '../../core.js';
-import { sgen, fracDistractors, sum, numDistractors } from './util.js';
+import { sgen, fracDistractors, fracEq, sum, numDistractors } from './util.js';
 import { barChart, pictogram, tallyChart, lineGraph, pieChart } from './charts.js';
 
 /** Scale for a bar chart / line graph by difficulty: unit = value of one small square. */
@@ -41,6 +41,28 @@ const BAR_CTX = [
   { intro: 'The bar chart shows the number of sunny days in some months last year.', cats: ['Apr', 'May', 'Jun', 'Jul', 'Aug'], xTitle: 'Month', yTitle: 'Number of sunny days', ask: (c) => `How many sunny days were there in ${{ Apr: 'April', May: 'May', Jun: 'June', Jul: 'July', Aug: 'August' }[c]}?`, who: 'sunny days', label: (c) => ({ Apr: 'April', May: 'May', Jun: 'June', Jul: 'July', Aug: 'August' }[c]), small: true },
 ];
 const catLabel = (ctx, c) => (ctx.label ? ctx.label(c) : c.toLowerCase());
+const plural = (w) => ({ horse: 'horses', lorry: 'lorries', bus: 'buses', 'hot chocolate': 'hot chocolates' }[w] || `${w}s`);
+const travel = (w) => (w === 'walk' ? 'walk' : `travel by ${w}`);
+// "How many more … than …?" in the words of each context (labels already lower case / full names)
+const BAR_MORE = {
+  Fruit: (a, b) => `How many more students chose ${a} than ${b}?`,
+  'How they travel': (a, b) => `How many more students ${travel(a)} than ${travel(b)}?`,
+  Flavour: (a, b) => `How many more ${a} ice creams than ${b} ice creams were sold?`,
+  Colour: (a, b) => `How many more ${a} cars than ${b} cars drove past?`,
+  Day: (a, b) => `How many more books were borrowed on ${a} than on ${b}?`,
+  Animal: (a, b) => `How many more ${plural(a)} than ${plural(b)} did the vet treat?`,
+  Sport: (a, b) => `How many more votes did ${a} get than ${b}?`,
+  Drink: (a, b) => `How many more ${plural(a)} than ${plural(b)} were sold?`,
+  Month: (a, b) => `How many more sunny days were there in ${a} than in ${b}?`,
+};
+const TALLY_MORE = {
+  Pet: (a, b) => `How many more students chose ${a} than ${b}?`,
+  Colour: (a, b) => `How many more people chose ${a} than ${b}?`,
+  Transport: (a, b) => `How many more students ${travel(a)} than ${travel(b)}?`,
+  Flavour: (a, b) => `How many more packets of ${a} crisps than ${b} crisps were sold?`,
+  Score: (a, b) => `How many more times did Ben roll a ${a} than a ${b}?`,
+  Vehicle: (a, b) => `How many more ${plural(a)} than ${plural(b)} passed Laura's house?`,
+};
 
 export const barRead = sgen('stat-bar-read', 'stat-bar-pictograms', (rng, d) => {
   const ctx = pick(rng, BAR_CTX);
@@ -71,7 +93,7 @@ export const barRead = sgen('stat-bar-read', 'stat-bar-pictograms', (rng, d) => 
     const [hi, lo] = vals[i] > vals[j] ? [i, j] : [j, i];
     const ans = vals[hi] - vals[lo];
     return {
-      prompt: `${ctx.intro}<br>How many more ${ctx.who} were there for ${catLabel(ctx, cats[hi])} than for ${catLabel(ctx, cats[lo])}?`,
+      prompt: `${ctx.intro}<br>${BAR_MORE[ctx.xTitle](catLabel(ctx, cats[hi]), catLabel(ctx, cats[lo]))}`,
       visual,
       answer: num(ans),
       distractors: numDistractors(ans, [vals[hi] + vals[lo], vals[hi], vals[lo], ans + u, ans - u, ans + sc.step], { integer: true }),
@@ -111,17 +133,19 @@ export const barRead = sgen('stat-bar-read', 'stat-bar-pictograms', (rng, d) => 
     visual,
     answer: `$${f.tex()}$`,
     distractors: fracDistractors(f, [frac(vals[i], total - vals[i]), frac(vals[i], Math.max(...vals) === vals[i] ? total - 1 : Math.max(...vals)), frac(vals[j], total), frac(vals[i] + u, total), frac(vals[i], 100)]),
-    solution: [scaleTip, `Total $= ${vals.join(' + ')} = ${total}$`, `Fraction $= \\frac{${vals[i]}}{${total}} = ${f.tex()}$`, `Answer: $${f.tex()}$`],
+    solution: [scaleTip, `Total $= ${vals.join(' + ')} = ${total}$`, `Fraction $= ${fracEq(vals[i], total, f)}$`, `Answer: $${f.tex()}$`],
   };
 }, { title: 'Read and interpret a bar chart' });
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+const DAY_NAME = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday' };
+// diffQ(category, more, less), totalQ(series): wording for each context; vals: optional realistic band [lo, hi].
 const DUAL_CTX = [
-  { intro: 'The dual bar chart shows the number of medals a country won at two events.', cats: ['Gold', 'Silver', 'Bronze'], series: ['2008', '2012'], xTitle: 'Medal', yTitle: 'Number of medals', what: 'medals' },
-  { intro: 'The dual bar chart shows how many boys and girls in a year group chose each club.', cats: ['Art', 'Chess', 'Drama', 'Music'], series: ['Boys', 'Girls'], xTitle: 'Club', yTitle: 'Number of students', what: 'students' },
-  { intro: 'The dual bar chart shows the number of cakes a bakery sold on two days.', cats: ['Lemon', 'Carrot', 'Choc', 'Coffee'], series: ['Saturday', 'Sunday'], xTitle: 'Cake', yTitle: 'Number sold', what: 'cakes' },
-  { intro: 'The dual bar chart shows the hours of sunshine in two towns over three months.', cats: ['June', 'July', 'August'], series: ['Torquay', 'Whitby'], xTitle: 'Month', yTitle: 'Hours of sunshine', what: 'hours of sunshine', big: true },
-  { intro: 'The dual bar chart shows the numbers of visitors to a museum in the mornings and afternoons.', cats: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], series: ['Morning', 'Afternoon'], xTitle: 'Day', yTitle: 'Number of visitors', what: 'visitors' },
+  { intro: 'The dual bar chart shows the number of medals a country won at two events.', cats: ['Gold', 'Silver', 'Bronze'], series: ['2008', '2012'], xTitle: 'Medal', yTitle: 'Number of medals', diffQ: (c, m, l) => `How many more ${c.toLowerCase()} medals did the country win in ${m} than in ${l}?`, totalQ: (s) => `How many medals did the country win altogether in ${s}?` },
+  { intro: 'The dual bar chart shows how many boys and girls in a year group chose each club.', cats: ['Art', 'Chess', 'Drama', 'Music'], series: ['Boys', 'Girls'], xTitle: 'Club', yTitle: 'Number of students', diffQ: (c, m, l) => `How many more ${m.toLowerCase()} than ${l.toLowerCase()} chose ${c}?`, totalQ: (s) => `How many ${s.toLowerCase()} are shown on the chart altogether?` },
+  { intro: 'The dual bar chart shows the number of cakes a bakery sold on two days.', cats: ['Lemon', 'Carrot', 'Choc', 'Coffee'], series: ['Saturday', 'Sunday'], xTitle: 'Cake', yTitle: 'Number sold', diffQ: (c, m, l) => `How many more ${c === 'Choc' ? 'chocolate' : c.toLowerCase()} cakes were sold on ${m} than on ${l}?`, totalQ: (s) => `How many cakes did the bakery sell altogether on ${s}?` },
+  { intro: 'The dual bar chart shows the hours of sunshine in two towns over three months.', cats: ['June', 'July', 'August'], series: ['Torquay', 'Whitby'], xTitle: 'Month', yTitle: 'Hours of sunshine', big: true, vals: [15, 26], diffQ: (c, m, l) => `In ${c}, how many more hours of sunshine did ${m} have than ${l}?`, totalQ: (s) => `How many hours of sunshine did ${s} have altogether in these three months?` },
+  { intro: 'The dual bar chart shows the numbers of visitors to a museum in the mornings and afternoons.', cats: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], series: ['Morning', 'Afternoon'], xTitle: 'Day', yTitle: 'Number of visitors', diffQ: (c, m, l) => `On ${DAY_NAME[c]}, how many more visitors were there in the ${m.toLowerCase()} than in the ${l.toLowerCase()}?`, totalQ: (s) => `How many visitors came in the ${s.toLowerCase()} altogether, Monday to Friday?` },
 ];
 const COMPOSITE_CTX = [
   { intro: 'The composite bar chart shows the percentage of drinks of each type sold by a café in two years.', series: ['Coffee', 'Tea', 'Other'], cats: ['2015', '2023'], noun: 'drinks', item: (s) => `${s.toLowerCase()}s`.replace('others', 'other drinks') },
@@ -136,17 +160,18 @@ export const barDualComposite = sgen('stat-bar-dual-composite', 'stat-bar-pictog
     const ctx = pick(rng, DUAL_CTX);
     const sc = ctx.big ? { step: 50, minor: 5, unit: 10, n: 6 } : pickScale(rng, d === 'easy' ? 'easy' : 'medium');
     const k = ctx.cats.length;
-    const a = valsOn(rng, k, sc); const b = valsOn(rng, k, sc);
+    const band = () => Array.from({ length: k }, () => sc.unit * int(rng, ctx.vals[0], ctx.vals[1]));
+    const a = ctx.vals ? band() : valsOn(rng, k, sc); const b = ctx.vals ? band() : valsOn(rng, k, sc);
     const y = yAxis(sc, [...a, ...b], ctx.yTitle);
     const visual = barChart({ categories: ctx.cats, series: [{ name: ctx.series[0], values: a }, { name: ctx.series[1], values: b }], y, xTitle: ctx.xTitle, width: 440, height: 300 });
     const q = pick(rng, ['diff', 'total', 'most']);
     const i = int(rng, 0, k - 1);
-    const label = ctx.cats[i] === 'Choc' ? 'chocolate' : ctx.cats[i];
+    const label = DAY_NAME[ctx.cats[i]] || (ctx.cats[i] === 'Choc' ? 'Chocolate' : ctx.cats[i]);
     if (q === 'diff') {
       const ans = Math.abs(a[i] - b[i]);
       const more = a[i] > b[i] ? ctx.series[0] : ctx.series[1]; const less = more === ctx.series[0] ? ctx.series[1] : ctx.series[0];
       return {
-        prompt: `${ctx.intro}<br>For ${label}, how many more ${ctx.what} were there for ${more} than for ${less}?`,
+        prompt: `${ctx.intro}<br>${ctx.diffQ(ctx.cats[i], more, less)}`,
         visual,
         answer: num(ans),
         distractors: numDistractors(ans, [a[i] + b[i], Math.max(a[i], b[i]), ans + sc.unit, ans - sc.unit, Math.abs(a[(i + 1) % k] - b[(i + 1) % k]), ans + sc.step], { integer: true }),
@@ -158,7 +183,7 @@ export const barDualComposite = sgen('stat-bar-dual-composite', 'stat-bar-pictog
       const which = chance(rng) ? 0 : 1; const vals = which ? b : a;
       const ans = sum(vals);
       return {
-        prompt: `${ctx.intro}<br>Work out the total number of ${ctx.what} for ${ctx.series[which]}.`,
+        prompt: `${ctx.intro}<br>${ctx.totalQ(ctx.series[which])}`,
         visual,
         answer: num(ans),
         distractors: numDistractors(ans, [sum(which ? a : b), sum(a) + sum(b), ans + sc.unit, ans - sc.step, ans + 2 * sc.unit], { integer: true }),
@@ -166,18 +191,20 @@ export const barDualComposite = sgen('stat-bar-dual-composite', 'stat-bar-pictog
         solution: [`Use only the ${ctx.series[which]} bars (check the key).`, `$${vals.join(' + ')} = ${ans}$`, `Answer: ${num(ans)}`],
       };
     }
-    const diffs = ctx.cats.map((_, m) => b[m] - a[m]);
+    const diffs = ctx.cats.map((_, m) => Math.abs(b[m] - a[m]));
     const best = Math.max(...diffs);
-    if (diffs.filter((x) => x === best).length > 1 || best <= 0) throw new Error('unclear increase');
+    if (diffs.filter((x) => x === best).length > 1 || best <= 0) throw new Error('unclear difference');
     const ans = ctx.cats[diffs.indexOf(best)];
+    const catName = (c) => (DAY_NAME[c] || (c === 'Choc' ? 'chocolate' : c));
     return {
-      prompt: `${ctx.intro}<br>For which ${ctx.xTitle.toLowerCase()} was the number for ${ctx.series[1]} the most <b>greater</b> than the number for ${ctx.series[0]}?`,
+      prompt: `${ctx.intro}<br>For which ${ctx.xTitle.toLowerCase()} was the difference between ${ctx.series[0]} and ${ctx.series[1]} the greatest?`,
       visual,
       answer: ans,
       distractors: ctx.cats.filter((c) => c !== ans),
       count: k,
       keepOrder: true,
-      solution: [`Work out ${ctx.series[1]} − ${ctx.series[0]} for each: ${ctx.cats.map((c, m) => `${c} ${diffs[m]}`).join(', ')}.`, `The biggest difference is ${best}.`, `Answer: ${ans}`],
+      order: ctx.cats,
+      solution: [`Find the gap between the two bars for each ${ctx.xTitle.toLowerCase()}: ${ctx.cats.map((c, m) => `${catName(c)} ${diffs[m]}`).join(', ')}.`, `The biggest difference is ${best}.`, `Answer: ${ans}`],
     };
   }
   const ctx = pick(rng, COMPOSITE_CTX);
@@ -232,6 +259,10 @@ export const pictogramRead = sgen('stat-pictogram', 'stat-bar-pictograms', (rng,
   const rowsN = ctx.rows.length;
   const vals = Array.from({ length: rowsN }, () => (per / parts) * int(rng, parts, parts * 5));
   if (new Set(vals).size < rowsN) throw new Error('dupe rows');
+  if (ctx.rows.includes('Snow')) { // snow should be the rarest weather
+    const si = ctx.rows.indexOf('Snow'); const mi = vals.indexOf(Math.min(...vals));
+    [vals[si], vals[mi]] = [vals[mi], vals[si]];
+  }
   const q = size(d, pick(rng, ['read', 'read', 'more']), pick(rng, ['read', 'total', 'more']), pick(rng, ['key', 'symbols', 'total']));
   const i = int(rng, 0, rowsN - 1);
   const rows = ctx.rows.map((r, m) => ({ label: r, value: vals[m] }));
@@ -330,13 +361,13 @@ export const tallyRead = sgen('stat-tally', 'stat-bar-pictograms', (rng, d) => {
       overlap: `The groups overlap, so a value such as ${w} fits in two groups`,
       gap: `There are gaps between the groups, so a value such as ${w - 1} does not fit in any group`,
       missing: fault === 'missing' ? `There is no group for values above ${top - 1}, but the largest value is ${dataMax}` : 'Some of the values are too large to fit in any group',
-      unequal: 'The groups should all have different widths',
-      tally: 'Tallies should be written as numbers, not marks',
+      wider: 'The groups should be wider, so there are fewer of them',
+      start: 'The first group should start at 1, not 0',
     };
     const visual = tallyChart({ rows: labels.map((l) => ({ label: l, count: 0 })), headers: [thing[1], 'Tally', 'Frequency'] });
     const ans = opts[fault];
     return {
-      prompt: `Katy recorded the number of ${thing[0]}. The smallest value was ${int(rng, 0, 3)} and the largest was ${dataMax}.<br>She draws this tally chart to group the data.<br>What is wrong with her tally chart?`,
+      prompt: `Katy recorded the number of ${thing[0]}. The smallest value was 0 and the largest was ${dataMax}.<br>She draws this tally chart to group the data.<br>What is wrong with her tally chart?`,
       visual,
       answer: ans,
       distractors: shuffle(rng, Object.entries(opts).filter(([key]) => key !== fault).map(([, v]) => v)),
@@ -345,7 +376,7 @@ export const tallyRead = sgen('stat-tally', 'stat-bar-pictograms', (rng, d) => {
     };
   }
   const ctx = pick(rng, TALLY_CTX);
-  const k = Math.min(ctx.rows.length, size(d, 4, 5, 6));
+  const k = ctx.head === 'Score' ? 6 : Math.min(ctx.rows.length, size(d, 4, 5, 6)); // a dice shows every face
   const counts = Array.from({ length: k }, () => int(rng, 1, size(d, 12, 18, 23)));
   const maxC = Math.max(...counts);
   if (counts.filter((c) => c === maxC).length > 1) throw new Error('tie');
@@ -370,7 +401,7 @@ export const tallyRead = sgen('stat-tally', 'stat-bar-pictograms', (rng, d) => {
       prompt: `${ctx.intro}<br>Which ${ctx.head.toLowerCase()} was the most common?`,
       visual, answer: ans,
       distractors: ctx.rows.slice(0, k).filter((r) => r !== ans),
-      count: k, keepOrder: true,
+      count: Math.min(k, 5), keepOrder: true, order: ctx.rows,
       solution: ['Count each row: a crossed bundle is 5.', `Frequencies: ${ctx.rows.slice(0, k).map((r, m) => `${r} ${counts[m]}`).join(', ')}.`, `Answer: ${ans}`],
     };
   }
@@ -380,7 +411,7 @@ export const tallyRead = sgen('stat-tally', 'stat-bar-pictograms', (rng, d) => {
     if (counts[hi] === counts[lo]) throw new Error('tie');
     const ans = counts[hi] - counts[lo];
     return {
-      prompt: `${ctx.intro}<br>How many more for ${ctx.rows[hi]} than for ${ctx.rows[lo]}?`,
+      prompt: `${ctx.intro}<br>${TALLY_MORE[ctx.head](ctx.head === 'Score' ? ctx.rows[hi] : ctx.rows[hi].toLowerCase(), ctx.head === 'Score' ? ctx.rows[lo] : ctx.rows[lo].toLowerCase())}`,
       visual, answer: num(ans),
       distractors: numDistractors(ans, [counts[hi] + counts[lo], counts[hi], ans + 1, ans - 1, ans + 5, ans + 4], { integer: true }),
       typed: { kind: 'number', value: ans },
@@ -402,7 +433,7 @@ export const tallyRead = sgen('stat-tally', 'stat-bar-pictograms', (rng, d) => {
     prompt: `${ctx.intro}<br>What fraction of the ${ctx.who} were for ${ctx.rows[i]}? Give your answer in its simplest form.`,
     visual, answer: `$${f.tex()}$`,
     distractors: fracDistractors(f, [frac(counts[i], total - counts[i]), frac(counts[i] + 1, total), frac(counts[(i + 1) % k], total), frac(1, counts[i]), frac(counts[i], 100)]),
-    solution: [`Frequencies: ${counts.join(', ')}, total ${total}.`, `Fraction $= \\frac{${counts[i]}}{${total}} = ${f.tex()}$`, `Answer: $${f.tex()}$`],
+    solution: [`Frequencies: ${counts.join(', ')}, total ${total}.`, `Fraction $= ${fracEq(counts[i], total, f)}$`, `Answer: $${f.tex()}$`],
   };
 }, { title: 'Read a tally chart (and criticise grouping)' });
 
@@ -417,7 +448,7 @@ const LINE_CTX = [
   { intro: 'The time series graph shows the number of bikes sold by a shop each quarter.', labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Q1', 'Q2', 'Q3', 'Q4'], full: ['Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023', 'Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024'], yTitle: 'Bikes sold', val: 'number of bikes sold', unit: '', range: [20, 100], shape: 'season', at: (l) => `in ${l}`, xTitle: 'Quarter (2023, 2024)' },
   { intro: 'The graph shows the mean price of a house in a town each year, in thousands of pounds.', labels: ['2017', '2018', '2019', '2020', '2021', '2022', '2023'], yTitle: 'Price (£ thousands)', val: 'mean house price', unit: 'money', range: [150, 290], shape: 'up', at: (l) => `in ${l}`, xTitle: 'Year' },
   { intro: 'The graph shows the time Lena took to run 5 km each week as she trained for a race.', labels: ['1', '2', '3', '4', '5', '6', '7', '8'], full: ['week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6', 'week 7', 'week 8'], yTitle: 'Time (minutes)', unit: 'minutes', range: [24, 40], val: 'time', shape: 'down', at: (l) => `in ${l}`, xTitle: 'Week' },
-  { intro: 'The graph shows the height of a sunflower measured each week.', labels: ['1', '2', '3', '4', '5', '6', '7'], full: ['week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6', 'week 7'], yTitle: 'Height (cm)', unit: 'cm', range: [10, 150], val: 'height', shape: 'up', at: (l) => `in ${l}`, xTitle: 'Week' },
+  { intro: 'The graph shows the height of a sunflower measured each week.', labels: ['1', '2', '3', '4', '5', '6', '7'], full: ['week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6', 'week 7'], yTitle: 'Height (cm)', unit: 'cm', range: [10, 150], grow: true, val: 'height', shape: 'up', at: (l) => `in ${l}`, xTitle: 'Week' },
   { intro: 'The graph shows the number of people in a café each hour.', labels: ['9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm'], yTitle: 'Number of people', unit: 'people', val: 'number of people', range: [4, 40], shape: 'hump', at: (l) => `at ${l}`, xTitle: 'Time' },
   { intro: 'The time series shows the number of electric cars sold in a town each year.', labels: ['2018', '2019', '2020', '2021', '2022', '2023'], yTitle: 'Number sold', unit: 'cars', val: 'number sold', range: [20, 200], shape: 'up', at: (l) => `in ${l}`, xTitle: 'Year' },
 ];
@@ -429,7 +460,10 @@ function seriesShape(rng, ctx, sc, n) {
       : ctx.shape === 'hump' ? lo + span * (0.2 + 0.75 * Math.sin(Math.PI * t)) : lo + span * (0.35 + 0.08 * (i >= 4 ? 1 : 0) + [0.05, 0.3, 0.5, 0.1][i % 4]);
     return base + (rng() - 0.5) * span * 0.18;
   });
-  return raw.map((v) => Math.max(sc.unit, Math.round(v / sc.unit) * sc.unit));
+  const out = raw.map((v) => Math.max(sc.unit, Math.round(v / sc.unit) * sc.unit));
+  // things that grow (a plant's height) never go down
+  if (ctx.grow) for (let i = 1; i < out.length; i += 1) out[i] = Math.max(out[i], out[i - 1]);
+  return out;
 }
 function lineScale(ctx, d) {
   const span = ctx.range[1] - ctx.range[0];
@@ -509,14 +543,14 @@ const TWO_LINE_CTX = [
   { intro: 'The graph shows the mean monthly temperature in two cities.', labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], full: ['January', 'February', 'March', 'April', 'May', 'June'], series: ['London', 'Aberdeen'], yTitle: 'Temperature (°C)', range: [2, 20], unit: '°C', step: 5 },
   { intro: 'The graph shows the number of members of two clubs over six years.', labels: ['2018', '2019', '2020', '2021', '2022', '2023'], series: ['Tennis', 'Golf'], yTitle: 'Members', range: [20, 100], unit: 'members', step: 20 },
   { intro: 'The graph shows the sales of two magazines, in thousands, over six months.', labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], full: ['July', 'August', 'September', 'October', 'November', 'December'], series: ['Magazine A', 'Magazine B'], yTitle: 'Sales (thousands)', range: [10, 50], unit: 'thousand', step: 10 },
-  { intro: 'The graph shows the heights of two plants measured each week.', labels: ['1', '2', '3', '4', '5', '6'], full: ['week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6'], series: ['Plant A', 'Plant B'], yTitle: 'Height (cm)', range: [4, 40], unit: 'cm', step: 10 },
+  { intro: 'The graph shows the heights of two plants measured each week.', labels: ['1', '2', '3', '4', '5', '6'], full: ['week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6'], series: ['Plant A', 'Plant B'], grow: true, yTitle: 'Height (cm)', range: [4, 40], unit: 'cm', step: 10 },
 ];
 const TREND = {
   up: 'There is an increasing trend: the values generally go up over time',
   down: 'There is a decreasing trend: the values generally go down over time',
   hump: 'The values increase to a peak and then decrease',
   season: 'The values follow a repeating pattern that is highest in the same quarter each year',
-  flat: 'The values stay exactly the same over time',
+  dip: 'The values decrease to a low point and then increase',
 };
 export const lineInterpret = sgen('stat-line-interpret', 'stat-line-graphs', (rng, d) => {
   if (d !== 'easy' && chance(rng, d === 'hard' ? 0.7 : 0.4)) {
@@ -524,7 +558,8 @@ export const lineInterpret = sgen('stat-line-interpret', 'stat-line-graphs', (rn
     const n = ctx.labels.length; const span = ctx.range[1] - ctx.range[0];
     const unitV = ctx.step / 5;
     const mk = (off) => Array.from({ length: n }, (_, i) => Math.round((ctx.range[0] + span * (0.15 + 0.6 * (i / (n - 1)) + off) + (rng() - 0.5) * span * 0.25) / unitV) * unitV);
-    const a = mk(0.15); const b = mk(-0.05).map((v) => Math.max(unitV, v));
+    const grow = (s) => (ctx.grow ? s.map((v, i) => Math.max(...s.slice(0, i + 1))) : s);
+    const a = grow(mk(0.15)); const b = grow(mk(-0.05).map((v) => Math.max(unitV, v)));
     const diffs = a.map((v, i) => Math.abs(v - b[i]));
     const q = pick(rng, ['greatest', 'value']);
     const ymax = Math.ceil((Math.max(...a, ...b) + unitV) / ctx.step) * ctx.step;
@@ -561,7 +596,7 @@ export const lineInterpret = sgen('stat-line-interpret', 'stat-line-graphs', (rn
   return {
     prompt: `${ctx.intro}<br>Which statement best describes the graph?`,
     visual, answer: ans,
-    distractors: shuffle(rng, Object.values(TREND).filter((t) => t !== ans)),
+    distractors: shuffle(rng, ['up', 'down', 'hump', 'dip', ...(ctx.shape === 'season' ? ['season'] : [])].filter((k) => TREND[k] !== ans).map((k) => TREND[k])).slice(0, 3),
     count: 4,
     solution: ['Look at the overall shape, not just one or two points.', `From ${lineName(ctx, 0)} to ${lineName(ctx, ctx.labels.length - 1)} the values go ${vals.map((v) => num(v)).join(', ')}.`, `Answer: ${ans}`],
   };
@@ -574,9 +609,9 @@ export const lineInterpret = sgen('stat-line-interpret', 'stat-line-graphs', (rn
 const PIE_CTX = [
   { intro: 'Some students were asked how they travel to school.', cats: ['Walk', 'Bus', 'Car', 'Bike', 'Train'], who: 'students', head: 'Method' },
   { intro: 'Visitors to a zoo were asked which animal was their favourite.', cats: ['Lions', 'Penguins', 'Monkeys', 'Giraffes', 'Snakes'], who: 'visitors', head: 'Animal' },
-  { intro: 'People in a town were asked how they mainly listen to music.', cats: ['Streaming', 'Radio', 'CD', 'Vinyl', 'Other'], who: 'people', head: 'Method' },
+  { intro: 'Some people were asked how they mainly listen to music.', cats: ['Streaming', 'Radio', 'CD', 'Vinyl', 'Other'], who: 'people', head: 'Method' },
   { intro: 'A café recorded the sandwiches it sold one day.', cats: ['Cheese', 'Ham', 'Tuna', 'Egg', 'Vegan'], who: 'sandwiches', head: 'Sandwich', verb: 'were' },
-  { intro: 'The voters in an election chose one of five candidates.', cats: ['Ahmed', 'Brown', 'Clarke', 'Davies', 'Evans'], who: 'voters', head: 'Candidate', verb: 'voted for' },
+  { intro: 'In an election, each voter chose one of the candidates.', cats: ['Ahmed', 'Brown', 'Clarke', 'Davies', 'Evans'], who: 'voters', head: 'Candidate', verb: 'voted for' },
   { intro: 'Some football players were asked the colour of their team\'s shirts.', cats: ['White', 'Blue', 'Red', 'Green', 'Yellow'], who: 'players', head: 'Colour', verb: 'said' },
   { intro: 'A garden centre recorded the types of plant it sold one weekend.', cats: ['Roses', 'Herbs', 'Shrubs', 'Bulbs', 'Trees'], who: 'plants', head: 'Plant', verb: 'were' },
   { intro: 'Students chose one language to study next year.', cats: ['French', 'Spanish', 'German', 'Mandarin', 'Italian'], who: 'students', head: 'Language' },
@@ -639,7 +674,7 @@ export const pieRead = sgen('stat-pie-read', 'stat-pie-charts', (rng, d) => {
       prompt: `${ctx.intro}<br>The pie chart shows the results.<br>What fraction of the ${ctx.who} ${ctx.verb || 'chose'} ${ctx.cats[i]}? Give your answer in its simplest form.`,
       visual, answer: `$${f.tex()}$`,
       distractors: fracDistractors(f, [frac(P.angles[i], 100), frac(P.angles[i], 180), frac(1, k), frac(P.angles[(i + 1) % k], 360), frac(P.angles[i], 360 - P.angles[i]), frac(P.angles[i] + 30, 360), frac(P.angles[i] - 30, 360), frac(P.angles[i] + 60, 360), frac(10, P.angles[i])]),
-      solution: ['The whole pie is $360^\\circ$.', `${ctx.cats[i]} has $${P.angles[i]}^\\circ$, so the fraction is $\\frac{${P.angles[i]}}{360} = ${f.tex()}$`, `Answer: $${f.tex()}$`],
+      solution: ['The whole pie is $360^\\circ$.', `${ctx.cats[i]} has $${P.angles[i]}^\\circ$, so the fraction is $${fracEq(P.angles[i], 360, f)}$`, `Answer: $${f.tex()}$`],
     };
   }
   const others = P.angles.filter((_, m) => m !== i);
@@ -740,9 +775,24 @@ export const pieComplete = sgen('stat-pie-complete', 'stat-pie-charts', (rng, d)
   throw new Error('pie complete');
 }, { title: 'Complete a pie chart from a ratio' });
 
+// Group labels that suit each context: [labels, sentence that introduces the two totals]
+const PIE_GROUPS = {
+  students: [
+    [['School A', 'School B'], (a, b) => `The pie charts show the results for ${a} students at School A and ${b} students at School B.`],
+    [['Year 9', 'Year 11'], (a, b) => `The pie charts show the results for ${a} students in Year 9 and ${b} students in Year 11.`],
+  ],
+  visitors: [
+    [['Saturday', 'Sunday'], (a, b) => `The pie charts show the results for ${a} visitors on Saturday and ${b} visitors on Sunday.`],
+    [['2022', '2023'], (a, b) => `The pie charts show the results for ${a} visitors in 2022 and ${b} visitors in 2023.`],
+  ],
+  people: [
+    [['Under 30', '30 and over'], (a, b) => `The pie charts show the results for ${a} people aged under 30 and ${b} people aged 30 and over.`],
+    [['Leeds', 'York'], (a, b) => `The same survey was done in two towns. The pie charts show the results for ${a} people in Leeds and ${b} people in York.`],
+  ],
+};
 export const pieCompare = sgen('stat-pie-compare', 'stat-pie-charts', (rng, d) => {
-  const ctx = pick(rng, PIE_CTX.filter((c) => c.who === 'students' || c.who === 'people' || c.who === 'visitors'));
-  const [groups, at] = pick(rng, [[['School A', 'School B'], 'at'], [['Year 9', 'Year 11'], 'in'], [['Saturday', 'Sunday'], 'on'], [['2022', '2023'], 'in'], [['Survey A', 'Survey B'], 'in']]);
+  const ctx = pick(rng, PIE_CTX.filter((c) => PIE_GROUPS[c.who]));
+  const [groups, introTotals] = pick(rng, PIE_GROUPS[ctx.who]);
   for (let t = 0; t < 200; t += 1) {
     const A = pieData(rng, 3, [36, 40, 45, 60, 72], 40); const B = pieData(rng, 3, [36, 40, 45, 60, 72], 40);
     const ka = pick(rng, [2, 3, 5, 10]); const kb = pick(rng, [2, 3, 5, 10]);
@@ -752,23 +802,34 @@ export const pieCompare = sgen('stat-pie-compare', 'stat-pie-charts', (rng, d) =
     // the trap: bigger angle but fewer people
     if (nA === nB || (A.angles[i] > B.angles[i]) === (nA > nB)) continue;
     if (Math.abs(A.angles[i] - B.angles[i]) < 20) continue;
-    const vis = (P, g) => pieChart({ sectors: ctx.cats.slice(0, 3).map((c, m) => ({ label: c, angle: P.angles[m], angleLabel: deg(P.angles[m]) })), title: g, r: 92 });
+    const vis = (P, g) => pieChart({ sectors: ctx.cats.slice(0, 3).map((c, m) => ({ label: c, angle: P.angles[m], angleLabel: deg(P.angles[m]) })), title: g, r: 100 });
     const visual = `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${vis(A, groups[0])}${vis(B, groups[1])}</div>`;
     const more = nA > nB ? groups[0] : groups[1]; const fewer = more === groups[0] ? groups[1] : groups[0];
     const bigAngle = A.angles[i] > B.angles[i] ? groups[0] : groups[1];
+    const working = [
+      'A bigger sector means a bigger <b>fraction</b>, not necessarily more people: the totals are different.',
+      `${groups[0]}: $\\frac{${A.angles[i]}}{360} \\times ${tnum(TA)} = ${tnum(nA)}$`,
+      `${groups[1]}: $\\frac{${B.angles[i]}}{360} \\times ${tnum(TB)} = ${tnum(nB)}$`,
+    ];
+    if (d === 'hard') {
+      const ans = Math.abs(nA - nB);
+      return {
+        prompt: `${ctx.intro}<br>${introTotals(num(TA), num(TB))}<br>How many more ${ctx.who} chose ${ctx.cats[i]} in ${more} than in ${fewer}?`,
+        visual,
+        answer: num(ans),
+        distractors: numDistractors(ans, [Math.abs(A.angles[i] - B.angles[i]), nA + nB, Math.abs(TA - TB), Math.max(nA, nB), Math.abs(A.angles[i] / 360 * TB - B.angles[i] / 360 * TA)], { integer: true }),
+        typed: { kind: 'number', value: ans },
+        solution: [...working, `Difference: $${tnum(Math.max(nA, nB))} - ${tnum(Math.min(nA, nB))} = ${tnum(ans)}$`, `Answer: ${num(ans)}`],
+      };
+    }
     const ans = `${more}: ${Math.max(nA, nB)} compared with ${Math.min(nA, nB)}`;
     return {
-      prompt: `${ctx.intro}<br>The pie charts show the results for ${num(TA)} ${ctx.who} ${at} ${groups[0]} and ${num(TB)} ${ctx.who} ${at} ${groups[1]}.<br>In which group did more ${ctx.who} choose ${ctx.cats[i]}?`,
+      prompt: `${ctx.intro}<br>${introTotals(num(TA), num(TB))}<br>In which group did more ${ctx.who} choose ${ctx.cats[i]}?`,
       visual,
       answer: ans,
-      distractors: [`${bigAngle}, because its ${ctx.cats[i]} sector is bigger`, `${fewer}: ${Math.max(nA, nB)} compared with ${Math.min(nA, nB)}`, `The same number, because the pie charts are the same size`, `${bigAngle}: ${Math.max(A.angles[i], B.angles[i])} compared with ${Math.min(A.angles[i], B.angles[i])}`],
+      distractors: [`${bigAngle}, because its ${ctx.cats[i]} sector is bigger`, `${fewer}: ${Math.max(nA, nB)} compared with ${Math.min(nA, nB)}`, 'The same number, because the pie charts are the same size', `${bigAngle}: ${Math.max(A.angles[i], B.angles[i])} compared with ${Math.min(A.angles[i], B.angles[i])}`],
       count: 4,
-      solution: [
-        'A bigger sector means a bigger <b>fraction</b>, not necessarily more people: the totals are different.',
-        `${groups[0]}: $\\frac{${A.angles[i]}}{360} \\times ${TA} = ${nA}$`,
-        `${groups[1]}: $\\frac{${B.angles[i]}}{360} \\times ${TB} = ${nB}$`,
-        `Answer: ${ans}`,
-      ],
+      solution: [...working, `Answer: ${ans}`],
     };
   }
   throw new Error('pie compare');

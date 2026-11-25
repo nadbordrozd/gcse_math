@@ -1,6 +1,6 @@
 // Statistics generators: averages and spread (lists, problems, frequency tables, grouped data, comparisons).
 import {
-  pick, int, size, shuffle, sample, names, num, money, roundTo, tidy, table, chance, ordinal,
+  pick, int, size, shuffle, sample, names, num, tnum, money, roundTo, tidy, table, chance, ordinal,
 } from '../../core.js';
 import {
   sgen, sum, mean, sorted, median, modeOf, countOf, rangeOf, numDistractors, ineq, peakedFreqs, randInts, unsortedOrder, spaced, isClean,
@@ -58,11 +58,12 @@ export const listMean = sgen('stat-avg-list-mean', 'stat-averages-list', (rng, d
       fixTotal(rng, vals, 3, ctx.lo, ctx.hi);
     } else {
       ctx = pick(rng, DEC_CTX); scale = ctx.scale;
-      vals = randInts(rng, 5, ctx.lo, ctx.hi);
+      vals = randInts(rng, 6, ctx.lo, ctx.hi);
+      fixTotal(rng, vals, 3, ctx.lo, ctx.hi); // six 1-dp values with a clean mean
     }
   } else {
-    ctx = pick(rng, LIST_CTX);
-    const n = size(d, pick(rng, [4, 5]), pick(rng, [4, 5]), pick(rng, [5, 8]));
+    ctx = pick(rng, d === 'hard' ? LIST_CTX.filter((c) => c.hi >= 20) : LIST_CTX);
+    const n = size(d, pick(rng, [4, 5]), pick(rng, [4, 5]), pick(rng, [8, 10]));
     vals = randInts(rng, n, ctx.lo, ctx.hi);
     if (d === 'easy') fixTotal(rng, vals, n, ctx.lo, ctx.hi);
     else if (n === 8) fixTotal(rng, vals, 4, ctx.lo, ctx.hi);
@@ -232,7 +233,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June'];
 const MISSING_CTX = [
   { n: 5, lo: 60, hi: 99, unit: '', make: (k, m) => `The table shows the attendance at a youth club from Monday to Thursday.${table([DAYS.slice(0, 4), k.map((v) => num(v))])}For all five days, Monday to Friday, the mean attendance is ${num(m)}.<br>Work out the attendance on Friday.` },
   { n: 6, lo: 5, hi: 70, unit: 'runs', make: (k, m) => `A cricketer scores ${k.map((v) => num(v)).join(', ')} runs in her first five innings.<br>After her sixth innings her mean score is ${num(m)} runs.<br>How many runs did she score in her sixth innings?` },
-  { n: 5, lo: 20, hi: 48, unit: '', max: 50, make: (k, m, nm) => `${nm[0]} has taken four tests, each out of 50. Her marks are ${k.map((v) => num(v)).join(', ')}.<br>She wants her mean mark over five tests to be ${num(m)}.<br>What mark does she need in the fifth test?` },
+  { n: 5, lo: 20, hi: 48, unit: '', max: 50, make: (k, m, nm) => `${nm[0]} has taken four tests, each out of 50. The marks are ${k.map((v) => num(v)).join(', ')}.<br>${nm[0]} wants a mean mark of ${num(m)} over five tests.<br>What mark is needed in the fifth test?` },
   { n: 6, lo: 15, hi: 60, unit: 'cm', make: (k, m) => `A gardener has six tomato plants. The heights of five of them are ${k.map((v) => `${v} cm`).join(', ')}.<br>The mean height of all six plants is ${num(m)} cm.<br>Work out the height of the sixth plant.` },
   { n: 5, lo: 8, hi: 40, unit: '', make: (k, m) => `A café counts its customers each hour. In the first four hours it has ${k.map((v) => num(v)).join(', ')} customers.<br>The mean number of customers per hour over the first five hours is ${num(m)}.<br>How many customers came in the fifth hour?` },
   { n: 5, lo: 350, hi: 700, unit: 'g', make: (k, m) => `A box contains five melons. Four of them have masses ${k.map((v) => `${num(v)} g`).join(', ')}.<br>The mean mass of the five melons is ${num(m)} g.<br>Work out the mass of the fifth melon.` },
@@ -240,7 +241,7 @@ const MISSING_CTX = [
   { n: 5, lo: 12, hi: 80, unit: '£', make: (k, m) => `Five friends raised money for charity. Four of them raised ${k.map((v) => money(v)).join(', ')}.<br>The mean amount raised by the five friends was ${money(m)}.<br>How much did the fifth friend raise?` },
   { n: 6, lo: 10, hi: 45, unit: 'goals', make: (k, m) => `A netball team scores ${k.map((v) => num(v)).join(', ')} goals in its first five matches.<br>After six matches, the team's mean is ${num(m)} goals per match.<br>How many goals did the team score in the sixth match?` },
   { n: 7, lo: 0, hi: 14, unit: 'mm', make: (k, m) => `The rainfall in a town from Monday to Saturday was ${k.map((v) => `${v} mm`).join(', ')}.<br>The mean daily rainfall for the whole week, Monday to Sunday, was ${num(m)} mm.<br>How much rain fell on Sunday?` },
-  { n: 7, lo: 2, hi: 15, unit: 'km', make: (k, m, nm) => `${nm[1]} runs every day. From Monday to Saturday she runs ${k.map((v) => `${v} km`).join(', ')}.<br>Her mean daily distance for the seven days is ${num(m)} km.<br>How far does she run on Sunday?` },
+  { n: 7, lo: 2, hi: 15, unit: 'km', make: (k, m, nm) => `${nm[1]} runs every day. From Monday to Saturday, ${nm[1]} runs ${k.map((v) => `${v} km`).join(', ')}.<br>The mean daily distance for the seven days is ${num(m)} km.<br>How far does ${nm[1]} run on Sunday?` },
   { n: 5, lo: 300, hi: 900, unit: '', make: (k, m) => `The numbers of visitors to a museum each month were:${table([MONTHS.slice(0, 4), k.map((v) => num(v))])}The mean number of visitors per month from January to May was ${num(m)}.<br>How many visitors were there in May?` },
   { n: 6, lo: 1, hi: 9, unit: '£', make: (k, m, nm) => `${nm[2]} gets pocket money from five relatives: ${k.map((v) => money(v)).join(', ')}.<br>After a sixth relative also gives some money, the mean amount per relative is ${money(m)}.<br>How much did the sixth relative give?` },
   { n: 6, lo: 20, hi: 70, unit: 'eggs', make: (k, m) => `A farmer collects ${k.map((v) => num(v)).join(', ')} eggs on five days.<br>The mean number of eggs per day over six days is ${num(m)}.<br>How many eggs did she collect on the sixth day?` },
@@ -254,8 +255,8 @@ export const avgMissing = sgen('stat-avg-missing-value', 'stat-averages-problems
   const m = Math.round((sum(known) + target) / n);
   const ans = n * m - sum(known);
   if (ans < ctx.lo || ans > (ctx.max ?? ctx.hi) * 1.15 || ans < 0) throw new Error('missing out of range');
-  if (d === 'easy' && n > 5) throw new Error('easy wants 5 values');
-  if (d === 'hard' && n < 6) throw new Error('hard wants more values');
+  if (d === 'easy' && (n > 5 || ctx.hi > 100)) throw new Error('easy wants 5 smallish values');
+  if (d === 'hard' && (n < 6 || ctx.hi < 40)) throw new Error('hard wants more, larger values');
   const f = fmtU(ctx.unit === 'runs' || ctx.unit === 'goals' || ctx.unit === 'eggs' || ctx.unit === 'years' ? '' : ctx.unit);
   const nm = names(rng, 3);
   return {
@@ -299,6 +300,9 @@ export const avgNewValue = sgen('stat-avg-new-value', 'stat-averages-problems', 
   const b = a + delta;
   const ans = ctx.add ? (n + 1) * b - n * a : n * a - (n - 1) * b;
   if (ans <= 0) throw new Error('bad value');
+  // keep the new or removed value realistic for the context
+  const LIM = { kg: [50, 115], cm: [160, 215], g: [80, 220], years: [16, 85], seconds: [25, 70], '£': [1, 3 * a], '': [1, 100] }[ctx.unit];
+  if (ans < LIM[0] || ans > LIM[1]) throw new Error('unrealistic value');
   const f = fmtU(ctx.unit === 'years' ? 'years' : ctx.unit);
   const nm = names(rng, 2);
   const big = ctx.add ? n + 1 : n; const small = ctx.add ? n : n - 1;
@@ -310,9 +314,9 @@ export const avgNewValue = sgen('stat-avg-new-value', 'stat-averages-problems', 
     typed: { kind: 'number', value: ans },
     solution: [
       'Work with <b>totals</b>: total = mean × number of values.',
-      `Total for ${big} values: $${big} \\times ${bigM} = ${big * bigM}$`,
-      `Total for ${small} values: $${small} \\times ${smallM} = ${small * smallM}$`,
-      `The difference is the value ${ctx.add ? 'added' : 'removed'}: $${big * bigM} - ${small * smallM} = ${ans}$`,
+      `Total for ${big} values: $${big} \\times ${bigM} = ${tnum(big * bigM)}$`,
+      `Total for ${small} values: $${small} \\times ${smallM} = ${tnum(small * smallM)}$`,
+      `The difference is the value ${ctx.add ? 'added' : 'removed'}: $${tnum(big * bigM)} - ${tnum(small * smallM)} = ${tnum(ans)}$`,
       `Answer: ${f(ans)}`,
     ],
   };
@@ -339,18 +343,26 @@ export const avgCombined = sgen('stat-avg-combined-mean', 'stat-averages-problem
   const reverse = d === 'hard' || (d === 'medium' && chance(rng, 0.4));
   const a = int(rng, 4, 20); const b = int(rng, 4, 20);
   if (a === b) throw new Error('equal groups');
-  const unitStep = ctx.dp === 0 ? 1 : 10 ** -Math.min(ctx.dp, 1) * (ctx.dp === 2 ? 1 : 1);
-  const dpM = reverse ? ctx.dp : d === 'easy' ? Math.min(ctx.dp, 0) : Math.min(ctx.dp, 1);
-  const M = roundTo(ctx.base[0] + rng() * (ctx.base[1] - ctx.base[0]), dpM);
-  const p = roundTo(M + int(rng, 1, 9) * unitStep * (ctx.dp === 0 ? 2 : 1) * (chance(rng) ? 1 : -1), ctx.dp);
-  const q = tidy(((a + b) * M - a * p) / b);
-  if (!isClean(q, ctx.dp) || q <= 0 || p <= 0 || p === q) throw new Error('q not clean');
-  const fmtV = (x) => (ctx.unit === '£' ? money(x, { forcePence: true }) : `${num(x)}${ctx.unit ? ` ${ctx.unit}` : ''}`);
-  const fm = (x) => (ctx.unit === '£' ? money(roundTo(x, 2), { forcePence: true }) : `${num(roundTo(x, Math.max(ctx.dp, 1)))}${ctx.unit ? ` ${ctx.unit}` : ''}`);
+  const span = ctx.base[1] - ctx.base[0];
+  const unitStep = 10 ** -ctx.dp;
+  const M = roundTo(ctx.base[0] + rng() * span, ctx.dp);
+  // Backwards design: p − M = b·j·unit and q − M = −a·j·unit, so a(p − M) + b(q − M) = 0 and both are clean.
+  const jMax = Math.floor((span * 0.3) / (Math.max(a, b) * unitStep));
+  if (jMax < 1) throw new Error('groups too big for this context');
+  const j = int(rng, 1, jMax) * (chance(rng) ? 1 : -1);
+  const p = roundTo(M + b * j * unitStep, ctx.dp);
+  const q = roundTo(M - a * j * unitStep, ctx.dp);
+  // keep both group means realistic for the context
+  const okV = (v) => v > 0 && v >= ctx.base[0] - span * 0.3 && v <= ctx.base[1] + span * 0.3;
+  if (!okV(p) || !okV(q)) throw new Error('unrealistic group mean');
+  // every option uses the same number of decimal places as the data
+  const D = ctx.unit === '£' ? 2 : ctx.dp;
+  const fmtV = (x) => (ctx.unit === '£' ? money(roundTo(x, 2), { forcePence: true }) : `${num(roundTo(x, D), D)}${ctx.unit ? ` ${ctx.unit}` : ''}`);
+  const fm = fmtV;
   const tA = tidy(a * p); const tB = tidy(b * q); const tAll = tidy((a + b) * M);
   if (!reverse) {
     return {
-      prompt: `${ctx.a(a, ctx.unit === '£' ? p : num(p))}<br>${ctx.b(b, ctx.unit === '£' ? q : num(q))}<br>Work out the mean ${ctx.what} for ${ctx.all}.`,
+      prompt: `${ctx.a(a, ctx.unit === '£' ? p : num(p, D))}<br>${ctx.b(b, ctx.unit === '£' ? q : num(q, D))}<br>Work out the mean ${ctx.what} for ${ctx.all}.`,
       answer: fmtV(M),
       distractors: [(p + q) / 2, (a * p + b * q) / Math.max(a, b), (p * b + q * a) / (a + b), M + unitStep * 3, M - unitStep * 3, (a * p + b * q) / 2]
         .filter((v) => v > 0 && Math.abs(v - M) > 1e-9 && isClean(roundTo(v, 2), 2)).map(fm),
@@ -358,15 +370,15 @@ export const avgCombined = sgen('stat-avg-combined-mean', 'stat-averages-problem
       calculator: ctx.dp >= 1 || d !== 'easy',
       solution: [
         'You cannot just average the two means, because the groups are different sizes. Work with <b>totals</b>.',
-        `Total for the ${ctx.A}: $${a} \\times ${num(p)} = ${num(tA)}$; total for the ${ctx.B}: $${b} \\times ${num(q)} = ${num(tB)}$`,
-        `Combined total $= ${num(tAll)}$, shared between $${a} + ${b} = ${a + b}$`,
-        `Mean $= ${num(tAll)} \\div ${a + b} = ${num(M)}$`,
+        `Total for the ${ctx.A}: $${a} \\times ${tnum(p)} = ${tnum(tA)}$; total for the ${ctx.B}: $${b} \\times ${tnum(q)} = ${tnum(tB)}$`,
+        `Combined total $= ${tnum(tAll)}$, shared between $${a} + ${b} = ${a + b}$`,
+        `Mean $= ${tnum(tAll)} \\div ${a + b} = ${tnum(M)}$`,
         `Answer: ${fmtV(M)}`,
       ],
     };
   }
   return {
-    prompt: `${ctx.a(a, ctx.unit === '£' ? p : num(p))}<br>${ctx.bSize(b)}<br>The mean ${ctx.what} for ${ctx.all} is ${fmtV(M)}.<br>Work out the mean ${ctx.what} for the ${ctx.B}.`,
+    prompt: `${ctx.a(a, ctx.unit === '£' ? p : num(p, D))}<br>${ctx.bSize(b)}<br>The mean ${ctx.what} for ${ctx.all} is ${fmtV(M)}.<br>Work out the mean ${ctx.what} for the ${ctx.B}.`,
     answer: fmtV(q),
     distractors: [2 * M - p, ((a + b) * M - a * p) / a, (b * M - a * p) / b + M, q + unitStep * 5, q - unitStep * 5, (a * M - b * p) / a + M, ((a + b) * M + a * p) / b]
       .filter((v) => v > 0 && Math.abs(v - q) > 1e-9 && isClean(roundTo(v, 2), 2)).map(fm),
@@ -374,9 +386,9 @@ export const avgCombined = sgen('stat-avg-combined-mean', 'stat-averages-problem
     calculator: true,
     solution: [
       'Work with <b>totals</b> (total = mean × number). Don\'t just say the two means average to the overall mean.',
-      `Total for everyone: $${a + b} \\times ${num(M)} = ${num(tAll)}$`,
-      `Total for the ${ctx.A}: $${a} \\times ${num(p)} = ${num(tA)}$`,
-      `Total for the ${ctx.B}: $${num(tAll)} - ${num(tA)} = ${num(tB)}$, so their mean is $${num(tB)} \\div ${b} = ${num(q)}$`,
+      `Total for everyone: $${a + b} \\times ${tnum(M)} = ${tnum(tAll)}$`,
+      `Total for the ${ctx.A}: $${a} \\times ${tnum(p)} = ${tnum(tA)}$`,
+      `Total for the ${ctx.B}: $${tnum(tAll)} - ${tnum(tA)} = ${tnum(tB)}$, so their mean is $${tnum(tB)} \\div ${b} = ${tnum(q)}$`,
       `Answer: ${fmtV(q)}`,
     ],
   };
@@ -396,9 +408,10 @@ const ALG_CTX = [
   { kind: 'count', verb: 'sold', noun: 'raffle tickets', past: true },
   { kind: 'count', verb: 'took', noun: 'photos', past: true },
   { kind: 'money', verb: 'saved' },
-  { kind: 'money', verb: 'raised for charity' },
+  { kind: 'money', verb: 'raised', tail: ' for charity' },
   { kind: 'count', verb: 'planted', noun: 'trees', past: true },
 ];
+const one = (noun) => (noun === 'fish' ? 'fish' : noun.replace(/s$/, ''));
 export const avgAlgebra = sgen('stat-avg-algebra', 'stat-averages-problems', (rng, d) => {
   const ctx = pick(rng, ALG_CTX);
   const [A, B, C, D] = names(rng, 4);
@@ -415,16 +428,16 @@ export const avgAlgebra = sgen('stat-avg-algebra', 'stat-averages-problems', (rn
   const m = total / people;
   function phrase(P, Q, amount, sgn) {
     if (ctx.kind === 'age') return `${P} is ${amount} ${amount === 1 ? 'year' : 'years'} ${sgn > 0 ? 'older' : 'younger'} than ${Q}.`;
-    if (ctx.kind === 'money') return `${P} ${ctx.verb} £${amount} ${sgn > 0 ? 'more' : 'less'} than ${Q}.`;
-    return `${P} ${ctx.verb} ${amount} ${sgn > 0 ? 'more' : 'fewer'} ${ctx.noun} than ${Q}.`;
+    if (ctx.kind === 'money') return `${P} ${ctx.verb} £${amount} ${sgn > 0 ? 'more' : 'less'}${ctx.tail || ''} than ${Q}.`;
+    return `${P} ${ctx.verb} ${amount} ${sgn > 0 ? 'more' : 'fewer'} ${amount === 1 ? one(ctx.noun) : ctx.noun} than ${Q}.`;
   }
   const times = k === 2 ? 'twice' : 'three times';
-  const mult = ctx.kind === 'age' ? `${C} is ${times} as old as ${A}.` : ctx.kind === 'money' ? `${C} ${ctx.verb} ${times} as much as ${A}.` : `${C} ${ctx.verb} ${times} as many ${ctx.noun} as ${A}.`;
+  const mult = ctx.kind === 'age' ? `${C} is ${times} as old as ${A}.` : ctx.kind === 'money' ? `${C} ${ctx.verb} ${times} as much${ctx.tail || ''} as ${A}.` : `${C} ${ctx.verb} ${times} as many ${ctx.noun} as ${A}.`;
   const meanLine = ctx.kind === 'age' ? `The mean of their ages is ${m} years.` : ctx.kind === 'money' ? `The mean amount ${ctx.verb} by the ${people} friends is £${m}.` : `The mean number of ${ctx.noun} for the ${people} friends is ${m}.`;
   const askP = pick(rng, people === 4 ? [C, D] : [C, B]);
   const PAST = { read: 'read', caught: 'catch', scored: 'score', collected: 'collect', baked: 'bake', sold: 'sell', took: 'take', planted: 'plant' };
   const askText = ctx.kind === 'age' ? `How old is ${askP}?`
-    : ctx.kind === 'money' ? `How much money did ${askP} ${ctx.verb === 'saved' ? 'save' : 'raise'}?`
+    : ctx.kind === 'money' ? `How much money did ${askP} ${ctx.verb === 'saved' ? 'save' : 'raise for charity'}?`
       : ctx.past ? `How many ${ctx.noun} did ${askP} ${PAST[ctx.verb]}?` : `How many ${ctx.noun} does ${askP} have?`;
   const ans = vals[askP];
   const f = ctx.kind === 'money' ? (v) => money(v) : (v) => num(v);
@@ -440,7 +453,7 @@ export const avgAlgebra = sgen('stat-avg-algebra', 'stat-averages-problems', (rn
     distractors: numDistractors(ans, [x, m, ...Object.values(vals), total, ans + a, ans - a, k * m], { fmt: f, integer: true }),
     typed: { kind: 'number', value: ans },
     solution: [
-      `Let ${A}'s ${ctx.kind === 'age' ? 'age' : 'amount'} be $x$. Then ${Object.keys(exprs).filter((p) => p !== A).map((p) => `${p} = $${exprs[p]}$`).join(', ')}.`,
+      `Let ${A}'s ${ctx.kind === 'age' ? 'age' : ctx.kind === 'money' ? 'amount' : `number of ${ctx.noun}`} be $x$. Then ${Object.keys(exprs).filter((p) => p !== A).map((p) => `${p} = $${exprs[p]}$`).join(', ')}.`,
       `The total is mean × ${people} $= ${m} \\times ${people} = ${total}$`,
       `So $${coef}x ${cst >= 0 ? '+' : '-'} ${Math.abs(cst)} = ${total}$, giving $${coef}x = ${total - cst}$ and $x = ${x}$.`,
       `So ${askP} $= ${subst[askP]} = ${ans}$`,
@@ -536,7 +549,7 @@ const FT_CTX = [
   { head: 'Number of siblings', intro: 'Some students were asked how many brothers and sisters they have.', who: 'students', per: 'siblings per student', start: 0 },
   { head: 'Days absent', intro: 'The table shows the number of days some students were absent last term.', who: 'students', per: 'days absent per student', start: 0 },
   { head: 'Books read', intro: 'Some students recorded how many books they read during the summer holiday.', who: 'students', per: 'books per student', start: 0 },
-  { head: 'Score', intro: 'Ravi rolls a dice many times and records the scores.', who: 'rolls', per: 'score', start: 1, max: 6 },
+  { head: 'Score', intro: 'Ravi rolls a dice many times and records the scores.', who: 'rolls', per: 'score', meanQ: 'Work out the mean score.', totalNoun: 'the scores', start: 1, max: 6 },
   { head: 'Portions of fruit', intro: 'Some adults were asked how many portions of fruit they ate yesterday.', who: 'adults', per: 'portions per adult', start: 0 },
   { head: 'Number of visits', intro: 'Some members of a gym recorded how many times they visited the gym last week.', who: 'members', per: 'visits per member', start: 0 },
   { head: 'Number of eggs', intro: 'A farmer counted the number of eggs in each nest in a field.', who: 'nests', per: 'eggs per nest', start: 1 },
@@ -547,7 +560,7 @@ const FT_CTX = [
 
 /** Make an ungrouped table: xs and frequencies, with constraints. */
 function makeFreqTable(rng, d, { allowedN = null, meanDp = null, k = null, ctx }) {
-  const kk = k ?? size(d, 4, 5, 6);
+  const kk = ctx.max ? ctx.max - ctx.start + 1 : k ?? size(d, 4, 5, 6); // a dice table always shows every face
   const start = ctx.start;
   if (ctx.max && start + kk - 1 > ctx.max) throw new Error('too many values');
   const xs = Array.from({ length: kk }, (_, i) => start + i);
@@ -576,13 +589,13 @@ export const freqMean = sgen('stat-freq-mean', 'stat-frequency-table', (rng, d) 
   const med = (() => { const all = []; T.xs.forEach((x, i) => { for (let j = 0; j < T.fs[i]; j += 1) all.push(x); }); return median(all); })();
   const modeX = T.xs[T.fs.indexOf(Math.max(...T.fs))];
   return {
-    prompt: `${ctx.intro}${freqTableHtml(rng, ctx.head, T.xs, T.fs)}Work out the mean number of ${ctx.per}.${exact ? (Number.isInteger(ans) ? '' : '<br>Give your answer as a decimal.') : '<br>Give your answer to 1 decimal place.'}`,
+    prompt: `${ctx.intro}${freqTableHtml(rng, ctx.head, T.xs, T.fs)}${ctx.meanQ || `Work out the mean number of ${ctx.per}.`}${exact ? (Number.isInteger(ans) ? '' : '<br>Give your answer as a decimal.') : '<br>Give your answer to 1 decimal place.'}`,
     answer: f(ans),
-    distractors: numDistractors(ans, [T.sfx / k, T.N / k, sum(T.xs) / k, T.sfx, med, modeX, T.sfx / (T.N - 1), ans + 0.5, ans - 0.5], { fmt: f, dp }),
+    distractors: numDistractors(ans, [T.sfx / k, T.N / k, sum(T.xs) / k, T.sfx, med, modeX, T.sfx / (T.N - 1), ans + 0.5, ans - 0.5], { fmt: (v) => num(v), dp }),
     typed: { kind: 'number', value: ans, ...(exact ? {} : { tolerance: 0.05 }) },
     calculator: !exact,
     solution: [
-      `Multiply each value by its frequency to find the total number of ${ctx.per.split(' per ')[0]}.`,
+      `Multiply each value by its frequency to find the total of ${ctx.totalNoun || `all the ${ctx.per.split(' per ')[0]}`}.`,
       `$${T.xs.map((x, i) => `${x} \\times ${T.fs[i]}`).join(' + ')} = ${T.sfx}$`,
       `Divide by the total frequency, $${T.fs.join(' + ')} = ${T.N}$ (not by the ${k} rows!).`,
       `Mean $= ${T.sfx} \\div ${T.N} = ${num(exact ? T.mean : roundTo(T.mean, 3))}${exact ? '' : '\\ldots'}$`,
@@ -659,7 +672,7 @@ export const freqModeRange = sgen('stat-freq-mode-range', 'stat-frequency-table'
     typed: { kind: 'number', value: r },
     solution: [
       '<b>Range</b> = largest value − smallest value, using the values in the first column (not the frequencies).',
-      zeroEnd ? `Nobody had ${xs[xs.length - 1]} (frequency 0), so the largest value is ${lastNZ}.` : `The largest value is ${lastNZ} and the smallest is ${firstNZ}.`,
+      zeroEnd ? `The value ${xs[xs.length - 1]} has a frequency of 0, so it never occurs: the largest value is ${lastNZ}.` : `The largest value is ${lastNZ} and the smallest is ${firstNZ}.`,
       `Range $= ${lastNZ} - ${firstNZ} = ${r}$`,
       `Answer: ${r}`,
     ],
@@ -694,7 +707,7 @@ export const freqChart = sgen('stat-freq-chart', 'stat-frequency-table', (rng, d
       answer: num(ans),
       distractors: numDistractors(ans, [sum(T.fs.filter((_, i) => T.xs[i] >= cut)), T.fs[T.xs.indexOf(cut) + 1], T.N - ans, sum(T.xs.filter((x) => x > cut)), ans + 1, ans - 1], { integer: true }),
       typed: { kind: 'number', value: ans },
-      solution: [`"More than ${cut}" means ${T.xs.filter((x) => x > cut).join(', ')} (not ${cut} itself).`, `Read those bars and add the frequencies: $${T.fs.filter((_, i) => T.xs[i] > cut).join(' + ')} = ${ans}$`, `Answer: ${ans}`],
+      solution: [`"More than ${cut}" means ${T.xs.filter((x) => x > cut).join(', ')} (not ${cut} itself).`, (T.fs.filter((_, i) => T.xs[i] > cut).length > 1 ? `Read those bars and add the frequencies: $${T.fs.filter((_, i) => T.xs[i] > cut).join(' + ')} = ${ans}$` : `Read that bar: ${ans}.`), `Answer: ${ans}`],
     };
   }
   if (q === 'total') {
@@ -761,7 +774,7 @@ export const freqMissing = sgen('stat-freq-missing', 'stat-frequency-table', (rn
       ],
     };
   }
-  if (!isClean(T.mean, 2) || Math.abs(v - T.mean) < 1e-9) throw new Error('mean not clean');
+  if (!isClean(T.mean, 1) || Math.abs(v - T.mean) < 1e-9) throw new Error('mean not clean'); // 1 dp keeps the algebra doable by hand
   const m = T.mean; const left = tidy(m * otherF - otherFX); const c = tidy(v - m);
   const step3 = c > 0 ? `$${coefX(c)} = ${num(tidy(m * otherF))} - ${otherFX} = ${num(left)}$` : `$${otherFX} - ${num(tidy(m * otherF))} = ${coefX(-c)}$, so $${coefX(-c)} = ${num(-left)}$`;
   return {
@@ -802,12 +815,12 @@ GROUPED_CTX[11].v = 'r';
 export const fmtUnit = (unit, v, dp = null) => (unit === '£' ? money(v, { forcePence: dp === 2 || !Number.isInteger(v) }) : `${dp === null ? num(v) : num(v, dp)}${unit ? ` ${unit}` : ''}`);
 
 /** Grouped frequency table data. */
-export function makeGrouped(rng, d, { k = null, allowedN = null, ctx = null } = {}) {
+export function makeGrouped(rng, d, { k = null, allowedN = null, ctx = null, anyPeak = false } = {}) {
   ctx = ctx || pick(rng, GROUPED_CTX);
   const kk = k ?? size(d, 4, pick(rng, [4, 5]), 5);
   const w = pick(rng, ctx.widths); const start = pick(rng, ctx.starts);
   const N = ctx.fixedN ?? pick(rng, allowedN || [20, 25, 30, 40, 50, 60, 80]);
-  const fs = peakedFreqs(rng, kk, N, { min: 1 });
+  const fs = peakedFreqs(rng, kk, N, { min: 1, ...(anyPeak ? { peak: pick(rng, [0, kk - 1, int(rng, 0, kk - 1)]) } : {}) });
   const classes = fs.map((f, i) => ({ a: start + i * w, b: start + (i + 1) * w, f, mid: start + (i + 0.5) * w }));
   return { ctx, classes, N, w };
 }
@@ -841,7 +854,7 @@ export const groupedMean = sgen('stat-grouped-mean', 'stat-grouped-estimate', (r
   return {
     prompt,
     answer: f(ans),
-    distractors: numDistractors(ans, dist, { fmt: f, dp: money2 ? 2 : dp }),
+    distractors: numDistractors(ans, dist, { fmt: money2 ? f : (v) => fmtUnit(ctx.unit, v), dp: money2 ? 2 : dp }),
     typed: { kind: 'number', value: ans, ...(exact || askTotal ? {} : { tolerance: 0.05 }) },
     calculator: d !== 'easy',
     solution: [
@@ -855,7 +868,7 @@ export const groupedMean = sgen('stat-grouped-mean', 'stat-grouped-estimate', (r
 }, { title: 'Estimate the mean (or total) from grouped data' });
 
 export const groupedClasses = sgen('stat-grouped-classes', 'stat-grouped-estimate', (rng, d) => {
-  const G = makeGrouped(rng, d, { allowedN: [21, 25, 29, 31, 35, 40, 41, 45, 50, 60, 80, 99, 120] });
+  const G = makeGrouped(rng, d, { anyPeak: true, k: size(d, pick(rng, [4, 5]), 5, 5), allowedN: [21, 25, 29, 31, 35, 40, 41, 45, 50, 60, 80, 99, 120] });
   const { ctx, classes, N } = G;
   const askMedian = d === 'easy' ? chance(rng, 0.3) : d === 'hard' ? true : chance(rng, 0.6);
   const maxF = Math.max(...classes.map((c) => c.f));
@@ -935,7 +948,7 @@ export const groupedStatements = sgen('stat-grouped-statements', 'stat-grouped-e
   const nAbove = sum(classes.slice(above + 1).map((c) => c.f));
   const st = pick(rng, ['exact', 'more', 'fewer', 'range', 'rangeBig']);
   let s; let ans; let why;
-  if (st === 'exact') { s = `${nAbove} of the ${ctx.who} had a ${ctx.noun} of more than ${unitTxt(cut)}.`; ans = 'Definitely true'; why = `The classes above ${unitTxt(cut)} have frequencies adding to ${nAbove}, so this is certain.`; }
+  if (st === 'exact') { s = `${nAbove === 1 ? 'Exactly one' : `Exactly ${nAbove}`} of the ${ctx.who} had a ${ctx.noun} of more than ${unitTxt(cut)}.`; ans = 'Definitely true'; why = `The classes above ${unitTxt(cut)} have frequencies adding to ${nAbove}, so this is certain.`; }
   else if (st === 'more') { s = `More than ${nAbove + classes[above].f} of the ${ctx.who} had a ${ctx.noun} of more than ${unitTxt(classes[above].a)}.`; ans = 'Cannot be true'; why = `At most ${nAbove + classes[above].f} values are above ${unitTxt(classes[above].a)} (the classes from ${unitTxt(classes[above].a)} upwards).`; }
   else if (st === 'fewer') { const c = classes[above]; s = `At least one of the ${ctx.who} had a ${ctx.noun} of more than ${unitTxt(c.a + G.w / 2)}.`; ans = nAbove > 0 ? 'Definitely true' : 'Might be true'; why = nAbove > 0 ? `${nAbove} values are in classes above ${unitTxt(c.b)}, so some values are certainly above ${unitTxt(c.a + G.w / 2)}.` : 'We cannot tell where the values sit inside the class.'; }
   else if (st === 'range') { const v = maxRange - G.w / 2; s = `The range is ${unitTxt(v)}.`; ans = v >= minRange && v <= maxRange ? 'Might be true' : 'Cannot be true'; why = `The range must be between ${unitTxt(Math.max(0, minRange))} and ${unitTxt(maxRange)}; we don't know the exact values.`; }
@@ -946,6 +959,7 @@ export const groupedStatements = sgen('stat-grouped-statements', 'stat-grouped-e
     distractors: ['Definitely true', 'Might be true', 'Cannot be true'].filter((o) => o !== ans),
     count: 3,
     keepOrder: true,
+    order: ['Definitely true', 'Might be true', 'Cannot be true'],
     solution: ['In grouped data we only know which <b>class</b> each value is in, not the exact value.', why, `Answer: ${ans}`],
   };
 }, { title: 'What grouped data can and cannot tell you' });
@@ -996,9 +1010,9 @@ export const compareTable = sgen('stat-compare-table', 'stat-compare', (rng, d) 
   const wrong = [
     `On average, ${loAvg.s} ${ctx.high}, because ${their} ${avgName} is higher.`,
     `The ${ctx.noun} for ${hiSp.s} were more consistent, because ${their} ${sprName} is higher.`,
-    `On average, ${hiSp.s} ${ctx.high}, because ${their} ${sprName} is higher.`,
+    ...(hiSp !== hiAvg ? [`On average, ${hiSp.s} ${ctx.high}, because ${their} ${sprName} is higher.`] : []),
     `All of the ${ctx.noun} for ${hiAvg.s} were higher than all of those for ${loAvg.s}, because ${their} ${avgName} is higher.`,
-    `The ${ctx.noun} for ${loAvg.s} were more consistent, because ${their} ${avgName} is lower.`,
+    ...(loAvg !== loSp ? [`The ${ctx.noun} for ${loAvg.s} were more consistent, because ${their} ${avgName} is lower.`] : [`The ${ctx.noun} for ${hiSp.s} were more consistent, because ${their} ${avgName} is ${hiSp === hiAvg ? 'higher' : 'lower'}.`]),
   ].map(cap);
   return {
     prompt: `${ctx.intro}${tbl}Which statement is a correct comparison?`,
@@ -1017,11 +1031,11 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 
 const CLAIM_CTX = [
-  { A: 'Toffees', B: 'Mints', thing: 'sweets in a bag', claim: (c) => `The company claims that the average number of sweets per bag is at least ${c}.`, intro: 'A company sells bags of toffees and bags of mints. The numbers of sweets in some bags are:', lo: 40, hi: 60 },
-  { A: 'Brand A', B: 'Brand B', thing: 'matches in a box', claim: (c) => `Both brands claim that the average number of matches in a box is at least ${c}.`, intro: 'The numbers of matches in some boxes of two brands are:', lo: 45, hi: 55 },
-  { A: 'Type X', B: 'Type Y', thing: 'hours of battery life', claim: (c) => `The maker claims that the average battery life is at least ${c} hours.`, intro: 'Some batteries of two types were tested. Their lives, in hours, are:', lo: 15, hi: 35 },
-  { A: 'Plain', B: 'Salted', thing: 'grams of popcorn in a bag', claim: (c) => `The label says that the average mass of a bag is at least ${c} g.`, intro: 'The masses, in grams, of some bags of plain and salted popcorn are:', lo: 70, hi: 90 },
-  { A: 'Red', B: 'Green', thing: 'seeds in a packet', claim: (c) => `The seed company claims that the average number of seeds in a packet is at least ${c}.`, intro: 'The numbers of seeds in some packets of red and green peppers are:', lo: 20, hi: 40 },
+  { A: 'Toffees', B: 'Mints', each: 'each type of sweet', thing: 'sweets in a bag', claim: (c) => `The company claims that the average number of sweets per bag is at least ${c}.`, intro: 'A company sells bags of toffees and bags of mints. The numbers of sweets in some bags are:', lo: 40, hi: 60 },
+  { A: 'Brand A', B: 'Brand B', thing: 'matches in a box', each: 'each brand', claim: (c) => `Both brands claim that the average number of matches in a box is at least ${c}.`, intro: 'The numbers of matches in some boxes of two brands are:', lo: 45, hi: 55 },
+  { A: 'Type X', B: 'Type Y', each: 'each type of battery', thing: 'hours of battery life', claim: (c) => `The maker claims that the average battery life is at least ${c} hours.`, intro: 'Some batteries of two types were tested. Their lives, in hours, are:', lo: 15, hi: 35 },
+  { A: 'Plain', B: 'Salted', each: 'each type of popcorn', thing: 'grams of popcorn in a bag', claim: (c) => `The label says that the average mass of a bag is at least ${c} g.`, intro: 'The masses, in grams, of some bags of plain and salted popcorn are:', lo: 70, hi: 90 },
+  { A: 'Red', B: 'Green', thing: 'seeds in a packet', each: 'each type of seed', claim: (c) => `The seed company claims that the average number of seeds in a packet is at least ${c}.`, intro: 'The numbers of seeds in some packets of red and green peppers are:', lo: 20, hi: 40 },
 ];
 export const compareClaim = sgen('stat-compare-claim', 'stat-compare', (rng, d) => {
   const ctx = pick(rng, CLAIM_CTX);
@@ -1046,11 +1060,12 @@ export const compareClaim = sgen('stat-compare-claim', 'stat-compare', (rng, d) 
   const all = [opt(true, true), opt(true, false), opt(false, true), opt(false, false)];
   const ans = opt(okA, okB);
   return {
-    prompt: `${ctx.intro}<br><b>${ctx.A}</b>${spaced(A)}<b>${ctx.B}</b>${spaced(B)}${ctx.claim(C)}<br>Using medians, is the claim correct for each type?`,
+    prompt: `${ctx.intro}<br><b>${ctx.A}</b>${spaced(A)}<b>${ctx.B}</b>${spaced(B)}${ctx.claim(C)}<br>Using medians, is the claim correct for ${ctx.each}?`,
     answer: ans,
     distractors: all.filter((o) => o !== ans),
     count: 4,
     keepOrder: true,
+    order: all,
     solution: [
       `The lists are already in order. Each has ${n} values, so the median is the ${n % 2 ? `${ordinal((n + 1) / 2)} value` : `mean of the ${ordinal(n / 2)} and ${ordinal(n / 2 + 1)} values`}.`,
       `${ctx.A}: median $= ${num(median(A))}$, which is ${median(A) >= C ? 'at least' : 'less than'} ${C}.`,
@@ -1070,11 +1085,38 @@ const AVG_CHOICE = [
   { kind: 'category', intro: 'A survey asked people how they travel to work: car, bus, train, bike or walking.', what: 'the typical way people travel' },
   { kind: 'category', intro: 'A school asked students for their favourite colour for the new sports kit.', what: 'the colour to choose' },
   { kind: 'stock', intro: 'A shoe shop records the sizes of the shoes it sells. The manager wants to know which size to order most of.', what: 'the size to order most of' },
-  { kind: 'stock', intro: 'A clothes shop records the sizes of the T-shirts it sells and wants to know which size it sells most often.', what: 'the size sold most often' },
+  { kind: 'stock', intro: 'A school uniform shop records the collar sizes of the shirts it sells. It wants to decide which size to order most of.', what: 'the size to order most of' },
   { kind: 'total', intro: 'A charity knows the average amount given by each of its 2,000 donors. It wants to use the average to work out the total amount given.', what: 'the total' },
   { kind: 'total', intro: 'A farmer wants to use the average mass of a sample of potatoes to estimate the total mass of all 500 potatoes in a sack.', what: 'the total mass' },
 ];
-export const compareBestAverage = sgen('stat-compare-best-average', 'stat-compare', (rng) => {
+// Hard: measure how far an outlier pulls the mean away from the median.
+const OUTLIER_NUM = [
+  { intro: 'Eight children ran across the playground. Their times, in seconds, were:', lo: 11, hi: 16, big: [34, 58], f: (v) => `${num(v)} s` },
+  { intro: 'Eight students were asked how much pocket money they get each week. The amounts, in pounds, were:', lo: 2, hi: 9, big: [40, 70], f: (v) => money(v, { forcePence: !Number.isInteger(v) }) },
+  { intro: 'A train company records how late eight trains were one morning. The delays, in minutes, were:', lo: 2, hi: 8, big: [45, 90], f: (v) => `${num(v)} minutes` },
+  { intro: 'The numbers of goals scored by a hockey team in eight matches were:', lo: 0, hi: 4, big: [15, 22], f: (v) => num(v) },
+];
+export const compareBestAverage = sgen('stat-compare-best-average', 'stat-compare', (rng, d) => {
+  if (d === 'hard' && chance(rng, 0.6)) {
+    const c = pick(rng, OUTLIER_NUM);
+    const vals = [...randInts(rng, 7, c.lo, c.hi), int(rng, c.big[0], c.big[1])];
+    const mn = mean(vals); const md = median(vals);
+    if (!isClean(mn, 2) || mn - md <= 0) throw new Error('mean not clean');
+    const ans = tidy(mn - md);
+    return {
+      prompt: `${c.intro}${spaced(shuffle(rng, vals))}One of the values is an outlier.<br>How much bigger is the mean than the median?`,
+      answer: c.f(ans),
+      distractors: numDistractors(ans, [mn, md, Math.max(...vals) - md, tidy(mean(vals.slice(0, 7)) - md), rangeOf(vals) - md, tidy(mn - modeOf(vals) || 0) || null], { fmt: c.f }),
+      count: 4,
+      typed: { kind: 'number', value: ans },
+      solution: [
+        `Mean $= (${vals.join(' + ')}) \\div 8 = ${tnum(sum(vals))} \\div 8 = ${tnum(mn)}$`,
+        `In order: ${sorted(vals).join(', ')}. Median $= (${sorted(vals)[3]} + ${sorted(vals)[4]}) \\div 2 = ${tnum(md)}$`,
+        `Difference $= ${tnum(mn)} - ${tnum(md)} = ${tnum(ans)}$. The outlier drags the mean up, so the median is the better average here.`,
+        `Answer: ${c.f(ans)}`,
+      ],
+    };
+  }
   const sc = pick(rng, AVG_CHOICE);
   let prompt; let ans; let why;
   const O = {
@@ -1117,7 +1159,7 @@ export const compareBestAverage = sgen('stat-compare-best-average', 'stat-compar
     ans = O.mode; why = 'The answers are words, not numbers, so you cannot find a mean or median. The mode (most common answer) is the only average possible.';
   } else if (sc.kind === 'stock') {
     prompt = `${sc.intro}<br>Which average is most useful for finding ${sc.what}?`;
-    ans = O.mode; why = 'The shop wants the most common size. A mean size (like 6.37) might not even be a real size.';
+    ans = O.mode; why = 'The shop wants the most common size. A mean (such as 9.37) might not even be a size that exists.';
   } else {
     prompt = `${sc.intro}<br>Which average should be used?`;
     ans = O.mean; why = 'Total = mean × number of values. Only the mean is linked to the total like this.';

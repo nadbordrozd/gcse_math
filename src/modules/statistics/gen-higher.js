@@ -3,11 +3,13 @@ import {
   pick, int, size, shuffle, num, tnum, roundTo, tidy, table, chance, frac, ordinal,
 } from '../../core.js';
 import {
-  sgen, fracDistractors, sum, sorted, median, quartiles, numDistractors, randInts, ineq, peakedFreqs, isClean, unsortedOrder, spaced,
+  sgen, fracDistractors, fracEq, sum, sorted, median, quartiles, numDistractors, randInts, ineq, peakedFreqs, isClean, unsortedOrder, spaced,
 } from './util.js';
 import { cumulativeFrequencyGraph, boxPlot, histogram } from './charts.js';
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+/** "an age", "a mass" */
+const art = (noun) => `${/^[aeiou]/i.test(noun) ? 'an' : 'a'} ${noun}`;
 
 /* ------------------------------------------------------------------ */
 /* Cumulative frequency                                                 */
@@ -149,7 +151,7 @@ export const cfCount = sgen('stat-cf-count', 'stat-cumulative-frequency', (rng, 
   const tol = Math.max(1, C.ys);
   const what = more ? `more than ${num(xv)}${u}` : `less than ${num(xv)}${u}`;
   return {
-    prompt: `${intro}<br>Estimate how many ${ctx.who} had a ${ctx.noun} of ${what}.`,
+    prompt: `${intro}<br>Estimate how many ${ctx.who} had ${art(ctx.noun)} of ${what}.`,
     visual: C.G.svg, answer: num(ans),
     distractors: numDistractors(ans, [more ? cfAt : N - cfAt, xv, ans + 3 * tol, ans - 3 * tol, N, Math.round(C.G.spline.at(xv + C.w)) - (more ? 0 : 0)], { minGap: 2 * tol, integer: true }),
     typed: { kind: 'number', value: ans, tolerance: tol },
@@ -273,26 +275,40 @@ export const boxCompare = sgen('stat-box-compare', 'stat-box-plots', (rng, d) =>
   const visual = boxPlot({ plots: [{ label: c.g[0], ...A }, { label: c.g[1], ...B }], axis: boxAxis(ctx, A, B) });
   const hiM = A.med > B.med ? 0 : 1; const loI = iA < iB ? 0 : 1;
   const g = c.s;
+  const working = [
+    `Compare the <b>medians</b> for the average: ${c.g[0]} ${num(A.med)}, ${c.g[1]} ${num(B.med)}.`,
+    `Compare the <b>interquartile ranges</b> for consistency (smaller = more consistent): ${c.g[0]} $${A.q3} - ${A.q1} = ${iA}$, ${c.g[1]} $${B.q3} - ${B.q1} = ${iB}$.`,
+  ];
+  if (d === 'hard') {
+    // Two-part statements: average and consistency together; each distractor gets one or both parts wrong.
+    const two = (avgG, consG) => `${cap(g[avgG])} ${c.high} on average, and the ${c.noun} for ${g[consG]} were more consistent`;
+    const correct = two(hiM, loI);
+    return {
+      prompt: `The box plots show ${c.what}.<br>Which statement is correct?`,
+      visual, answer: correct,
+      distractors: [two(1 - hiM, loI), two(hiM, 1 - loI), two(1 - hiM, 1 - loI)],
+      count: 4,
+      solution: [...working, 'Check both parts of each statement: both must be true.', `Answer: ${correct}`],
+    };
+  }
   const aboutAvg = chance(rng);
   const correct = aboutAvg ? `On average, ${g[hiM]} ${c.high}, because the median is higher` : `The ${c.noun} for ${g[loI]} were more consistent, because the interquartile range is smaller`;
+  // Every distractor has a wrong conclusion, so no option is "right for the wrong reason".
+  const lowM = 1 - hiM; const hiI = 1 - loI;
   const wrongs = [
-    `On average, ${g[1 - hiM]} ${c.high}, because the median is higher`,
-    `The ${c.noun} for ${g[1 - loI]} were more consistent, because the interquartile range is bigger`,
-    ...(rA !== rB ? [`On average, ${g[rA > rB ? 0 : 1]} ${c.high}, because the range is bigger`] : []),
-    `On average, ${g[A.max > B.max ? 0 : 1]} ${c.high}, because the highest value is bigger`,
-    `The ${c.noun} for ${g[hiM]} were more consistent, because the median is higher`,
-  ].filter((w) => w !== correct);
+    `On average, ${g[lowM]} ${c.high}, because the median is higher`,
+    `The ${c.noun} for ${g[hiI]} were more consistent, because the interquartile range is bigger`,
+    ...((lowM === 0 ? rA > rB : rB > rA) ? [`On average, ${g[lowM]} ${c.high}, because the range is bigger`] : []),
+    ...((lowM === 0 ? A.max > B.max : B.max > A.max) ? [`On average, ${g[lowM]} ${c.high}, because the highest value is bigger`] : []),
+    ...((hiI === 0 ? rA < rB : rB < rA) ? [`The ${c.noun} for ${g[hiI]} were more consistent, because the range is smaller`] : []),
+    `The ${c.noun} for ${g[hiI]} were more consistent, because the median is ${(hiI === 0 ? A.med > B.med : B.med > A.med) ? 'higher' : 'lower'}`,
+  ];
   return {
     prompt: `The box plots show ${c.what}.<br>Which statement is correct?`,
     visual, answer: correct,
     distractors: shuffle(rng, wrongs),
     count: 4,
-    solution: [
-      `Compare the <b>medians</b> for the average: ${c.g[0]} ${num(A.med)}, ${c.g[1]} ${num(B.med)}.`,
-      `Compare the <b>interquartile ranges</b> for consistency (smaller = more consistent): ${c.g[0]} $${A.q3} - ${A.q1} = ${iA}$, ${c.g[1]} $${B.q3} - ${B.q1} = ${iB}$.`,
-      'The range and the highest value are affected by single extreme values, so they are not good for comparing.',
-      `Answer: ${correct}`,
-    ],
+    solution: [...working, 'The range and the highest value are affected by single extreme values, so they are not good for comparing.', `Answer: ${correct}`],
   };
 }, { title: 'Compare two box plots' });
 
@@ -448,7 +464,7 @@ export const histRead = sgen('stat-hist-read', 'stat-histograms', (rng, d) => {
     prompt: `${intro}<br>What fraction of the ${H.ctx.who} are in the class ${ctex(H, c)}? Give your answer in its simplest form.`,
     visual, answer: `$${fr.tex()}$`,
     distractors: fracDistractors(fr, [frac(Math.round(c.fd * 10), Math.round(sum(H.classes.map((x) => x.fd)) * 10)), frac(1, H.classes.length), frac(c.f, H.N - c.f), frac(w, H.x.max - H.x.min), frac(c.f + w, H.N), frac(c.f, H.N + w)]),
-    solution: ['Frequency = frequency density × class width for every bar.', `This class: $${num(c.fd)} \\times ${w} = ${num(c.f)}$. Total: $${H.classes.map((x) => num(x.f)).join(' + ')} = ${num(H.N)}$`, `$\\frac{${num(c.f)}}{${num(H.N)}} = ${fr.tex()}$`, `Answer: $${fr.tex()}$`],
+    solution: ['Frequency = frequency density × class width for every bar.', `This class: $${num(c.fd)} \\times ${w} = ${num(c.f)}$. Total: $${H.classes.map((x) => num(x.f)).join(' + ')} = ${num(H.N)}$`, `$${fracEq(num(c.f), num(H.N), fr)}$`, `Answer: $${fr.tex()}$`],
   };
 }, { title: 'Read frequencies from a histogram' });
 
@@ -495,7 +511,7 @@ export const histEstimate = sgen('stat-hist-estimate', 'stat-histograms', (rng, 
   const ans = part + sum(rest.map((x) => x.f));
   const u = H.ctx.unit;
   return {
-    prompt: `The histogram shows information about ${H.ctx.what}.<br>Estimate how many ${H.ctx.who} had a ${H.ctx.noun} ${more ? 'greater' : 'less'} than ${num(cut)} ${u}.`,
+    prompt: `The histogram shows information about ${H.ctx.what}.<br>Estimate how many ${H.ctx.who} had ${art(H.ctx.noun)} ${more ? 'greater' : 'less'} than ${num(cut)} ${u}.`,
     visual, answer: num(ans),
     distractors: numDistractors(ans, [ans - part + c.f, ans - part, sum(rest.map((x) => x.fd)) + c.fd, ans - part + Math.round(c.f / 2), H.N - ans, ans + Math.round(c.fd)], { integer: true }),
     typed: { kind: 'number', value: ans },
@@ -503,7 +519,7 @@ export const histEstimate = sgen('stat-hist-estimate', 'stat-histograms', (rng, 
       `${num(cut)} is inside the class ${ctex(H, c)}, so only part of that bar counts: assume its values are spread evenly.`,
       `Part of the bar: frequency density ${num(c.fd)} × width $${more ? `${num(c.b)} - ${num(cut)}` : `${num(cut)} - ${num(c.a)}`} = ${partW}$ gives $${num(part)}$.`,
       rest.length ? `Whole bars ${more ? 'above' : 'below'}: $${rest.map((x) => `${num(x.fd)} \\times ${x.b - x.a}`).join(' + ')} = ${num(sum(rest.map((x) => x.f)))}$` : 'There are no other bars on that side.',
-      `Total $= ${num(part)}${rest.length ? ` + ${num(sum(rest.map((x) => x.f)))}` : ''} = ${num(ans)}$`,
+      ...(rest.length ? [`Total $= ${tnum(part)} + ${tnum(sum(rest.map((x) => x.f)))} = ${tnum(ans)}$`] : []),
       `Answer: about ${num(ans)}`,
     ],
   };

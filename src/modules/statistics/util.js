@@ -60,6 +60,7 @@ export function numDistractors(answer, values, { fmt = (v) => num(v), minGap = 0
     if (dp !== null) v = roundTo(v, dp);
     else if (!isClean(v, 2)) v = roundTo(v, 1);
     if (!allowNeg && v < 0) continue;
+    if (v === 0 && answer !== 0 && !allowNeg) continue; // a bare 0 is never a believable slip here
     if (integer && !Number.isInteger(v)) continue;
     if (Math.abs(v - answer) < 1e-9 || Math.abs(v - answer) < minGap) continue;
     out.push(fmt(v));
@@ -115,8 +116,23 @@ export function sgen(id, skill, build, meta = {}) {
   return gen(id, skill, (rng, d) => {
     let last;
     for (let i = 0; i < 300; i += 1) {
-      try { return build(rng, d); } catch (e) { last = e; }
+      try { return texCommas(build(rng, d)); } catch (e) { last = e; }
     }
     throw last;
   }, meta);
 }
+/** Inside $…$, write thousands separators as {,} so KaTeX does not add a space after the comma. */
+const fixTex = (s) => (typeof s === 'string' ? s.replace(/\$[^$]*\$/g, (m) => m.replace(/(\d),(?=\d{3}(?!\d))/g, '$1{,}')) : s);
+function texCommas(q) {
+  return {
+    ...q,
+    prompt: fixTex(q.prompt),
+    answer: fixTex(q.answer),
+    distractors: (q.distractors || []).map(fixTex),
+    solution: (q.solution || []).map(fixTex),
+    ...(q.order ? { order: q.order.map(fixTex) } : {}),
+  };
+}
+
+/** TeX for a fraction and its simplified form, without "= same thing" when it does not simplify. */
+export const fracEq = (a, b, f) => (Number(String(b).replace(/,/g, "")) === f.d ? `\\frac{${a}}{${b}}` : `\\frac{${a}}{${b}} = ${f.tex()}`);
