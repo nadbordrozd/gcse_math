@@ -179,10 +179,11 @@ function symbolAt(x, y, s, frac, kind) {
   }
   const c = [x + s / 2, y + s / 2]; const r = s / 2;
   if (frac >= 1 - EPS) return circle(c[0], c[1], r, { fill: FILL, width: 1.4 });
-  const a1 = frac * 2 * Math.PI;
+  // Part circle drawn on the LEFT side (from the start angle clockwise round to 12 o'clock), so it sits
+  // next to the previous whole circle: a half is the left half, a quarter the top-left quarter.
   const p = (a) => [c[0] + r * Math.sin(a), c[1] - r * Math.cos(a)];
-  const [ex, ey] = p(a1);
-  return path(`M ${r2(c[0])} ${r2(c[1])} L ${r2(c[0])} ${r2(c[1] - r)} A ${r2(r)} ${r2(r)} 0 ${frac > 0.5 ? 1 : 0} 1 ${r2(ex)} ${r2(ey)} Z`, { fill: FILL, width: 1.4 });
+  const [sx, sy] = p((1 - frac) * 2 * Math.PI);
+  return path(`M ${r2(c[0])} ${r2(c[1])} L ${r2(sx)} ${r2(sy)} A ${r2(r)} ${r2(r)} 0 ${frac > 0.5 ? 1 : 0} 1 ${r2(c[0])} ${r2(c[1] - r)} Z`, { fill: FILL, width: 1.4 });
 }
 
 /**

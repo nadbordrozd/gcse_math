@@ -50,6 +50,8 @@ function checkTex(g, where, str) {
   for (let i = 1; i < parts.length; i += 2) {
     const tex = parts[i];
     if (katexCache.has(tex)) { if (katexCache.get(tex)) return `${where} KaTeX error: ${katexCache.get(tex)}`; continue; }
+    { const lost = String(tex).replace(/\\(text|mathrm|textbf|operatorname)\{[^}]*\}/g, '').match(/(^|[^\\a-zA-Z])(circ|frac|dfrac|tfrac|sqrt|times|div|theta|cdot|leqslant|geqslant|pi|alpha|neq)(?![a-zA-Z])/);
+      if (lost && !/^(pi)$/.test(lost[2]) ) { const msg = `${where}: TeX command without backslash ("${lost[2]}") in "${String(tex).slice(0, 60)}"`; return msg; } }
     try { katex.renderToString(tex, { throwOnError: true }); katexCache.set(tex, null); } catch (e) { katexCache.set(tex, e.message); return `${where} KaTeX error in "${tex}": ${e.message}`; }
   }
   return null;

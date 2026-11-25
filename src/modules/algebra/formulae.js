@@ -676,7 +676,7 @@ export const iterationRearrange = G('alg-iteration-rearrange', 'alg-iteration', 
       `Answer: $${ans}$`,
     ],
   };
-}, { title: 'Rearrange an equation into an iterative form', learn: ['alg-iteration', 'alg-rearrange-simple'] });
+}, { title: 'Rearrange an equation into an iterative form', learn: ['alg-iteration', 'alg-rearrange-hard'] });
 
 export const generators = [
   formulaSub, formulaWords, formulaReverse,

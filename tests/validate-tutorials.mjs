@@ -21,6 +21,8 @@ function checkText(where, str) {
   if (parts.length % 2 === 0) return [`${where}: unbalanced $`];
   const errs = [];
   for (let i = 1; i < parts.length; i += 2) {
+    { const lost = String(parts[i]).replace(/\\(text|mathrm|textbf|operatorname)\{[^}]*\}/g, '').match(/(^|[^\\a-zA-Z])(circ|frac|dfrac|tfrac|sqrt|times|div|theta|cdot|leqslant|geqslant|pi|alpha|neq)(?![a-zA-Z])/);
+      if (lost && !/^(pi)$/.test(lost[2]) ) { const msg = `${where}: TeX command without backslash ("${lost[2]}") in "${String(parts[i]).slice(0, 60)}"`; errs.push(msg); } }
     try { katex.renderToString(parts[i], { throwOnError: true }); } catch (e) { errs.push(`${where}: KaTeX error in "${parts[i].slice(0, 60)}": ${e.message.slice(0, 120)}`); }
     if (/\[\[/.test(parts[i])) errs.push(`${where}: [[link]] inside maths`);
   }
