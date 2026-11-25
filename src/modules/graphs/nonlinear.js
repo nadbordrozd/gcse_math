@@ -26,17 +26,17 @@ const pmc = (k) => (k === 0 ? '' : ` ${k < 0 ? '-' : '+'} ${Math.abs(k)}`);
 const LETTER_SETS =[['A', 'B', 'C', 'D'], ['P', 'Q', 'R', 'S'], ['E', 'F', 'G', 'H'], ['K', 'L', 'M', 'N'], ['W', 'X', 'Y', 'Z']];
 
 /** Grid for a quadratic y = f(x) showing x in [xmin, xmax]; picks a y-scale so the grid is not too tall. */
-function quadGrid(f, xmin, xmax, { extraY = [], unit = 26 } = {}) {
+function quadGrid(f, xmin, xmax, { extraY = [], unit = 26, ystep: forceStep = null } = {}) {
   let lo = Infinity; let hi = -Infinity;
   for (let i = 0; i <= 200; i += 1) { const y = f(xmin + ((xmax - xmin) * i) / 200); lo = Math.min(lo, y); hi = Math.max(hi, y); }
   for (const y of extraY) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
   lo = Math.min(lo, 0); hi = Math.max(hi, 0);
   const span = hi - lo;
-  const ystep = span + 2 <= 14 ? 1 : span + 4 <= 28 ? 2 : 5;
+  const ystep = forceStep || (span + 2 <= 14 ? 1 : span + 4 <= 28 ? 2 : 5);
   const ymin = Math.floor((lo - 0.5) / ystep) * ystep; const ymax = Math.ceil((hi + 0.5) / ystep) * ystep;
   const c = chart({
     xmin, xmax, ymin, ymax, xstep: 1, ystep, w: Math.max((xmax - xmin) * unit, 220), h: Math.min(((ymax - ymin) / ystep) * unit, 290), zeroAxes: true, fontSize: 12.5,
-    padL: xmin < 0 ? 18 : 34,
+    padL: xmin < 0 ? 18 : 34, ylabelIf: (ymax - ymin) / ystep > 14 ? (y) => Math.round(y / ystep) % 2 === 0 : null,
   });
   return { c, ystep, ymin, ymax };
 }
@@ -101,15 +101,18 @@ export const quadRootsGraph = G('gr-quad-roots-graph', 'gr-quadratic-graphs', (r
 }, { title: 'Roots from a quadratic graph' });
 
 export const quadTurning = G('gr-quad-turning', 'gr-quadratic-graphs', (rng, d) => {
-  const h = nz(rng, -4, 5); const k = int(rng, -6, 6);
   const mode = d === 'easy' ? 'graph' : d === 'medium' ? pick(rng, ['graph', 'form']) : pick(rng, ['complete', 'complete', 'form']);
+  // On a drawn graph keep the turning point close to the y-axis so the grid includes x = 0 and stays a sensible size.
+  const h = mode === 'graph' ? pick(rng, [-3, -2, -1, 1, 2, 3]) : nz(rng, -4, 5);
+  const k = mode === 'graph' ? int(rng, -5, 4) : int(rng, -6, 6);
   const b = -2 * h; const c = h * h + k;
   const ans = P(h, k);
   const dist = [P(-h, k), P(h, -k), P(-h, -k), P(k, h), P(h, c), P(0, c)];
   if (mode === 'graph') {
     const f = (x) => (x - h) ** 2 + k;
+    // Window: 3 either side of the turning point, always including x = 0; ruled every 1 unit
     const xmin = Math.min(h - 3, -1); const xmax = Math.max(h + 3, 1);
-    const { c: cg } = quadGrid(f, xmin, xmax);
+    const { c: cg } = quadGrid(f, xmin, xmax, { ystep: 1 });
     return {
       prompt: `Here is the graph of $y = ${qx(1, b, c)}$.<br>Write down the coordinates of the turning point.`,
       visual: cg.wrap(cg.curve(f)),
@@ -160,7 +163,8 @@ export const quadSolveK = G('gr-quad-solve-k', 'gr-quadratic-graphs', (rng, d) =
   const f = (x) => x * x + b * x + c;
   const xmin = Math.min(p - 2, -1); const xmax = Math.max(q + 2, 1);
   if (xmax - xmin > 11) throw new Error('r');
-  const cands = []; for (let x = xmin + 1; x < (p + q) / 2; x += 1) if (f(x) > 0 && f(x) <= 12) cands.push(x);
+  const vmin = f((p + q) / 2);
+  const cands = []; for (let x = xmin + 1; x < (p + q) / 2; x += 1) if ((d === 'hard' ? f(x) !== 0 && f(x) > vmin : f(x) > 0) && f(x) <= 12) cands.push(x);
   if (!cands.length) throw new Error('r');
   const x1 = pick(rng, cands); const k = f(x1); const x2 = p + q - x1;
   const { c: cg } = quadGrid(f, xmin, xmax);
@@ -168,14 +172,16 @@ export const quadSolveK = G('gr-quad-solve-k', 'gr-quadratic-graphs', (rng, d) =
   const showLine = d === 'easy';
   const vis = cg.wrap(cg.curve(f) + (showLine ? cg.lineEq(0, k, { color: ACCENT2, dash: true, width: 1.8 }) : ''));
   const opt = pairOpt;
+  const rearr = d === 'hard'; // e.g. solve x² − 4x − 12 = 0 using the graph of y = x² − 4x − 5
+  const target = rearr ? `${qx(1, b, c - k)} = 0` : `${tex} = ${k}`;
   return {
-    prompt: `Here is the graph of $y = ${tex}$.<br>Use the graph to solve $${tex} = ${k}$.${showLine ? ` The line $y = ${k}$ is shown dashed.` : ''}`,
+    prompt: `Here is the graph of $y = ${tex}$.<br>Use the graph to solve $${target}$.${showLine ? ` The line $y = ${k}$ is shown dashed.` : ''}`,
     visual: vis,
     answer: opt(x1, x2),
     distractors: uniq([opt(p, q), opt(-x2, -x1), opt(x1, k), opt(x1 + 1, x2 - 1), opt(x1 - 1, x2 + 1), opt(-x1, -x2)], opt(x1, x2)),
     typed: { kind: 'list', values: [x1, x2] },
     solution: [
-      `Draw the horizontal line $y = ${k}$ across the graph.`,
+      rearr ? `Rewrite it to match the graph: $${qx(1, b, c - k)} = 0$ is the same as $${tex} = ${k}$ (add $${k}$ to both sides). Draw the line $y = ${k}$.` : `Draw the horizontal line $y = ${k}$ across the graph.`,
       `It meets the curve at $x = ${x1}$ and $x = ${x2}$ — read these from the $x$-axis.`,
       `Check: $${par(x1)}^2${b ? ` ${b < 0 ? '-' : '+'} ${Math.abs(b) === 1 ? '' : `${Math.abs(b)} \\times `}${par(x1)}` : ''}${pmc(c)} = ${k}$ ✓`,
       `Answer: ${opt(x1, x2)}`,
@@ -189,14 +195,16 @@ export const quadFeatures = G('gr-quad-features', 'gr-quadratic-graphs', (rng, d
   const b = -s * (p + q); const c = s * p * q;
   const h = (p + q) / 2;
   const tex = qx(s, b, c);
-  const ask = d === 'easy' ? pick(rng, ['yint', 'sym']) : pick(rng, ['sym', 'sym', 'yint', 'xint']);
+  const ask = d === 'easy' ? pick(rng, ['yint', 'sym']) : d === 'medium' ? pick(rng, ['sym', 'sym', 'yint', 'xint']) : pick(rng, ['sym', 'xint']);
   if (ask === 'sym') {
     const ans = Y(`x = ${h}`);
     return {
-      prompt: `The graph of $y = ${tex}$ crosses the $x$-axis at $x = ${p}$ and $x = ${q}$.<br>What is the equation of its line of symmetry?`,
+      prompt: d === 'hard' ? `What is the equation of the line of symmetry of the graph of $y = ${tex}$?`
+        : `The graph of $y = ${tex}$ crosses the $x$-axis at $x = ${p}$ and $x = ${q}$.<br>What is the equation of its line of symmetry?`,
       answer: ans,
       distractors: uniq([`x = ${-h}`, `y = ${h}`, `x = ${q - p}`, `x = ${c}`, `y = ${c}`, `x = ${p + q}`].map(Y), ans),
       solution: [
+        ...(d === 'hard' ? [`First find where it crosses the $x$-axis: $${tex} = 0$ factorises to give $x = ${p}$ or $x = ${q}$.`] : []),
         'A quadratic graph is symmetrical about a vertical line halfway between its roots.',
         `Halfway between $${p}$ and $${q}$: $\\frac{${p} + ${par(q)}}{2} = ${h}$`,
         `A vertical line has equation $x = \\ldots$. Answer: $x = ${h}$`,
@@ -264,7 +272,9 @@ function familyFns(fam) {
 export const shapeWhichGraph = G('gr-shape-which-graph', 'gr-graph-shapes', (rng, d) => {
   const fam = familyFns(shapeFamilies(rng));
   const pool = d === 'easy' ? ['lin', 'linNeg', 'quad', 'quadNeg', 'recip', 'cubic'] : Object.keys(fam);
-  const keys = sample(rng, pool, 4);
+  // hard: two pairs of easily confused shapes (e.g. x³ and −x³, k/x and −k/x)
+  const PAIRS = [['quad', 'quadNeg'], ['cubic', 'cubicNeg'], ['recip', 'recipNeg'], ['exp', 'expDecay'], ['lin', 'linNeg']];
+  const keys = d === 'hard' ? shuffle(rng, sample(rng, PAIRS, 2).flat()) : sample(rng, pool, 4);
   const names = keys.map((k) => fam[k].name);
   const candidates = keys.filter((k, i) => d !== 'easy' || names.filter((n) => n === names[i]).length === 1);
   if (!candidates.length) throw new Error('retry');
@@ -305,7 +315,7 @@ export const shapeWhichEquation = G('gr-shape-which-equation', 'gr-graph-shapes'
   const fam = familyFns(shapeFamilies(rng));
   const pool = d === 'easy' ? ['lin', 'quad', 'quadNeg', 'recip', 'cubic', 'linNeg'] : Object.keys(fam);
   const key = pick(rng, pool);
-  if (chance(rng, 0.3)) {
+  if (d !== 'hard' && chance(rng, 0.3)) {
     const names = ['Linear', 'Quadratic', 'Cubic', 'Reciprocal', 'Exponential'];
     return {
       prompt: `What type of graph does the equation $${fam[key].tex}$ give?`,
@@ -321,7 +331,15 @@ export const shapeWhichEquation = G('gr-shape-which-equation', 'gr-graph-shapes'
   const c = chart({ xmin: -4, xmax: 4, ymin: -4, ymax: 4, w: 220, h: 220, zeroAxes: true, labels: false, grid: false, padL: 14, padB: 10 });
   const vis = c.wrap(c.curve(fam[key].f, { samples: 400 }) + text(c.X(0) - 8, c.Y(0) + 10, 'O', { size: 13, italic: true, anchor: 'end' }));
   const others = Object.keys(fam).filter((k) => fam[k].name !== fam[key].name || (k !== key && d === 'hard'));
-  const opts = shuffle(rng, others).map((k) => Y(fam[k].tex));
+  let opts = shuffle(rng, others).map((k) => Y(fam[k].tex));
+  if (d === 'hard') {
+    // Lead with the confusable ones: the same family with the opposite sign, and the same equation with the
+    // constant's sign flipped (the sketch shows which side of the origin the curve crosses).
+    const sib = others.filter((k) => fam[k].name === fam[key].name).map((k) => Y(fam[k].tex));
+    const t = fam[key].tex;
+    const flip = / - \d+$/.test(t) ? t.replace(/ - (\d+)$/, ' + $1') : / \+ \d+$/.test(t) ? t.replace(/ \+ (\d+)$/, ' - $1') : null;
+    opts = [...(flip ? [Y(flip)] : []), ...sib, ...opts];
+  }
   return {
     prompt: 'Here is a sketch of a graph. Which of these could be its equation?',
     visual: vis,
@@ -428,8 +446,9 @@ export const gsWhichLine = G('gr-gs-which-line', 'gr-graphical-solutions', (rng,
     distractors: uniq(dist, ans),
     solution: [
       `Rearrange the equation so one side is $${drawn}$ (the curve already drawn).`,
-      `$${qx(lead, B, C)} = 0$ &nbsp;⟹&nbsp; $${drawn} = ${drawn} - (${qx(lead, B, C)})$`,
-      `$${drawn} = ${lin(m, k)}$, so draw $y = ${lin(m, k)}$ and read the $x$-values where it crosses the curve.`,
+      `Compare the two: to turn $${qx(lead, B, C)}$ into $${drawn}$ you add $${lin(m, k)}$.`,
+      `Add $${lin(m, k)}$ to both sides of $${qx(lead, B, C)} = 0$: $${drawn} = ${lin(m, k)}$.`,
+      `So draw $y = ${lin(m, k)}$; the solutions are the $x$-values where it crosses the curve.`,
       `Answer: ${ans}`,
     ],
   };
@@ -446,8 +465,8 @@ const strictSwap = { '<': '<=', '<=': '<', '>': '>=', '>=': '>' };
 function ineq(kind, params, rel) {
   const q = { kind, ...params, rel };
   q.g = (x, y) => (kind === 'x' ? x - params.k : kind === 'y' ? y - params.k : kind === 'line' ? y - (params.m * x + params.c) : params.p * x + params.q * y - params.k);
-  q.ok = (x, y) => { const v = q.g(x, y); return rel === '<' ? v < -1e-9 : rel === '>' ? v > 1e-9 : rel === '<=' ? v <= 1e-9 : v >= -1e-9; };
-  q.tex = (r = rel) => (kind === 'x' ? `x ${REL[r]} ${params.k}` : kind === 'y' ? `y ${REL[r]} ${params.k}` : kind === 'line' ? `y ${REL[r]} ${lin(params.m, params.c)}` : `${lin(params.p, 0).replace(/^0$/, '')}${params.q < 0 ? ' - ' : ' + '}${Math.abs(params.q) === 1 ? '' : Math.abs(params.q)}y ${REL[r]} ${params.k}`);
+  q.ok = (x, y) => { const v = q.g(x, y); const r = q.rel; return r === '<' ? v < -1e-9 : r === '>' ? v > 1e-9 : r === '<=' ? v <= 1e-9 : v >= -1e-9; };
+  q.tex = (r = q.rel) => (kind === 'x' ? `x ${REL[r]} ${params.k}` : kind === 'y' ? `y ${REL[r]} ${params.k}` : kind === 'line' ? `y ${REL[r]} ${lin(params.m, params.c)}` : `${lin(params.p, 0).replace(/^0$/, '')}${params.q < 0 ? ' - ' : ' + '}${Math.abs(params.q) === 1 ? '' : Math.abs(params.q)}y ${REL[r]} ${params.k}`);
   return q;
 }
 function clipHalf(poly, q) {
@@ -469,16 +488,22 @@ const area = (poly) => Math.abs(poly.reduce((s, p, i) => { const q = poly[(i + 1
 
 function makeRegion(rng, d) {
   for (let t = 0; t < 200; t += 1) {
-    const sharp = d === 'easy' ? '=' : '';
-    void sharp;
-    const rel = () => (d === 'easy' ? pick(rng, ['<=', '>=']) : d === 'medium' ? pick(rng, ['<=', '>=', '<', '>']) : pick(rng, ['<', '>', '<=', '>=']));
     const a = int(rng, -3, 2); const b = int(rng, -3, 2);
-    const qs = [ineq('x', { k: a }, pick(rng, ['>', '>='])), ineq('y', { k: b }, pick(rng, ['>', '>=']))];
-    const third = d === 'easy' ? ineq('sum', { p: 1, q: 1, k: int(rng, a + b + 3, a + b + 8) }, '<=')
-      : chance(rng, 0.5) ? ineq('sum', { p: 1, q: 1, k: int(rng, a + b + 3, a + b + 8) }, pick(rng, ['<', '<=']))
-        : ineq('line', { m: pick(rng, [1, 2, -1, -2]), c: int(rng, -2, 4) }, pick(rng, ['<', '<=', '>', '>=']));
-    qs.push(third);
-    if (d === 'easy') { qs[0].rel = rel(); qs[0].rel = '>='; qs[1].rel = '>='; }
+    let qs;
+    if (d === 'easy') {
+      // x ≥ a, y ≥ b, x + y ≤ k: all solid lines
+      qs = [ineq('x', { k: a }, '>='), ineq('y', { k: b }, '>='), ineq('sum', { p: 1, q: 1, k: int(rng, a + b + 3, a + b + 8) }, '<=')];
+    } else if (d === 'medium') {
+      qs = [ineq('x', { k: a }, pick(rng, ['>', '>='])), ineq('y', { k: b }, pick(rng, ['>', '>=']))];
+      qs.push(chance(rng, 0.5) ? ineq('sum', { p: 1, q: 1, k: int(rng, a + b + 3, a + b + 8) }, pick(rng, ['<', '<=']))
+        : ineq('line', { m: pick(rng, [1, 2, -1, -2]), c: int(rng, -2, 4) }, pick(rng, ['<', '<=', '>', '>='])));
+    } else {
+      // any direction for every boundary, steeper lines and 2x + y style boundaries
+      const ax = int(rng, -4, 4); const by = int(rng, -4, 4);
+      qs = [ineq('x', { k: ax }, pick(rng, ['<', '<=', '>', '>='])), ineq('y', { k: by }, pick(rng, ['<', '<=', '>', '>=']))];
+      qs.push(chance(rng, 0.5) ? ineq('line', { m: pick(rng, [2, -2, 3, -3, 1, -1]), c: int(rng, -4, 4) }, pick(rng, ['<', '<=', '>', '>=']))
+        : ineq('sum', { ...pick(rng, [{ p: 1, q: 1 }, { p: 2, q: 1 }, { p: 1, q: 2 }]), k: pick(rng, [-4, -2, 2, 4, 6, 8]) }, pick(rng, ['<', '<=', '>', '>='])));
+    }
     const box = [[-6, -6], [6, -6], [6, 6], [-6, 6]];
     let poly = box; for (const q of qs) poly = clipHalf(poly, q);
     if (poly.length < 3 || area(poly) < 3 || area(poly) > 40) continue;
@@ -490,16 +515,17 @@ function makeRegion(rng, d) {
 }
 function regionVisual(qs, poly, { label = 'R' } = {}) {
   const c = coordGrid({ xmin: -6, xmax: 6, ymin: -6, ymax: 6, unit: 24 });
+  // Draw every boundary first, then place the labels so they can avoid all of the lines.
+  const mk = (q) => (q.kind === 'x' ? [null, q.k] : q.kind === 'y' ? [0, q.k] : q.kind === 'line' ? [q.m, q.c] : [-q.p / q.q, q.k / q.q]);
   let lines = '';
   for (const q of qs) {
     const dash = q.rel === '<' || q.rel === '>';
-    const o = { color: ACCENT, width: 2.2, dash: dash ? '7 5' : null };
+    lines += c.lineEq(...mk(q), { color: ACCENT, width: 2.2, dash: dash ? '7 5' : null });
+  }
+  for (const q of qs) {
     const eq = q.tex().replace(/\\[lg]eqslant|\\[lg]t(?![a-z])/, '=').replace(/-/g, '−');
-    const lo = { color: ACCENT, size: 13 };
-    if (q.kind === 'x') lines += c.lineEq(null, q.k, o) + lineLabel(c, null, q.k, eq, { ...lo, at: 0.94 });
-    else if (q.kind === 'y') lines += c.lineEq(0, q.k, o) + lineLabel(c, 0, q.k, eq, { ...lo, at: 0.9, side: -1 });
-    else if (q.kind === 'line') lines += c.lineEq(q.m, q.c, o) + lineLabel(c, q.m, q.c, eq, { ...lo, at: 0.12 });
-    else lines += c.lineEq(-q.p / q.q, q.k / q.q, o) + lineLabel(c, -q.p / q.q, q.k / q.q, eq, { ...lo, at: 0.12 });
+    const at = q.kind === 'x' ? 0.94 : q.kind === 'y' ? 0.9 : 0.12;
+    lines += lineLabel(c, ...mk(q), eq, { color: ACCENT, size: 13, at, side: q.kind === 'y' ? -1 : 1 });
   }
   const cx = poly.reduce((s, p) => s + p[0], 0) / poly.length; const cy = poly.reduce((s, p) => s + p[1], 0) / poly.length;
   // Candidate spots for the region label: interior points, nearest the centre first.
@@ -809,7 +835,7 @@ export const circleRadius = G('gr-circle-radius', 'gr-circle-equation', (rng, d)
   else { N = pick(rng, [8, 12, 18, 20, 27, 32, 45, 48, 50, 72, 75, 80, 98]); rTex = surd(N); r = null; }
   const valTex = (k) => (r !== null ? `${r * k}` : k === 1 ? rTex : (() => { const m = rTex.match(/^(\d*)\\sqrt\{(\d+)\}$/); return m ? `${(Number(m[1] || 1)) * k}\\sqrt{${m[2]}}` : `${k}${rTex}`; })());
   const ans = Y(valTex(askD ? 2 : 1));
-  const dist = [Y(`${N}`), Y(`${2 * N}`), Y(valTex(askD ? 1 : 2)), Y(`${N / 2}`), Y(`${N * N}`), Y(`${4 * N}`)];
+  const dist = [Y(tnum(N)), Y(tnum(2 * N)), Y(valTex(askD ? 1 : 2)), Y(tnum(N / 2)), Y(valTex(askD ? 4 : 3)), Y(tnum(4 * N))];
   return {
     prompt: `The equation of a circle is $x^2 + y^2 = ${N}$.<br>Work out the length of the ${askD ? 'diameter' : 'radius'}.${r === null ? ' Give your answer as a surd in its simplest form.' : ''}`,
     answer: ans,
@@ -829,7 +855,36 @@ export const circleEquation = G('gr-circle-equation-find', 'gr-circle-equation',
   const sx = chance(rng) ? 1 : -1; const sy = chance(rng) ? 1 : -1;
   const a = a0 * sx; const b = b0 * sy;
   const N = a * a + b * b;
-  const mode = d === 'easy' ? pick(rng, ['point', 'graph']) : pick(rng, ['point', 'point', 'graph']);
+  const mode = d === 'easy' ? pick(rng, ['point', 'graph']) : d === 'medium' ? pick(rng, ['point', 'point', 'graph']) : pick(rng, ['surd', 'diameter']);
+  if (mode === 'surd') {
+    // radius given as a surd: r = k√m, so r² = k²m
+    const k = int(rng, 2, 5); const m = pick(rng, [2, 3, 5, 6, 7]);
+    const r2 = k * k * m; const ansS = Y(`x^2 + y^2 = ${r2}`);
+    return {
+      prompt: `A circle has its centre at the origin and radius $${k}\\sqrt{${m}}$.<br>Which is the equation of the circle?`,
+      answer: ansS,
+      distractors: uniq([`x^2 + y^2 = ${k * m}`, `x^2 + y^2 = ${k * k + m}`, `x^2 + y^2 = ${k * m * k * m}`, `x^2 + y^2 = ${k}\\sqrt{${m}}`, `x^2 + y^2 = ${2 * k * k * m}`, `x^2 + y^2 = ${k * k}`].map(Y), ansS),
+      solution: [
+        'The equation is $x^2 + y^2 = r^2$.',
+        `$r^2 = (${k}\\sqrt{${m}})^2 = ${k}^2 \\times (\\sqrt{${m}})^2 = ${k * k} \\times ${m} = ${r2}$`,
+        `Answer: ${ansS}`,
+      ],
+    };
+  }
+  if (mode === 'diameter') {
+    // AB is a diameter through the origin: A and B are opposite points
+    const ansD = Y(`x^2 + y^2 = ${N}`);
+    return {
+      prompt: `The points $A${pt(a, b)}$ and $B${pt(-a, -b)}$ are the ends of a diameter of a circle.<br>Which is the equation of the circle?`,
+      answer: ansD,
+      distractors: uniq([`x^2 + y^2 = ${4 * N}`, `x^2 + y^2 = ${2 * N}`, `x^2 + y^2 = ${Math.abs(a) + Math.abs(b)}`, `x^2 + y^2 = ${(Math.abs(a) + Math.abs(b)) ** 2}`, `x^2 - y^2 = ${N}`].map(Y), ansD),
+      solution: [
+        `The centre is the midpoint of AB: $\\left(\\frac{${a} + ${par(-a)}}{2}, \\frac{${b} + ${par(-b)}}{2}\\right) = (0, 0)$.`,
+        `The radius is the distance from the origin to A: $r^2 = ${par(a)}^2 + ${par(b)}^2 = ${N}$.`,
+        `Careful: $${4 * N}$ would be the square of the diameter. Answer: ${ansD}`,
+      ],
+    };
+  }
   const ans = Y(`x^2 + y^2 = ${N}`);
   const dist = [`x^2 + y^2 = ${Math.abs(a) + Math.abs(b)}`, `x^2 + y^2 = ${Math.round(Math.sqrt(N)) ** 2 === N ? Math.sqrt(N) : N * 2}`, `x^2 + y^2 = ${N * 2}`, `x^2 + y^2 = ${(Math.abs(a) + Math.abs(b)) ** 2}`, `x^2 - y^2 = ${N}`, `y = x^2 + ${N}`, `x^2 + y^2 = ${Math.abs(a * a - b * b) || N + 1}`].map(Y);
   if (mode === 'graph' && Number.isInteger(Math.sqrt(N)) && Math.sqrt(N) <= 6) {
@@ -869,26 +924,55 @@ function tangentData(rng, d) {
 export const circleTangent = G('gr-circle-tangent', 'gr-circle-equation', (rng, d) => {
   const { a, b, N, mOP, m, c } = tangentData(rng, d);
   const hidden = d === 'hard' && chance(rng, 0.5);
-  const ans = Y(yeq(m, c));
-  const dist = [yeq(mOP, c), yeq(m, frac(b)), yeq(mOP, 0), yeq(m.neg(), c), yeq(m, c.neg()), yeq(mOP.neg(), frac(b).sub(mOP.neg().mul(a))), yeq(m, frac(N))].map(Y);
+  // When the intercept is a fraction, ask for the form ax + by = c (as mark schemes do): the tangent is ax + by = r².
+  const general = c.d !== 1;
+  const s0 = a < 0 ? -1 : 1; // keep the x coefficient positive
+  const gen = (p, q, r) => `${lin(p, 0)} ${q < 0 ? '-' : '+'} ${Math.abs(q) === 1 ? '' : Math.abs(q)}y = ${r}`;
+  const ans = general ? Y(gen(s0 * a, s0 * b, s0 * N)) : Y(yeq(m, c));
+  const dist = general
+    ? [gen(s0 * a, -s0 * b, s0 * N), gen(s0 * b, s0 * a, s0 * N), gen(s0 * a, s0 * b, -s0 * N), gen(s0 * b, -s0 * a, 0), gen(s0 * a, s0 * b, Math.round(Math.sqrt(N)) ** 2 === N ? s0 * Math.sqrt(N) : s0 * 2 * N), yeq(m, c.mul(2).neg()).replace(/^y/, 'y')].map(Y)
+    : [yeq(mOP, c), yeq(m, frac(b)), yeq(mOP, 0), yeq(m.neg(), c), yeq(m, c.neg()), yeq(mOP.neg(), frac(b).sub(mOP.neg().mul(a))), yeq(m, frac(N))].map(Y);
   const where = hidden ? `P is a point on the circle with $x$-coordinate $${a}$, and P is ${b > 0 ? 'above' : 'below'} the $x$-axis.` : `P${P(a, b)} is a point on the circle.`;
   return {
-    prompt: `A circle has equation $x^2 + y^2 = ${N}$.<br>${where}<br>Work out the equation of the tangent to the circle at P.`,
+    prompt: `A circle has equation $x^2 + y^2 = ${N}$.<br>${where}<br>Work out the equation of the tangent to the circle at P.${general ? ' Give your answer in the form $ax + by = c$, where $a$, $b$ and $c$ are integers.' : ''}`,
     answer: ans,
     distractors: uniq(dist, ans),
-    typed: { kind: 'text', accept: linAccept(m, c, 'x', 'y=') },
+    typed: general
+      ? { kind: 'text', accept: [`${s0 * a === 1 ? '' : s0 * a}x${s0 * b < 0 ? '-' : '+'}${Math.abs(s0 * b) === 1 ? '' : Math.abs(s0 * b)}y=${s0 * N}`] }
+      : { kind: 'text', accept: linAccept(m, c, 'x', 'y=') },
     solution: [
-      ...(hidden ? [`$${a}^2 + y^2 = ${N}$, so $y^2 = ${b * b}$ and $y = ${b}$ (${b > 0 ? 'above' : 'below'} the axis): P is ${P(a, b)}.`] : []),
-      `Gradient of the radius OP $= \\frac{${b}}{${a}} = ${mOP.tex()}$.`,
+      ...(hidden ? [`$(${a})^2 + y^2 = ${N}$, so $y^2 = ${b * b}$ and $y = ${b}$ (${b > 0 ? 'above' : 'below'} the axis): P is ${P(a, b)}.`.replace(`$(${a})^2`, a < 0 ? `$(${a})^2` : `$${a}^2`)] : []),
+      `Gradient of the radius OP $= ${fracEq(b, a)}$.`,
       `The tangent is perpendicular to the radius, so its gradient is $${m.tex()}$ (negative reciprocal).`,
       `$y = ${lin(m, 0)} + c$ through ${P(a, b)}: $${b} = ${m.mul(a).tex()} + c$, so $c = ${c.tex()}$.`,
-      `Answer: $${yeq(m, c)}$`,
+      ...(general ? [`$y = ${lin(m, c)}$. Multiply by $${s0 * b}$ and rearrange: $${gen(s0 * a, s0 * b, s0 * N)}$.`] : []),
+      `Answer: ${ans}`,
     ],
   };
 }, { title: 'Equation of a tangent to a circle' });
 
 export const circleTangentIntercept = G('gr-circle-tangent-intercept', 'gr-circle-equation', (rng, d) => {
   const { a, b, N, m, c } = tangentData(rng, 'hard');
+  if (d === 'hard') {
+    // The tangent and the axes make a triangle: area = ½ × (x-intercept) × (y-intercept)
+    const xi = frac(N, a); const yi = c;
+    const area = xi.mul(yi).div(2).value();
+    if (xi.d !== 1 || yi.d !== 1 || !Number.isInteger(area * 2)) throw new Error('r');
+    const A = Math.abs(area);
+    return {
+      prompt: `${P(a, b)} is a point on the circle $x^2 + y^2 = ${N}$.<br>The tangent to the circle at ${P(a, b)} meets the $x$-axis at A and the $y$-axis at B.<br>Work out the area of triangle OAB, where O is the origin.`,
+      answer: `$${tnum(A)}$ square units`,
+      distractors: uniq([2 * A, Math.abs(xi.value()) + Math.abs(yi.value()), Math.abs(xi.value() * yi.value()) / 4, N, N / 2, A + Math.abs(a * b) / 2].filter((v) => v > 0 && v !== A && Number.isInteger(v * 2)).map((v) => `$${tnum(v)}$ square units`), `$${tnum(A)}$ square units`),
+      typed: { kind: 'number', value: A },
+      solution: [
+        `Gradient of radius $= ${fracEq(b, a)}$, so the tangent gradient is $${m.tex()}$ (negative reciprocal).`,
+        `Tangent: $y = ${lin(m, yi)}$ (substitute ${P(a, b)} to find $c = ${yi.tex()}$). So B is $(0, ${yi.tex()})$.`,
+        `On the $x$-axis $y = 0$: $x = ${xi.tex()}$, so A is $(${xi.tex()}, 0)$.`,
+        `Area $= \\frac{1}{2} \\times ${Math.abs(xi.value())} \\times ${Math.abs(yi.value())} = ${tnum(A)}$`,
+        `Answer: $${tnum(A)}$ square units`,
+      ],
+    };
+  }
   const axis = d === 'easy' ? 'y' : pick(rng, ['x', 'y']);
   const val = axis === 'x' ? frac(N, a) : c;
   if (val.d !== 1) throw new Error('r');
@@ -909,6 +993,23 @@ export const circleTangentIntercept = G('gr-circle-tangent-intercept', 'gr-circl
 export const circlePoint = G('gr-circle-point', 'gr-circle-equation', (rng, d) => {
   const [a0, b0] = pick(rng, PYTH.concat([[0, 5], [7, 24], [24, 7], [9, 12], [12, 9], [8, 15], [15, 8]]).filter(([u, v]) => u !== v));
   const N = a0 * a0 + b0 * b0;
+  if (d === 'hard') {
+    // (k, mk) on x² + y² = N  =>  (1 + m²)k² = N
+    const mm = pick(rng, [2, 3]); const k = int(rng, 1, 5); const NN = (1 + mm * mm) * k * k;
+    const yTex = `${mm}k`;
+    return {
+      prompt: `The point $(k, ${yTex})$ lies on the circle $x^2 + y^2 = ${NN}$, and $k \\gt 0$.<br>Work out the value of $k$.`,
+      answer: T(k),
+      distractors: uniq([NN / (1 + mm), Math.round(Math.sqrt(NN / (1 + mm))), k * k, k * mm, Math.round(Math.sqrt(NN)), k + 1].filter((v) => Number.isInteger(v) && v > 0 && v !== k).map(T), T(k)),
+      typed: { kind: 'number', value: k },
+      solution: [
+        `Substitute $x = k$ and $y = ${yTex}$: $k^2 + (${yTex})^2 = ${NN}$`,
+        `$(${yTex})^2 = ${mm * mm}k^2$, so $${1 + mm * mm}k^2 = ${NN}$`,
+        `$k^2 = ${k * k}$, so $k = ${k}$ (positive)`,
+        `Answer: $k = ${k}$`,
+      ],
+    };
+  }
   if (d === 'easy' || chance(rng, 0.5)) {
     const x = a0; const y = b0 + pick(rng, [-1, 0, 1]);
     const v = x * x + y * y;
@@ -1031,6 +1132,35 @@ const SHAPES = [
 export const transIdentify = G('gr-trans-identify', 'gr-transformations', (rng, d) => {
   const shape = pick(rng, SHAPES).map(([x, y]) => [x, y + pick(rng, [0, -1])]);
   const a = int(rng, 1, 3);
+  if (d === 'hard') {
+    // A combined translation: g(x) = f(x − p) + q
+    const p = nz(rng, -3, 3); const q = nz(rng, -3, 3);
+    const img = shape.map(([x, y]) => [x + p, y + q]);
+    if ([...shape, ...img].some(([x, y]) => Math.abs(x) > 6 || Math.abs(y) > 5)) throw new Error('r');
+    const cg = coordGrid({ xmin: -6, xmax: 6, ymin: -5, ymax: 5, unit: 24 });
+    const lab = (pts, str, col) => {
+      const w = str.length * 14 * 0.55; const cands = [];
+      for (const pp of [pts[pts.length - 1], pts[0], pts[1], pts[pts.length - 2]]) for (const [u, v] of [[1, -1], [1, 1], [-1, -1], [-1, 1], [0, -1.6], [0, 1.6]]) cands.push([cg.X(pp[0]) + u * (w / 2 + 8), cg.Y(pp[1]) + v * 14]);
+      const [x, y] = cg.place(cands, w, 14);
+      return halo(x, y, str, { size: 14, color: col });
+    };
+    const vis = cg.wrap(cg.poly(shape) + cg.poly(img, { color: ACCENT2, dash: '7 5' }) + lab(shape, 'y = f(x)', ACCENT) + lab(img, 'y = g(x)', ACCENT2));
+    const inner = (h) => `f(x ${h > 0 ? '-' : '+'} ${Math.abs(h)})`;
+    const form = (h, v) => `g(x) = ${inner(h)} ${v > 0 ? '+' : '-'} ${Math.abs(v)}`;
+    const ans = Y(form(p, q));
+    return {
+      prompt: 'The graph of $y = f(x)$ is shown with a solid line. The dashed graph is $y = g(x)$.<br>Which is the equation for $g(x)$?',
+      visual: vis,
+      answer: ans,
+      distractors: uniq([form(-p, q), form(p, -q), form(-p, -q), form(q, p), `g(x) = f(x) ${p + q >= 0 ? '+' : '-'} ${Math.abs(p + q) || 1}`].map(Y), ans),
+      solution: [
+        `Compare matching points: ${P(...shape[1])} on $f$ moves to ${P(...img[1])} on $g$.`,
+        `That is ${Math.abs(p)} to the ${p > 0 ? 'right' : 'left'} and ${Math.abs(q)} ${q > 0 ? 'up' : 'down'}.`,
+        `Horizontal: $${inner(p)}$ (the sign in the bracket is opposite to the direction). Vertical: ${q > 0 ? `add $${q}$` : `subtract $${-q}$`} outside.`,
+        `Answer: ${ans}`,
+      ],
+    };
+  }
   const kinds = d === 'easy' ? ['up', 'down', 'right', 'left'] : ['up', 'down', 'right', 'left', 'reflX', 'reflY'];
   const kind = pick(rng, kinds);
   const t = TRANS[kind](a);
@@ -1038,7 +1168,16 @@ export const transIdentify = G('gr-trans-identify', 'gr-transformations', (rng, 
   const allPts = [...shape, ...img];
   if (allPts.some(([x, y]) => Math.abs(x) > 6 || Math.abs(y) > 5)) throw new Error('r');
   const cg = coordGrid({ xmin: -6, xmax: 6, ymin: -5, ymax: 5, unit: 24 });
-  const lab = (pts, s, col) => { const p = pts[pts.length - 1]; return text(cg.X(p[0]) + 8, cg.Y(p[1]) - 8, s, { size: 14, color: col, anchor: 'start' }); };
+  // Label near one end of each graph, in whichever nearby spot overlaps least (and stays inside the grid).
+  const lab = (pts, s, col) => {
+    const w = s.length * 14 * 0.55;
+    const cands = [];
+    for (const p of [pts[pts.length - 1], pts[0], pts[1], pts[pts.length - 2]]) {
+      for (const [u, v] of [[1, -1], [1, 1], [-1, -1], [-1, 1], [0, -1.6], [0, 1.6]]) cands.push([cg.X(p[0]) + u * (w / 2 + 8), cg.Y(p[1]) + v * 14]);
+    }
+    const [x, y] = cg.place(cands, w, 14);
+    return halo(x, y, s, { size: 14, color: col });
+  };
   const vis = cg.wrap(cg.poly(shape) + cg.poly(img, { color: ACCENT2, dash: '7 5' }) + lab(shape, 'y = f(x)', ACCENT) + lab(img, 'y = g(x)', ACCENT2));
   const others = ['up', 'down', 'right', 'left'].filter((k) => k !== kind).map((k) => `g(x) = ${TRANS[k](a).tex}`);
   const refl = ['reflX', 'reflY'].filter((k) => k !== kind).map((k) => `g(x) = ${TRANS[k]().tex}`);
@@ -1090,7 +1229,7 @@ export const transEquation = G('gr-trans-equation', 'gr-transformations', (rng, 
     distractors: uniq(dist.map(Y), Y(ans)),
     solution: [
       `Moving ${Math.abs(p)} to the ${p > 0 ? 'right' : 'left'} replaces $x$ with $${inner.slice(1, -1)}$ (the sign is the opposite of the direction).`,
-      q === 0 ? 'There is no vertical movement.' : `Moving ${Math.abs(q)} ${q > 0 ? 'up' : 'down'} ${q > 0 ? 'adds' : 'subtracts'} $${Math.abs(q)}$ to the whole function.`,
+      q === 0 ? 'There is no vertical movement.' : `Moving ${Math.abs(q)} ${q > 0 ? 'up' : 'down'} ${q > 0 ? `adds $${q}$ to` : `subtracts $${-q}$ from`} the whole function.`,
       `Answer: $${ans}$`,
     ],
   };

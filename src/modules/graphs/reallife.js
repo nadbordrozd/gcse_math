@@ -6,6 +6,8 @@ import { chart, lineLabel } from './diagrams.js';
 import { ACCENT, ACCENT2 } from '../../svg.js';
 
 const ceilTo = (v, s) => Math.ceil(v / s - 1e-9) * s;
+/** Keep distractors at least one small square away from a value read off a graph. */
+const far = (ans, sq) => (v) => Math.abs(v - ans) >= sq - 1e-9;
 const nice = (v) => Number.isFinite(v) && Number.isInteger(tidy(v * 100));
 /** uniq() that also drops options with long decimals. */
 const UQ = (arr, ans) => uniq(arr.filter((s) => !/\d\.\d{3,}/.test(String(s))), ans);
@@ -17,10 +19,11 @@ const hrs = (mins) => (Number.isInteger(tidy((mins / 60) * 100)) ? tnum(tidy(min
 /* ================================================================== */
 
 // Each context: y = r·x + c drawn for 0 ≤ x ≤ xmax. good(x) says x lands the reading exactly on a gridline.
+const SINGULAR = { inches: 'inch', miles: 'mile', pounds: 'pound', gallons: 'gallon', litres: 'litre', pints: 'pint', cups: 'cup', feet: 'foot', euros: 'euro', dollars: 'dollar', francs: 'franc' };
 const CONVERSIONS = [
-  { a: 'pounds (£)', b: 'euros (€)', fa: (v) => money(v), fb: (v) => `€${num(v)}`, r: 1.2, xmax: 100, xstep: 20, xminor: 4, ymax: 120, ystep: 20, yminor: 4, xs: [10, 20, 30, 40, 50, 60, 70, 80, 90], what: 'currency', ta: 'Pounds (£)', tb: 'Euros (€)', ua: 'pounds', ub: 'euros' },
+  { a: 'pounds (£)', b: 'euros (€)', fa: (v) => money(v), fb: (v) => `€${num(v)}`, r: 1.2, xmax: 100, xstep: 20, xminor: 4, ymax: 120, ystep: 20, yminor: 4, xs: [25, 50, 75], what: 'currency', ta: 'Pounds (£)', tb: 'Euros (€)', ua: 'pounds', ub: 'euros' },
   { a: 'pounds (£)', b: 'US dollars', fa: (v) => money(v), fb: (v) => `${num(v)} dollars`, r: 1.25, xmax: 80, xstep: 10, xminor: 5, ymax: 100, ystep: 10, yminor: 5, xs: [8, 16, 24, 32, 40, 48, 56, 64, 72], what: 'currency', ta: 'Pounds (£)', tb: 'US dollars', ua: 'pounds', ub: 'dollars' },
-  { a: 'miles', b: 'kilometres', fa: (v) => `${num(v)} miles`, fb: (v) => `${num(v)} km`, r: 1.6, xmax: 50, xstep: 10, xminor: 5, ymax: 80, ystep: 10, yminor: 5, xs: [10, 20, 30, 40, 5, 15, 25, 35, 45].filter((x) => (x * 1.6) % 2 === 0), ta: 'Miles', tb: 'Kilometres', ua: 'miles', ub: 'km' },
+  { a: 'miles', b: 'kilometres', fa: (v) => `${num(v)} miles`, fb: (v) => `${num(v)} km`, r: 1.6, xmax: 50, xstep: 10, xminor: 5, ymax: 80, ystep: 10, yminor: 5, xs: [10, 20, 30, 40], ta: 'Miles', tb: 'Kilometres', ua: 'miles', ub: 'km' },
   { a: 'kilometres', b: 'miles', fa: (v) => `${num(v)} km`, fb: (v) => `${num(v)} miles`, r: 0.625, xmax: 80, xstep: 10, xminor: 5, ymax: 50, ystep: 10, yminor: 5, xs: [16, 32, 48, 64, 80], ta: 'Kilometres', tb: 'Miles', ua: 'km', ub: 'miles' },
   { a: 'kilograms', b: 'pounds (lb)', fa: (v) => `${num(v)} kg`, fb: (v) => `${num(v)} lb`, r: 2.2, xmax: 50, xstep: 10, xminor: 5, ymax: 110, ystep: 10, yminor: 5, xs: [10, 20, 30, 40, 50], ta: 'Kilograms', tb: 'Pounds (lb)', ua: 'kg', ub: 'lb' },
   { a: 'inches', b: 'centimetres', fa: (v) => `${num(v)} inches`, fb: (v) => `${num(v)} cm`, r: 2.5, xmax: 40, xstep: 5, xminor: 5, ymax: 100, ystep: 10, yminor: 5, xs: [4, 8, 12, 16, 20, 24, 28, 32, 36], ta: 'Inches', tb: 'Centimetres', ua: 'inches', ub: 'cm' },
@@ -32,7 +35,7 @@ const CONVERSIONS = [
   { a: 'feet', b: 'metres', fa: (v) => `${num(v)} feet`, fb: (v) => `${num(v)} m`, r: 0.3, xmax: 100, xstep: 10, xminor: 5, ymax: 30, ystep: 5, yminor: 5, xs: [10, 20, 30, 40, 50, 60, 70, 80, 90], ta: 'Feet', tb: 'Metres', ua: 'feet', ub: 'm' },
   { a: 'cups', b: 'millilitres', fa: (v) => `${num(v)} cups`, fb: (v) => `${num(v)} ml`, r: 250, xmax: 8, xstep: 1, xminor: 2, ymax: 2000, ystep: 500, yminor: 10, xs: [1, 2, 3, 4, 5, 6, 7], ta: 'Cups', tb: 'Millilitres', ua: 'cups', ub: 'ml' },
   { a: 'metres per second', b: 'kilometres per hour', fa: (v) => `${num(v)} m/s`, fb: (v) => `${num(v)} km/h`, r: 3.6, xmax: 30, xstep: 5, xminor: 5, ymax: 110, ystep: 20, yminor: 5, xs: [10, 20, 30], ta: 'Speed (m/s)', tb: 'Speed (km/h)', ua: 'm/s', ub: 'km/h' },
-  { a: 'pounds (£)', b: 'Swiss francs', fa: (v) => money(v), fb: (v) => `${num(v)} francs`, r: 1.1, xmax: 100, xstep: 10, xminor: 5, ymax: 110, ystep: 10, yminor: 5, xs: [10, 20, 30, 40, 50, 60, 70, 80, 90], what: 'currency', ta: 'Pounds (£)', tb: 'Swiss francs', ua: 'pounds', ub: 'francs' },
+  { a: 'pounds (£)', b: 'Swiss francs', fa: (v) => money(v), fb: (v) => `${num(v)} francs`, r: 1.1, xmax: 100, xstep: 10, xminor: 5, ymax: 110, ystep: 10, yminor: 5, xs: [20, 40, 60, 80], what: 'currency', ta: 'Pounds (£)', tb: 'Swiss francs', ua: 'pounds', ub: 'francs' },
 ];
 
 function convChart(k) {
@@ -57,17 +60,20 @@ export const rlConversion = G('gr-rl-conversion', 'gr-real-life', (rng, d) => {
     const fwd = mode === 'fwd';
     const ans = fwd ? y : x;
     const fmt = fwd ? k.fb : k.fa;
-    const dist = fwd ? [y + sqY, y - sqY, k.c ? y - k.c : tidy(x / k.r), x, tidy(y + (sqY > 1 ? 1 : 0.5) * (k.yminor > 1 ? 1 : 0))]
-      : [x + sqX, x - sqX, f(y) > 0 && f(y) <= 3 * Math.max(x, y) ? f(y) : null, y, tidy(y / k.r)];
+    const sq = fwd ? sqY : sqX;
+    const dist = (fwd ? [y + sqY, y - sqY, k.c ? y - k.c : tidy(x / k.r), x, y + 2 * sqY, y - 2 * sqY]
+      : [x + sqX, x - sqX, f(y) > 0 && f(y) <= 3 * Math.max(x, y) ? f(y) : null, y, tidy(y / k.r), x + 2 * sqX, x - 2 * sqX])
+      .filter((v) => v === null || Math.abs(v - ans) >= sq - 1e-9); // never within one small square of the answer
     return {
       prompt: `${intro}<br>Use the graph to convert ${fwd ? k.fa(x) : k.fb(y)} into ${fwd ? k.ub : k.ua}.`,
       visual: vis,
       answer: fmt(ans),
       distractors: UQ(dist.filter((v) => v !== null && v > 0 && Number.isFinite(v) && v !== ans && Number.isInteger(tidy(v * 4))).map((v) => fmt(tidy(v))), fmt(ans)),
-      typed: { kind: 'number', value: ans, tolerance: (fwd ? sqY : sqX) / 2 },
+      typed: { kind: 'number', value: ans, tolerance: sq / 2 },
+      fill: false,
       solution: [
         `Find ${fwd ? k.fa(x) : k.fb(y)} on the ${fwd ? 'horizontal' : 'vertical'} axis, go ${fwd ? 'up' : 'across'} to the line, then ${fwd ? 'across' : 'down'} to the other axis.`,
-        `Check the scale: one small square on the ${fwd ? "vertical" : "horizontal"} axis is ${num(fwd ? sqY : sqX)} ${fwd ? k.ub : k.ua}.`,
+        `Check the scale: one small square on the ${fwd ? "vertical" : "horizontal"} axis is ${num(sq)} ${sq === 1 ? (SINGULAR[fwd ? k.ub : k.ua] || (fwd ? k.ub : k.ua)) : (fwd ? k.ub : k.ua)}.`,
         `Answer: ${fmt(ans)}`,
       ],
     };
@@ -80,8 +86,9 @@ export const rlConversion = G('gr-rl-conversion', 'gr-real-life', (rng, d) => {
         prompt: `${intro}<br>Use the graph to convert ${k.fb(y)} into ${k.ua}.`,
         visual: vis,
         answer: k.fa(x),
-        distractors: UQ([x + sqX, x - sqX, tidy(y / k.r), y - k.c, tidy((y - k.c) * k.r)].filter((v) => v > 0 && Number.isInteger(v * 2)).map((v) => k.fa(v)), k.fa(x)),
+        distractors: UQ([x + sqX, x - sqX, x + 2 * sqX, x - 2 * sqX, tidy(y / k.r), y - k.c, tidy((y - k.c) * k.r)].filter((v) => v > 0 && Number.isInteger(v * 2) && far(x, sqX)(v)).map((v) => k.fa(v)), k.fa(x)),
         typed: { kind: 'number', value: x, tolerance: sqX / 2 },
+        fill: false,
         solution: [`Find ${k.fb(y)} on the vertical axis and go across to the line, then down.`, 'This graph does not start at 0, so you cannot just divide by a rate.', `Answer: ${k.fa(x)}`],
       };
     }
@@ -217,8 +224,9 @@ export const rlFixedCharge = G('gr-rl-fixed-charge', 'gr-real-life', (rng, d) =>
         prompt: `${head}<br>Use the graph to find the cost for ${xWord(x)}.`,
         visual: vis,
         answer: fmtY(y),
-        distractors: UQ([y + S.sqY, y - S.sqY, tidy(y - fixed), tidy((rate * x) / per), f(x + S.sqX)].filter((v) => v > 0 && v !== y).map(fmtY), fmtY(y)),
+        distractors: UQ([y + S.sqY, y - S.sqY, y + 2 * S.sqY, tidy(y - fixed), tidy((rate * x) / per), f(x + S.sqX), f(x + 2 * S.sqX)].filter((v) => v > 0 && far(y, S.sqY)(v)).map(fmtY), fmtY(y)),
         typed: { kind: 'number', value: y, tolerance: S.sqY / 2 },
+        fill: false,
         solution: [`Go up from ${xWord(x)} on the horizontal axis to the line, then across to the cost axis.`, `Each small square on the cost axis is ${fmtY(S.sqY)}.`, `Answer: ${fmtY(y)}`],
       };
     }
@@ -226,8 +234,9 @@ export const rlFixedCharge = G('gr-rl-fixed-charge', 'gr-real-life', (rng, d) =>
       prompt: `${head}<br>${who} paid ${fmtY(y)}. Use the graph to find the number of ${k.units}.`,
       visual: vis,
       answer: xWord(x),
-      distractors: UQ([x + S.sqX, x - S.sqX, tidy(y / rate * per), tidy((y + fixed) / rate * per), y].filter((v) => v > 0 && v !== x && Number.isInteger(v * 2)).map(xWord), xWord(x)),
+      distractors: UQ([x + S.sqX, x - S.sqX, x + 2 * S.sqX, tidy(y / rate * per), tidy((y + fixed) / rate * per), y].filter((v) => v > 0 && Number.isInteger(v * 2) && far(x, S.sqX)(v)).map(xWord), xWord(x)),
       typed: { kind: 'number', value: x, tolerance: S.sqX / 2 },
+      fill: false,
       solution: [`Find ${fmtY(y)} on the cost axis, go across to the line, then down.`, `Each small square on the horizontal axis is ${num(S.sqX)}.`, `Answer: ${xWord(x)}`],
     };
   }
@@ -298,8 +307,9 @@ export const rlCompare = G('gr-rl-compare', 'gr-real-life', (rng, d) => {
       prompt: `${head}<br>For how many ${k.units} do the two charge the same amount?`,
       visual: vis,
       answer: T(xc),
-      distractors: UQ([A(xc), xc + sqX, xc - sqX, fA0, xc + 2 * sqX].filter((v) => v > 0 && v !== xc && Number.isInteger(v)).map(T), T(xc)),
+      distractors: UQ([A(xc), xc + sqX, xc - sqX, fA0, xc + 2 * sqX, xc - 2 * sqX].filter((v) => v > 0 && Number.isInteger(v) && far(xc, sqX)(v)).map(T), T(xc)),
       typed: { kind: 'number', value: xc, tolerance: sqX / 2 },
+        fill: false,
       solution: [`The costs are the same where the two lines <b>cross</b>.`, `They cross at ${xw(xc)} (cost ${money(A(xc))}). Read the horizontal axis, not the cost.`, `Answer: ${xw(xc)}`],
     };
   }
@@ -323,8 +333,9 @@ export const rlCompare = G('gr-rl-compare', 'gr-real-life', (rng, d) => {
     prompt: `${head}<br>What is the difference between their charges for ${xw(x)}?`,
     visual: vis,
     answer: money(dif),
-    distractors: UQ([tidy(dif + sqY), tidy(dif - sqY), Math.min(a, b), Math.max(a, b), tidy(a + b)].filter((v) => v > 0 && v !== dif).map((v) => money(v)), money(dif)),
+    distractors: UQ([tidy(dif + sqY), tidy(dif - sqY), tidy(dif + 2 * sqY), Math.min(a, b), Math.max(a, b), tidy(a + b)].filter((v) => v > 0 && far(dif, sqY)(v)).map((v) => money(v)), money(dif)),
     typed: { kind: 'number', value: dif, tolerance: sqY / 2 },
+    fill: false,
     solution: [`At ${xw(x)}: ${k.A} costs ${money(a)} and ${k.B} costs ${money(b)}.`, `Difference = ${money(dif)}`, `Answer: ${money(dif)}`],
   };
 }, { title: 'Comparing two tariffs', word: true });
@@ -341,7 +352,7 @@ const RATES = [
   { ctx: 'A car uses fuel at a steady rate on a motorway.', y: 'Fuel in tank (litres)', x: 'Distance (km)', q: 'litres', t: 'km', rateU: 'litres per km', dir: -1, y0: [40, 50, 60], rates: [0.05, 0.08, 0.1], xs: 50 },
   { ctx: 'A swimming pool is filled at a steady rate.', y: 'Volume (m³)', x: 'Time (hours)', q: 'm³', t: 'hours', rateU: 'm³ per hour', dir: 1, y0: [0, 20, 40], rates: [10, 15, 20, 25], xs: 1 },
   { ctx: 'An oven heats up at a steady rate.', y: 'Temperature (°C)', x: 'Time (minutes)', q: '°C', t: 'minutes', rateU: '°C per minute', dir: 1, y0: [20], rates: [10, 15, 20, 25], xs: 1 },
-  { ctx: 'Maya saves the same amount each week.', y: 'Savings (£)', x: 'Time (weeks)', q: '£', t: 'weeks', rateU: 'pounds per week', dir: 1, y0: [20, 30, 50, 60], rates: [5, 8, 10, 12], xs: 1, money: true },
+  { ctx: 'Maya saves the same amount each week.', y: 'Savings (£)', x: 'Time (weeks)', q: '£', t: 'weeks', rateU: 'per week', dir: 1, y0: [20, 30, 50, 60], rates: [5, 8, 10, 12], xs: 1, money: true },
   { ctx: 'A plant grows at a steady rate.', y: 'Height (cm)', x: 'Time (weeks)', q: 'cm', t: 'weeks', rateU: 'cm per week', dir: 1, y0: [2, 4, 5, 10], rates: [1.5, 2, 2.5, 3], xs: 1 },
   { ctx: 'A water butt fills up during a rain shower.', y: 'Volume (litres)', x: 'Time (minutes)', q: 'litres', t: 'minutes', rateU: 'litres per minute', dir: 1, y0: [10, 20, 30], rates: [3, 4, 5, 6], xs: 1 },
   { ctx: 'A file is downloading at a steady rate.', y: 'Downloaded (MB)', x: 'Time (seconds)', q: 'MB', t: 'seconds', rateU: 'MB per second', dir: 1, y0: [0], rates: [5, 8, 10, 12, 15], xs: 1 },
@@ -367,13 +378,14 @@ export const rlRate = G('gr-rl-rate', 'gr-real-life', (rng, d) => {
   const mode = d === 'easy' ? pick(rng, ['start', 'value']) : d === 'medium' ? pick(rng, ['rate', 'value', 'when']) : pick(rng, ['rate', 'rate', 'when']);
   const fmt = (v) => (k.money ? money(v) : k.q === '%' ? `${num(v)}%` : k.q === '°C' ? `${num(v)}°C` : `${num(v)} ${k.q}`);
   if (mode === 'rate') {
-    const ans = `${num(rate)} ${k.rateU}`;
-    const wrong = [tidy(T0 / Math.abs(yEnd - y0)), tidy(top / T0), tidy(rate * 2), tidy(Math.abs(yEnd - y0)), tidy(rate / 2), tidy(rate + (k.xs === 1 ? 1 : 0.1))].filter((v) => v > 0 && v !== rate && Number.isFinite(v) && Number.isInteger(tidy(v * 1000)));
+    const rf = (v) => (k.money ? `${money(v, { forcePence: !Number.isInteger(v) })} per week` : `${num(v)} ${k.rateU}`);
+    const ans = rf(rate);
+    const wrong = [tidy(T0 / Math.abs(yEnd - y0)), tidy(top / T0), tidy(rate * 2), tidy(Math.abs(yEnd - y0)), tidy(rate / 2), tidy(rate + (k.xs === 1 ? 1 : 0.1))].filter((v) => v > 0 && v !== rate && Number.isFinite(v) && Number.isInteger(tidy(v * (k.money ? 100 : 1000))));
     return {
-      prompt: `${k.ctx}<br>The graph shows the ${k.y.split(' (')[0].toLowerCase()} over time. Work out the rate, in ${k.rateU}.`,
+      prompt: `${k.ctx}<br>The graph shows the ${k.y.split(' (')[0].toLowerCase()} over time. ${k.money ? 'How much does Maya save each week?' : `Work out the rate, in ${k.rateU}.`}`,
       visual: vis,
       answer: ans,
-      distractors: UQ(wrong.map((v) => `${num(v)} ${k.rateU}`), ans),
+      distractors: UQ(wrong.map(rf), ans),
       typed: { kind: 'number', value: rate },
       solution: [
         'The rate is the gradient of the line: change in the vertical quantity ÷ change in the horizontal quantity.',
@@ -385,7 +397,7 @@ export const rlRate = G('gr-rl-rate', 'gr-real-life', (rng, d) => {
   }
   if (mode === 'start') {
     return {
-      prompt: `${k.ctx}<br>The graph shows the ${k.y.split(' (')[0].toLowerCase()} over time. What was the ${k.y.split(' (')[0].toLowerCase()} at the start?`,
+      prompt: `${k.ctx}<br>The graph shows the ${k.y.split(' (')[0].toLowerCase()} over time. ${k.money ? 'How much had Maya saved at the start?' : `What was the ${k.y.split(' (')[0].toLowerCase()} at the start?`}`,
       visual: vis,
       answer: fmt(y0),
       distractors: UQ([yEnd, rate, y0 + ystep / yminor, T0, y0 - ystep / yminor].filter((v) => v >= 0 && v !== y0).map(fmt), fmt(y0)),
@@ -402,8 +414,9 @@ export const rlRate = G('gr-rl-rate', 'gr-real-life', (rng, d) => {
       prompt: `${k.ctx}<br>Use the graph to find the ${k.y.split(' (')[0].toLowerCase()} after ${num(t)} ${k.t}.`,
       visual: vis,
       answer: fmt(v),
-      distractors: UQ([v + ystep / yminor, v - ystep / yminor, tidy(rate * t), y0, f(t + sqX)].filter((u) => u >= 0 && u !== v).map(fmt), fmt(v)),
+      distractors: UQ([v + ystep / yminor, v - ystep / yminor, v + 2 * ystep / yminor, tidy(rate * t), y0, f(t + sqX)].filter((u) => u >= 0 && far(v, ystep / yminor)(u)).map(fmt), fmt(v)),
       typed: { kind: 'number', value: v, tolerance: ystep / yminor / 2 },
+      fill: false,
       solution: [`Go up from ${num(t)} ${k.t} on the time axis to the line, then across.`, `Each small square on the vertical axis is ${num(ystep / yminor)}.`, `Answer: ${fmt(v)}`],
     };
   }
@@ -411,9 +424,10 @@ export const rlRate = G('gr-rl-rate', 'gr-real-life', (rng, d) => {
     prompt: `${k.ctx}<br>How long does it take for the ${k.y.split(' (')[0].toLowerCase()} to reach ${fmt(v)}?`,
     visual: vis,
     answer: `${num(t)} ${k.t}`,
-    distractors: UQ([t + sqX, t - sqX, tidy(v / rate), T0, tidy(T0 - t)].filter((u) => u > 0 && u !== t).map((u) => `${num(u)} ${k.t}`), `${num(t)} ${k.t}`),
+    distractors: UQ([t + sqX, t - sqX, t + 2 * sqX, tidy(v / rate), T0, tidy(T0 - t)].filter((u) => u > 0 && far(t, sqX)(u)).map((u) => `${num(u)} ${k.t}`), `${num(t)} ${k.t}`),
     typed: { kind: 'number', value: t, tolerance: sqX / 2 },
-    solution: [`Find ${fmt(v)} on the vertical axis, go across to the line, then down to the time axis.`, `Or calculate: ${k.dir < 0 ? 'it must fall' : 'it must rise'} by ${fmt(Math.abs(v - y0))} at ${num(rate)} ${k.rateU}, which takes $${tnum(Math.abs(v - y0))} \\div ${tnum(rate)} = ${tnum(t)}$ ${k.t}.`, `Answer: ${num(t)} ${k.t}`],
+        fill: false,
+    solution: [`Find ${fmt(v)} on the vertical axis, go across to the line, then down to the time axis.`, `Or calculate: ${k.dir < 0 ? 'it must fall' : 'it must rise'} by ${fmt(Math.abs(v - y0))} at ${k.money ? `${money(rate)} per week` : `${num(rate)} ${k.rateU}`}, which takes $${tnum(Math.abs(v - y0))} \\div ${tnum(rate)} = ${tnum(t)}$ ${k.t}.`, `Answer: ${num(t)} ${k.t}`],
   };
 }, { title: 'Rates of filling, emptying and growing', word: true });
 
@@ -422,19 +436,19 @@ export const rlRate = G('gr-rl-rate', 'gr-real-life', (rng, d) => {
 /* ================================================================== */
 
 const JOURNEYS = [
-  { who: 'cycle ride', verb: 'cycles', speeds: [12, 15, 18, 20, 24], dmax: [20, 30] },
-  { who: 'walk', verb: 'walks', speeds: [3, 4, 5, 6], dmax: [10, 15] },
-  { who: 'car journey', verb: 'drives', speeds: [30, 40, 45, 48, 60], dmax: [80, 100, 120] },
-  { who: 'run', verb: 'runs', speeds: [8, 9, 10, 12], dmax: [10, 15] },
-  { who: 'bus journey', verb: 'travels by bus', speeds: [20, 24, 30, 36], dmax: [40, 50] },
-  { who: 'horse ride', verb: 'rides', speeds: [6, 8, 10, 12], dmax: [15, 20] },
-  { who: 'canoe trip', verb: 'paddles', speeds: [3, 4, 5, 6], dmax: [10, 15] },
-  { who: 'scooter ride', verb: 'rides a scooter', speeds: [12, 15, 18, 20], dmax: [20, 30] },
-  { who: 'delivery round', verb: 'drives a van', speeds: [30, 36, 40, 48], dmax: [60, 80] },
-  { who: 'hike', verb: 'hikes', speeds: [3, 4, 5], dmax: [10, 15] },
-  { who: 'school trip', verb: 'travels by coach', speeds: [40, 45, 48, 60], dmax: [100, 120] },
-  { who: 'motorbike ride', verb: 'rides a motorbike', speeds: [40, 48, 60], dmax: [80, 100, 120] },
-  { who: 'sailing trip', verb: 'sails', speeds: [6, 8, 10, 12], dmax: [20, 30] },
+  { who: 'cycle ride', verb: 'cycles', speeds: [12, 15, 18, 20, 24], dmax: [10, 20, 30, 40] },
+  { who: 'walk', verb: 'walks', speeds: [3, 4, 5, 6], dmax: [4, 6, 8, 10, 12, 16, 20] },
+  { who: 'car journey', verb: 'drives', speeds: [30, 40, 45, 48, 60], dmax: [40, 50, 60, 80, 100, 120] },
+  { who: 'run', verb: 'runs', speeds: [8, 9, 10, 12], dmax: [4, 6, 8, 10, 12, 16, 20] },
+  { who: 'bus journey', verb: 'travels by bus', speeds: [20, 24, 30, 36], dmax: [40, 50, 60, 80, 100, 120] },
+  { who: 'horse ride', verb: 'rides', speeds: [6, 8, 10, 12], dmax: [6, 8, 10, 12, 16, 20] },
+  { who: 'canoe trip', verb: 'paddles', speeds: [3, 4, 5, 6], dmax: [4, 6, 8, 10, 12, 16, 20] },
+  { who: 'scooter ride', verb: 'rides a scooter', speeds: [12, 15, 18, 20], dmax: [10, 20, 30, 40] },
+  { who: 'delivery round', verb: 'drives a van', speeds: [30, 36, 40, 48], dmax: [40, 50, 60, 80, 100, 120] },
+  { who: 'hike', verb: 'hikes', speeds: [3, 4, 5], dmax: [4, 6, 8, 10, 12, 16, 20] },
+  { who: 'school trip', verb: 'travels by coach', speeds: [40, 45, 48, 60], dmax: [40, 50, 60, 80, 100, 120] },
+  { who: 'motorbike ride', verb: 'rides a motorbike', speeds: [40, 48, 60], dmax: [40, 50, 60, 80, 100, 120] },
+  { who: 'sailing trip', verb: 'sails', speeds: [6, 8, 10, 12], dmax: [10, 20, 30, 40] },
 ];
 const clock = (startH, mins) => { const t = startH * 60 + mins; return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
 
@@ -463,7 +477,7 @@ function makeJourney(rng) {
     const dmax = J.dmax.filter((m) => m >= dist).sort((p, q) => p - q)[0] || null;
     if (!dmax) continue;
     // all turning points on the 10-minute grid and on a y small square
-    const ystep = dmax <= 30 ? 5 : dmax <= 60 ? 10 : 20; const yminor = ystep === 20 ? 4 : 5;
+    const ystep = dmax <= 10 ? 1 : dmax <= 20 ? 2 : dmax <= 40 ? 5 : dmax <= 60 ? 10 : 20; const yminor = ystep === 20 ? 4 : ystep === 1 || ystep === 2 ? 2 : 5;
     const sqY = ystep / yminor;
     let ok = true; let d0 = 0;
     const minorMin = legs.every((l) => l.t % 15 === 0) ? 15 : legs.every((l) => l.t % 10 === 0) ? 10 : 0;
@@ -481,7 +495,7 @@ function makeJourney(rng) {
 function journeyChart(jn) {
   const xmax = ceilTo(jn.total, 60);
   const c = chart({
-    xmin: 0, xmax, ymin: 0, ymax: jn.dmax, xstep: 60, ystep: jn.ystep, xminor: 60 / jn.minorMin, yminor: jn.yminor, w: Math.min(400, 85 * (xmax / 60)), h: 230,
+    xmin: 0, xmax, ymin: 0, ymax: jn.dmax, xstep: 60, ystep: jn.ystep, xminor: 60 / jn.minorMin, yminor: jn.yminor, w: Math.max(300, Math.min(420, 110 * (xmax / 60))), h: 230,
     xtitle: 'Time', ytitle: 'Distance from home (km)', fmtX: (v) => clock(jn.startH, v),
   });
   return { c, vis: c.wrap(c.poly(jn.pts)) };
@@ -558,8 +572,9 @@ export const dtRead = G('gr-dt-read', 'gr-distance-time', (rng, d) => {
     prompt: `${head}<br>How far from home was ${who} at ${clock(jn.startH, tm)}?`,
     visual: vis,
     answer: `${num(dd)} km`,
-    distractors: UQ([dd + jn.sqY, dd - jn.sqY, jn.dist, jn.pts[i][1], jn.pts[i + 1][1], tm / 60].filter((v) => v >= 0 && v !== dd && Number.isInteger(v * 2)).map((v) => `${num(v)} km`), `${num(dd)} km`),
+    distractors: UQ([dd + jn.sqY, dd - jn.sqY, dd + 2 * jn.sqY, jn.dist, jn.pts[i][1], jn.pts[i + 1][1], tm / 60].filter((v) => v >= 0 && Number.isInteger(v * 2) && far(dd, jn.sqY)(v)).map((v) => `${num(v)} km`), `${num(dd)} km`),
     typed: { kind: 'number', value: dd, tolerance: jn.sqY / 2 },
+    fill: false,
     solution: [`Find ${clock(jn.startH, tm)} on the time axis (each small square is ${jn.minorMin} minutes), go up to the graph, then across.`, `Each small square on the distance axis is ${jn.sqY} km.`, `Answer: ${num(dd)} km`],
   };
 }, { title: 'Read a distance–time graph', word: true });
@@ -569,6 +584,28 @@ export const dtSpeed = G('gr-dt-speed', 'gr-distance-time', (rng, d) => {
   const { vis } = journeyChart(jn);
   const [who] = names(rng, 1);
   const moves = jn.legs.map((l, i) => ({ ...l, i })).filter((l) => l.kind === 'move');
+  if (d === 'hard' && chance(rng, 0.6)) {
+    // Two speeds to find and compare: the first part of the journey and the way back.
+    const out = moves[0]; const home = moves[moves.length - 1];
+    if (out.s === home.s) throw new Error('r');
+    const diff = Math.abs(out.s - home.s);
+    const faster = out.s > home.s ? 'on the way out' : 'on the way back';
+    const ans = `${num(diff)} km/h faster ${faster}`;
+    const other = faster === 'on the way out' ? 'on the way back' : 'on the way out';
+    const h = (l) => `${Math.abs(l.d)} km in ${l.t} minutes: $${Math.abs(l.d)} \\div ${hrs(l.t)} = ${l.s}$ km/h`;
+    return {
+      prompt: `${who} goes on a ${jn.J.who}. The distance–time graph shows the journey.<br>Compare ${who}'s speed on the first part of the journey (from ${clock(jn.startH, 0)}) with the speed on the way back home.`,
+      visual: vis,
+      answer: ans,
+      distractors: UQ([`${num(diff)} km/h faster ${other}`, `${num(diff * 2)} km/h faster ${faster}`, `${num(Math.abs(Math.abs(out.d) - Math.abs(home.d)) || diff + 2)} km/h faster ${faster}`, `${num(diff + 2)} km/h faster ${other}`, 'The same speed both ways'], ans),
+      solution: [
+        'Speed = distance ÷ time, with the time in hours.',
+        `First part: ${h(out)}.`,
+        `Way back: ${h(home)}.`,
+        `Answer: ${ans}`,
+      ],
+    };
+  }
   const m = d === 'easy' ? moves[0] : pick(rng, moves);
   const back = m.d < 0;
   const t0 = clock(jn.startH, jn.pts[m.i][0]); const t1 = clock(jn.startH, jn.pts[m.i + 1][0]);
@@ -582,7 +619,7 @@ export const dtSpeed = G('gr-dt-speed', 'gr-distance-time', (rng, d) => {
     typed: { kind: 'number', value: ans },
     solution: [
       'Speed $= \\dfrac{\\text{distance}}{\\text{time}}$ — on a distance–time graph this is the gradient (steepness) of the line.',
-      `From ${t0} to ${t1} is ${m.t} minutes $= ${hrs(m.t)}$ hours, and the distance changes by ${dist} km.`,
+      `From ${t0} to ${t1} is ${m.t} minutes $= ${hrs(m.t)}$ ${m.t === 60 ? 'hour' : 'hours'}, and the distance changes by ${dist} km.`,
       `Speed $= ${dist} \\div ${hrs(m.t)} = ${tnum(ans)}$ km/h. (Dividing by ${m.t} minutes would give km per minute.)`,
       `Answer: ${num(ans)} km/h`,
     ],
@@ -593,7 +630,7 @@ export const dtAverage = G('gr-dt-average', 'gr-distance-time', (rng, d) => {
   const jn = makeJourney(rng);
   const { vis } = journeyChart(jn);
   const [who] = names(rng, 1);
-  const whole = d !== 'easy' && chance(rng, 0.5);
+  const whole = d === 'hard' || (d === 'medium' && chance(rng, 0.3));
   let dist; let time; let label;
   if (whole) { dist = 2 * jn.dist; time = jn.total; label = 'for the whole journey, including stops'; }
   else {
@@ -615,16 +652,17 @@ export const dtAverage = G('gr-dt-average', 'gr-distance-time', (rng, d) => {
     moves.reduce((a, l) => a + l.s, 0) / moves.length, // mean of the speeds
     dist / (time / 100), // minutes treated as decimal hours
     (dist * 60) / (time + 60),
-  ].filter((v) => v !== null && v > 0 && roundTo(v, 1) !== ans);
+  ].map((v) => (v === null ? null : Number.isInteger(ans) ? Math.round(v) : Math.round(v * 2) / 2)) // same format as the answer
+    .filter((v) => v !== null && v > 0 && v !== ans);
   return {
     prompt: `${who} goes on a ${jn.J.who}. The distance–time graph shows the journey.<br>Work out ${who}'s average speed ${label}. Give your answer in km/h.`,
     visual: vis,
     answer: `${num(ans)} km/h`,
-    distractors: UQ(wrong.map((v) => `${num(roundTo(v, 1))} km/h`), `${num(ans)} km/h`),
+    distractors: UQ(wrong.map((v) => `${num(v)} km/h`), `${num(ans)} km/h`),
     typed: { kind: 'number', value: ans },
     solution: [
       'Average speed $= \\dfrac{\\text{total distance}}{\\text{total time}}$ — the time includes any stops.',
-      `Distance: ${dist} km${whole ? ' (there and back)' : ''}. Time: ${time} minutes $= ${hrs(time)}$ hours.`,
+      `Distance: ${dist} km${whole ? ' (there and back)' : ''}. Time: ${time} minutes $= ${hrs(time)}$ ${time === 60 ? 'hour' : 'hours'}.`,
       `Average speed $= ${dist} \\div ${hrs(time)} = ${tnum(ans)}$ km/h. Averaging the speeds of the separate parts does not work.`,
       `Answer: ${num(ans)} km/h`,
     ],
@@ -637,6 +675,26 @@ export const dtInterpret = G('gr-dt-interpret', 'gr-distance-time', (rng, d) => 
   const [who] = names(rng, 1);
   const moves = jn.legs.map((l, i) => ({ ...l, i })).filter((l) => l.kind === 'move');
   const range = (i) => `Between ${clock(jn.startH, jn.pts[i][0])} and ${clock(jn.startH, jn.pts[i + 1][0])}`;
+  if (d === 'hard') {
+    // Identify the fastest part AND work out its speed.
+    const fastest = moves.reduce((a, b) => (b.s > a.s ? b : a));
+    if (moves.filter((m) => m.s === fastest.s).length > 1) throw new Error('r');
+    const fmt = (v) => `${num(v)} km/h`;
+    const slow = moves.filter((m) => m !== fastest).map((m) => m.s);
+    return {
+      prompt: `${who} goes on a ${jn.J.who}. The distance–time graph shows the journey.<br>What was ${who}'s greatest speed during the journey?`,
+      visual: vis,
+      answer: fmt(fastest.s),
+      distractors: UQ([...slow, Math.abs(fastest.d), tidy(Math.abs(fastest.d) / fastest.t * 10) || null, fastest.s * 2, jn.dist].filter((v) => v && v !== fastest.s).map(fmt), fmt(fastest.s)),
+      typed: { kind: 'number', value: fastest.s },
+      solution: [
+        'The fastest part is the <b>steepest</b> section of the graph (going up or down).',
+        `The steepest section is ${range(fastest.i).toLowerCase()}: ${Math.abs(fastest.d)} km in ${fastest.t} minutes.`,
+        `Speed $= ${Math.abs(fastest.d)} \\div ${hrs(fastest.t)} = ${fastest.s}$ km/h`,
+        `Answer: ${fmt(fastest.s)}`,
+      ],
+    };
+  }
   if (chance(rng, 0.55) && moves.length >= 2) {
     const fastest = moves.reduce((a, b) => (b.s > a.s ? b : a));
     if (moves.filter((m) => m.s === fastest.s).length > 1) throw new Error('r');
@@ -671,12 +729,31 @@ export const dtInterpret = G('gr-dt-interpret', 'gr-distance-time', (rng, d) => 
 /* gr-rates-of-change: velocity–time, gradients and areas                */
 /* ================================================================== */
 
-const VEHICLES = ['A car', 'A cyclist', 'A train', 'A tram', 'A runner', 'A motorbike', 'A lorry', 'A bus', 'A go-kart', 'A lift', 'A boat', 'A drone'];
+// Each vehicle: where it moves and a realistic top speed range (m/s) for the velocity–time graphs.
+const VEHICLES = [
+  { name: 'A car', where: 'along a straight road', speeds: [12, 15, 16, 18, 20, 24, 25, 30] },
+  { name: 'A cyclist', where: 'along a straight cycle path', speeds: [5, 6, 8, 10, 12] },
+  { name: 'A train', where: 'along a straight track', speeds: [15, 16, 18, 20, 24, 25, 30] },
+  { name: 'A tram', where: 'along a straight track', speeds: [8, 10, 12, 15] },
+  { name: 'A runner', where: 'along a straight running track', speeds: [4, 5, 6, 8] },
+  { name: 'A motorbike', where: 'along a straight road', speeds: [15, 16, 18, 20, 24, 25, 30] },
+  { name: 'A lorry', where: 'along a straight road', speeds: [10, 12, 15, 16, 18, 20] },
+  { name: 'A bus', where: 'along a straight road', speeds: [8, 10, 12, 15] },
+  { name: 'A go-kart', where: 'along a straight part of a track', speeds: [6, 8, 10, 12] },
+  { name: 'A lift', where: 'up a lift shaft', speeds: [2, 3, 4, 5, 6] },
+  { name: 'A boat', where: 'in a straight line across a lake', speeds: [4, 5, 6, 8, 10] },
+  { name: 'A drone', where: 'in a straight line', speeds: [4, 5, 6, 8, 10, 12] },
+];
+/** A vehicle whose speeds include values close to vmax (for curve graphs). */
+const vehicleFor = (rng, vmax) => {
+  const ok = VEHICLES.filter((v) => vmax <= Math.max(...v.speeds) * 1.15 && vmax >= Math.min(...v.speeds) * 0.8);
+  return pick(rng, ok.length ? ok : VEHICLES);
+};
 
-function vtTrip(rng, d) {
+function vtTrip(rng, d, speeds = [6, 8, 10, 12, 15, 16, 18, 20, 24, 25, 30]) {
   // accelerate 0→V over t1, constant for t2, decelerate to 0 (or to V2) over t3
   for (let k = 0; k < 200; k += 1) {
-    const V = pick(rng, [6, 8, 10, 12, 15, 16, 18, 20, 24, 25, 30]);
+    const V = pick(rng, speeds);
     const t1 = pick(rng, [2, 4, 5, 6, 8, 10]); const t2 = pick(rng, [4, 5, 6, 8, 10, 12]); const t3 = pick(rng, [2, 3, 4, 5, 6, 8, 10]);
     const startV = d === 'hard' && chance(rng, 0.4) ? pick(rng, [2, 4, 5, 6]) : 0;
     if (startV >= V) continue;
@@ -697,9 +774,10 @@ function vtChart(trip) {
 }
 
 export const rocAcceleration = G('gr-roc-acceleration', 'gr-rates-of-change', (rng, d) => {
-  const trip = vtTrip(rng, d);
+  const veh = pick(rng, VEHICLES);
+  const trip = vtTrip(rng, d, veh.speeds);
   const { vis } = vtChart(trip);
-  const v = pick(rng, VEHICLES);
+  const v = `${veh.name} moves ${veh.where}`;
   const which = d === 'easy' ? 'first' : pick(rng, ['first', 'last']);
   const a = which === 'first' ? trip.a1 : trip.a3;
   const [ts, te] = which === 'first' ? [0, trip.t1] : [trip.t1 + trip.t2, trip.T];
@@ -707,7 +785,7 @@ export const rocAcceleration = G('gr-roc-acceleration', 'gr-rates-of-change', (r
   const fmt = (x) => `$${tnum(x)}$ m/s²`;
   const wrong = [tidy(dt / dv), dv, tidy(dv * dt), tidy(dv * dt / 2), which === 'first' ? trip.a3 : trip.a1, tidy(trip.V / te)].filter((x) => x > 0 && x !== a && Number.isInteger(tidy(x * 100)));
   return {
-    prompt: `${v} moves along a straight road. The velocity–time graph shows its motion.<br>Work out the ${which === 'first' ? 'acceleration' : 'deceleration'} between $${ts}$ and $${te}$ seconds.`,
+    prompt: `${v}. The velocity–time graph shows its motion.<br>Work out the ${which === 'first' ? 'acceleration' : 'deceleration'} between $${ts}$ and $${te}$ seconds.`,
     visual: vis,
     answer: fmt(a),
     distractors: UQ(wrong.map(fmt), fmt(a)),
@@ -722,9 +800,10 @@ export const rocAcceleration = G('gr-roc-acceleration', 'gr-rates-of-change', (r
 }, { title: 'Acceleration from a velocity–time graph' });
 
 export const rocDistance = G('gr-roc-distance', 'gr-rates-of-change', (rng, d) => {
-  const trip = vtTrip(rng, d);
+  const veh = pick(rng, VEHICLES);
+  const trip = vtTrip(rng, d, veh.speeds);
   const { vis } = vtChart(trip);
-  const v = pick(rng, VEHICLES);
+  const v = `${veh.name} moves ${veh.where}`;
   const part = d === 'easy' ? pick(rng, ['first', 'middle']) : d === 'medium' ? pick(rng, ['first', 'total', 'last']) : 'total';
   const A1 = ((trip.startV + trip.V) / 2) * trip.t1; const A2 = trip.V * trip.t2; const A3 = (trip.V / 2) * trip.t3;
   const total = A1 + A2 + A3;
@@ -733,7 +812,7 @@ export const rocDistance = G('gr-roc-distance', 'gr-rates-of-change', (rng, d) =
   const range = part === 'first' ? [0, trip.t1] : part === 'middle' ? [trip.t1, trip.t1 + trip.t2] : part === 'last' ? [trip.t1 + trip.t2, trip.T] : [0, trip.T];
   const wrong = [trip.V * trip.T, A1 * 2, A3 * 2, total - A2, trip.V * (range[1] - range[0]), tidy(total / 2), A2].filter((x) => x > 0 && x !== ans);
   return {
-    prompt: `${v} moves along a straight road. The velocity–time graph shows its motion.<br>Work out the distance travelled ${part === 'total' ? 'in the whole journey' : `between $${range[0]}$ and $${range[1]}$ seconds`}.`,
+    prompt: `${v}. The velocity–time graph shows its motion.<br>Work out the distance travelled ${part === 'total' ? 'in the whole journey' : `between $${range[0]}$ and $${range[1]}$ seconds`}.`,
     visual: vis,
     answer: `${num(ans)} m`,
     distractors: UQ(wrong.map((x) => `${num(x)} m`), `${num(ans)} m`),
@@ -750,11 +829,11 @@ export const rocDistance = G('gr-roc-distance', 'gr-rates-of-change', (rng, d) =
 }, { title: 'Distance from the area under a velocity–time graph' });
 
 // Smooth curves with nice values at grid points: v(t) = p t (q − t) / r + s
-function curveTrip(rng) {
-  for (let k = 0; k < 200; k += 1) {
+function curveTrip(rng, n = 4, hs = [2, 4]) {
+  for (let k = 0; k < 300; k += 1) {
     const q = pick(rng, [16, 20, 24]); const r = pick(rng, [4, 8, 10, 16]); const s = pick(rng, [0, 2, 4, 5]);
     const f = (t) => (t * (q - t)) / r + s;
-    const h = pick(rng, [2, 4]); const n = 4; const end = h * n;
+    const h = pick(rng, hs); const end = h * n;
     if (end > q / 2 + 2) continue;
     const vals = Array.from({ length: n + 1 }, (_, i) => f(i * h));
     if (!vals.every((v) => Number.isInteger(v * 2))) continue;
@@ -766,19 +845,24 @@ function curveTrip(rng) {
 }
 
 export const rocEstimateArea = G('gr-roc-area-estimate', 'gr-rates-of-change', (rng, d) => {
-  const cv = curveTrip(rng);
-  const v = pick(rng, VEHICLES);
+  // easy: 4 strips, velocities given; medium: 4 strips; hard: 3 or 5 strips, velocities read from the graph (or over/under).
+  const n = d === 'hard' ? pick(rng, [3, 5]) : 4;
+  const cv = curveTrip(rng, n, d === 'hard' ? [2] : [2, 4]);
+  const v = vehicleFor(rng, cv.vmax).name;
   const xmax = cv.end + (cv.end % 4 === 0 ? 4 : 2);
   const ystep = cv.vmax <= 12 ? 2 : cv.vmax <= 25 ? 5 : 10;
-  const c = chart({ xmin: 0, xmax, ymin: 0, ymax: ceilTo(cv.vmax + 1, ystep), xstep: 2, ystep, xminor: 2, yminor: ystep === 2 ? 2 : 5, w: 340, h: 230, xtitle: 'Time (seconds)', ytitle: 'Velocity (m/s)' });
+  if (d !== 'easy' && ystep === 10 && !cv.vals.every(Number.isInteger)) throw new Error('r'); // must be readable
+  const yminor = ystep === 2 ? 4 : ystep === 5 ? 10 : 20; // small squares of 0.5 m/s so the readings are exact
+  const c = chart({ xmin: 0, xmax, ymin: 0, ymax: ceilTo(cv.vmax + 1, ystep), xstep: 2, ystep, xminor: 2, yminor: Math.min(yminor, 10), w: 340, h: 250, xtitle: 'Time (seconds)', ytitle: 'Velocity (m/s)' });
   const strips = cv.vals.map((y, i) => [i * cv.h, y]);
   let marks = '';
   for (const [t, y] of strips) marks += c.seg([t, 0], [t, y], { color: ACCENT2, width: 1.4, dash: '4 3' });
   const vis = c.wrap(c.curve(cv.f, { from: 0, to: xmax }) + marks + strips.map(([t, y]) => c.point(t, y, null, { r: 3 })).join(''));
-  const est = tidy((cv.h / 2) * (cv.vals[0] + 2 * (cv.vals[1] + cv.vals[2] + cv.vals[3]) + cv.vals[4]));
+  const V = cv.vals; const inner = V.slice(1, -1).reduce((a, b) => a + b, 0);
+  const est = tidy((cv.h / 2) * (V[0] + 2 * inner + V[n]));
   if (d === 'hard' && chance(rng, 0.35)) {
     return {
-      prompt: `${v} starts moving. The velocity–time graph is shown. The area under the graph between $0$ and $${cv.end}$ seconds is estimated using ${cv.n} trapeziums of equal width.<br>Is the estimate of the distance travelled an underestimate or an overestimate?`,
+      prompt: `${v} starts moving. The velocity–time graph is shown. The area under the graph between $0$ and $${cv.end}$ seconds is estimated using ${n} trapeziums of equal width.<br>Is the estimate of the distance travelled an underestimate or an overestimate?`,
       visual: vis,
       answer: 'Underestimate, because the curve is above the tops of the trapeziums',
       distractors: ['Overestimate, because the curve is above the tops of the trapeziums', 'Overestimate, because the trapeziums go above the curve', 'Underestimate, because the velocity is increasing', 'Exact, because the strips are equal widths'],
@@ -790,17 +874,20 @@ export const rocEstimateArea = G('gr-roc-area-estimate', 'gr-rates-of-change', (
       ],
     };
   }
-  const wrong = [tidy(cv.h * (cv.vals[0] + cv.vals[1] + cv.vals[2] + cv.vals[3] + cv.vals[4])), tidy(cv.h * (cv.vals[1] + cv.vals[2] + cv.vals[3] + cv.vals[4])), tidy(cv.h * (cv.vals[0] + cv.vals[1] + cv.vals[2] + cv.vals[3])), tidy(cv.vals[4] * cv.end / 2), tidy(est / 2), tidy(cv.vals[4] * cv.end)].filter((x) => x !== est);
+  const sum = V.reduce((a, b) => a + b, 0);
+  const wrong = [tidy(cv.h * sum), tidy(cv.h * (sum - V[0])), tidy(cv.h * (sum - V[n])), tidy((V[n] * cv.end) / 2), tidy(est / 2), tidy(V[n] * cv.end), tidy(cv.h * (V[0] + 2 * inner + V[n]))].filter((x) => x !== est);
+  const pieces = strips.slice(0, n).map(([, y], i) => tidy(((y + V[i + 1]) / 2) * cv.h));
   return {
-    prompt: `${v} starts moving. The velocity–time graph is shown.<br>Use ${cv.n} strips of equal width to estimate the distance travelled in the first $${cv.end}$ seconds.<br>The velocities at $${strips.map(([t]) => t).join(', ')}$ seconds are $${cv.vals.map((y) => tnum(y)).join(', ')}$ m/s.`,
+    prompt: `${v} starts moving. The velocity–time graph is shown.<br>Use ${n} strips of equal width to estimate the distance travelled in the first $${cv.end}$ seconds.${d === 'easy' ? `<br>The velocities at $${strips.map(([t]) => t).join(', ')}$ seconds are $${V.map((y) => tnum(y)).join(', ')}$ m/s.` : ''}`,
     visual: vis,
     answer: `${num(est)} m`,
     distractors: UQ(wrong.map((x) => `${num(x)} m`), `${num(est)} m`),
     typed: { kind: 'number', value: est },
     solution: [
-      `Distance = area under the graph. Split it into ${cv.n} trapeziums, each $${cv.h}$ seconds wide.`,
-      `Areas: ${strips.slice(0, 4).map(([, y], i) => `$\\frac{${tnum(y)} + ${tnum(cv.vals[i + 1])}}{2} \\times ${cv.h} = ${tnum(tidy(((y + cv.vals[i + 1]) / 2) * cv.h))}$`).join(', ')}`,
-      `Total $= ${strips.slice(0, 4).map(([, y], i) => tnum(tidy(((y + cv.vals[i + 1]) / 2) * cv.h))).join(' + ')} = ${tnum(est)}$ m`,
+      `Distance = area under the graph. Split it into ${n} trapeziums, each $${cv.h}$ seconds wide.`,
+      d === 'easy' ? 'Use the velocities given.' : `Read the velocities from the graph at $${strips.map(([t]) => t).join(', ')}$ s: $${V.map((y) => tnum(y)).join(', ')}$ m/s.`,
+      `Areas: ${strips.slice(0, n).map(([, y], i) => `$\\frac{${tnum(y)} + ${tnum(V[i + 1])}}{2} \\times ${cv.h} = ${tnum(pieces[i])}$`).join(', ')}`,
+      `Total $= ${pieces.map((x) => tnum(x)).join(' + ')} = ${tnum(est)}$ m`,
       `Answer: ${num(est)} m`,
     ],
   };
@@ -827,21 +914,24 @@ export const rocTangent = G('gr-roc-tangent', 'gr-rates-of-change', (rng, d) => 
     const c = chart({ xmin: 0, xmax, ymin: 0, ymax: ceilTo(vmax + 1, ystep), xstep: 2, ystep, xminor: 2, yminor: ystep === 2 ? 2 : 5, w: 340, h: 230, xtitle: 'Time (seconds)', ytitle: 'Velocity (m/s)' });
     const ext = 1.6;
     const tan = c.seg([t0 - dtc * ext, y0 - m * dtc * ext], [t0 + dtc * ext, y0 + m * dtc * ext], { color: ACCENT2, width: 2 });
-    const vis = c.wrap(c.curve(f, { from: 0, to: xmax }) + tan + c.point(t0, y0, null, { r: 3.5 }) + c.point(...pA, null, { r: 3, color: ACCENT2 }) + c.point(...pB, null, { r: 3, color: ACCENT2 }));
-    const v = pick(rng, VEHICLES);
+    // hard: the student chooses their own points on the tangent (none are marked)
+    const marks = d === 'hard' ? '' : c.point(...pA, null, { r: 3, color: ACCENT2 }) + c.point(...pB, null, { r: 3, color: ACCENT2 });
+    const vis = c.wrap(c.curve(f, { from: 0, to: xmax }) + tan + c.point(t0, y0, null, { r: 3.5 }) + marks);
+    const veh = vehicleFor(rng, vmax);
+    const v = `${veh.name} is moving ${veh.where}`;
     const word = m >= 0 ? 'acceleration' : 'deceleration';
     const ans = Math.abs(m);
     const wrong = [tidy(1 / ans), tidy(y0 / t0), tidy(Math.abs(pB[1] - pA[1])), tidy(ans * 2), tidy(f(t0 + 1) - f(t0) === ans ? ans + 0.5 : Math.abs(f(t0 + 1) - f(t0)))].filter((x) => x > 0 && x !== ans && Number.isInteger(tidy(x * 100)));
     const fmt = (x) => `$${tnum(x)}$ m/s²`;
     return {
-      prompt: `${v} is moving along a straight road. The velocity–time graph is shown, with a tangent drawn at $t = ${t0}$ seconds.<br>Use the tangent to estimate the ${word} at $${t0}$ seconds.`,
+      prompt: `${v}. The velocity–time graph is shown, with a tangent drawn at $t = ${t0}$ seconds.<br>Use the tangent to estimate the ${word} at $${t0}$ seconds.`,
       visual: vis,
       answer: fmt(ans),
       distractors: UQ(wrong.map(fmt), fmt(ans)),
       typed: { kind: 'number', value: ans },
       solution: [
         'The gradient of the tangent gives the rate of change at that instant — here, the acceleration.',
-        `Use two points on the tangent: ${`$(${tnum(pA[0])}, ${tnum(pA[1])})$`} and ${`$(${tnum(pB[0])}, ${tnum(pB[1])})$`}.`,
+        `${d === 'hard' ? 'Choose two points far apart where the tangent crosses grid lines, for example' : 'Use the two marked points on the tangent:'} ${`$(${tnum(pA[0])}, ${tnum(pA[1])})$`} and ${`$(${tnum(pB[0])}, ${tnum(pB[1])})$`}.`,
         `Gradient $= \\frac{${tnum(pB[1])} - ${tnum(pA[1])}}{${tnum(pB[0])} - ${tnum(pA[0])}} = ${tnum(m)}$${m < 0 ? ', negative, so it is slowing down' : ''}.`,
         `Answer: ${fmt(ans)}`,
       ],
@@ -871,7 +961,8 @@ export const rocAverageRate = G('gr-roc-average-rate', 'gr-rates-of-change', (rn
   const f = k.shape === 'up' ? (t) => a0 + (b * t * t) / 2
     : k.shape === 'slowUp' ? (t) => a0 + (b * (xmax * xmax - (xmax - t) ** 2)) / 2
       : (t) => base + (b * (xmax - t) ** 2) / 2;
-  const t1 = pick(rng, [0, 2, 4]); const t2 = t1 + pick(rng, [2, 4]);
+  // easy: neighbouring points with values given; medium: read the values; hard: a wider interval, read from the graph
+  const t1 = pick(rng, [0, 2, 4]); const t2 = t1 + (d === 'easy' ? 2 : d === 'medium' ? pick(rng, [2, 4]) : pick(rng, [4, 6]));
   if (t2 > xmax) throw new Error('r');
   const y1 = f(t1); const y2 = f(t2);
   if (!Number.isInteger(y1) || !Number.isInteger(y2)) throw new Error('r');
@@ -885,7 +976,7 @@ export const rocAverageRate = G('gr-roc-average-rate', 'gr-rates-of-change', (rn
   const ans = `$${tnum(rate)}$ ${k.u}`;
   const wrong = [tidy((t2 - t1) / (y2 - y1)), tidy(y2 / t2), tidy(y2 - y1), tidy(-rate), tidy((y2 + y1) / (t2 + t1 || 1)), tidy(rate * 2)].filter((x) => x !== rate && Number.isFinite(x) && Number.isInteger(tidy(x * 100)));
   return {
-    prompt: `${k.ctx}<br>Work out the average rate of change of ${k.yw} between A ($${t1}$ ${k.xw}) and B ($${t2}$ ${k.xw}).`,
+    prompt: `${k.ctx}<br>Work out the average rate of change of ${k.yw} between A ($${t1}$ ${k.xw}) and B ($${t2}$ ${k.xw}).${d === 'easy' ? ` A is the point $(${t1}, ${y1})$ and B is $(${t2}, ${y2})$.` : ''}`,
     visual: vis,
     answer: ans,
     distractors: UQ(wrong.map((x) => `$${tnum(x)}$ ${k.u}`), ans),

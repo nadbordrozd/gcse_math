@@ -58,9 +58,11 @@ export const coordRead = G('gr-coord-read', 'gr-coordinates', (rng, d) => {
 
 export const coordWhichPoint = G('gr-coord-which-point', 'gr-coordinates', (rng, d) => {
   const q1 = d === 'easy';
-  const x = q1 ? int(rng, 1, 7) : nz(rng, -5, 5); const y = q1 ? int(rng, 1, 7) : nz(rng, -5, 5);
+  let x = q1 ? int(rng, 1, 7) : nz(rng, -5, 5); let y = q1 ? int(rng, 1, 7) : nz(rng, -5, 5);
   if (x === y || x === -y) throw new Error('retry');
-  const decoys = q1 ? [[y, x], [x + 1, y], [x, y - 1]] : [[y, x], [-x, y], [x, -y], [-y, -x]];
+  if (d === 'hard') { if (chance(rng)) x = 0; else y = 0; } // a point on an axis
+  const decoys = q1 ? [[y, x], [x + 1, y], [x, y - 1]]
+    : d === 'hard' ? [[y, x], [-x, -y], [-y, -x], x === 0 ? [1, y] : [x, 1]] : [[y, x], [-x, y], [x, -y], [-y, -x]];
   const pts = shuffle(rng, [[x, y], ...decoys.filter((p) => (q1 ? p[0] >= 1 && p[1] >= 1 && p[0] <= 7 && p[1] <= 7 : true))].slice(0, 5));
   const letters = sample(rng, LETTERS, pts.length);
   const ti = pts.findIndex((p) => p[0] === x && p[1] === y);
@@ -74,7 +76,7 @@ export const coordWhichPoint = G('gr-coord-which-point', 'gr-coordinates', (rng,
     count: Math.min(5, pts.length),
     solution: [
       `The first number is the $x$-coordinate (across), the second is the $y$-coordinate (up/down).`,
-      `$x = ${x}$: go ${Math.abs(x)} ${x > 0 ? 'right' : 'left'}. $y = ${y}$: go ${Math.abs(y)} ${y > 0 ? 'up' : 'down'}.`,
+      `$x = ${x}$: ${x === 0 ? 'stay on the $y$-axis' : `go ${Math.abs(x)} ${x > 0 ? 'right' : 'left'}`}. $y = ${y}$: ${y === 0 ? 'stay on the $x$-axis' : `go ${Math.abs(y)} ${y > 0 ? 'up' : 'down'}`}.`,
       `Answer: ${letters[ti]}`,
     ],
   };
@@ -115,7 +117,7 @@ export const coordCompleteShape = G('gr-coord-complete-shape', 'gr-coordinates',
 }, { title: 'Complete a shape on a coordinate grid' });
 
 export const coordMove = G('gr-coord-move', 'gr-coordinates', (rng, d) => {
-  const mode = d === 'easy' ? 'translate' : pick(rng, ['translate', 'axis', 'axis', 'line']);
+  const mode = d === 'easy' ? 'translate' : d === 'medium' ? pick(rng, ['translate', 'axis', 'axis', 'line']) : 'diag';
   const x = nz(rng, -5, 6); const y = nz(rng, -5, 6);
   if (mode === 'translate') {
     const dx = nz(rng, -5, 5); const dy = nz(rng, -5, 5);
@@ -145,6 +147,27 @@ export const coordMove = G('gr-coord-move', 'gr-coordinates', (rng, d) => {
         `A line parallel to the ${toY ? 'x' : 'y'}-axis is ${toY ? 'horizontal' : 'vertical'}, so the ${toY ? 'y' : 'x'}-coordinate stays the same: $${toY ? y : x}$.`,
         `Every point on the ${toY ? 'y' : 'x'}-axis has ${toY ? 'x' : 'y'}-coordinate $0$.`,
         `Answer: ${P(...ans)}`,
+      ],
+    };
+  }
+  if (mode === 'diag') {
+    // Q is 1/k of the way along a diagonal segment AB: both coordinates move.
+    const k = pick(rng, [3, 4]); const sx = nz(rng, -3, 3) * k; const sy = nz(rng, -3, 3) * k;
+    const A = [int(rng, -6, 4), int(rng, -6, 4)]; const B = [A[0] + sx, A[1] + sy];
+    const Q = [A[0] + sx / k, A[1] + sy / k];
+    const halfway = [A[0] + sx / 2, A[1] + sy / 2];
+    const fromB = [B[0] - sx / k, B[1] - sy / k];
+    const ansP = P(...Q);
+    return {
+      prompt: `A is ${P(...A)} and B is ${P(...B)}.<br>Q is the point on AB that is $\\frac{1}{${k}}$ of the way from A to B.<br>Work out the coordinates of Q.`,
+      answer: ansP,
+      distractors: uniq([P(...fromB), P(sx / k, sy / k), P(Q[1], Q[0]), Number.isInteger(halfway[0]) && Number.isInteger(halfway[1]) ? P(...halfway) : null, P(A[0] + sx / k, A[1] - sy / k), P(A[0] + sx / (k + 1), A[1] + sy / (k + 1))].filter((t) => t && !/\\frac|\./.test(t)), ansP),
+      typed: { kind: 'coord', x: Q[0], y: Q[1] },
+      solution: [
+        `From A to B: $x$ changes by $${sx}$ and $y$ changes by $${sy}$.`,
+        `$\\frac{1}{${k}}$ of each change: $${sx} \\div ${k} = ${sx / k}$ and $${sy} \\div ${k} = ${sy / k}$.`,
+        `Add these to A: $(${A[0]} ${sx / k < 0 ? '-' : '+'} ${Math.abs(sx / k)}, ${A[1]} ${sy / k < 0 ? '-' : '+'} ${Math.abs(sy / k)}) = ${pt(...Q)}$`,
+        `Answer: ${ansP}`,
       ],
     };
   }
@@ -325,7 +348,8 @@ export const tableValue = G('gr-table-value', 'gr-table-plot', (rng, d) => {
 export const tableOnLine = G('gr-table-on-line', 'gr-table-plot', (rng, d) => {
   const m = d === 'easy' ? int(rng, 2, 5) : nz(rng, -5, 5);
   const c = nz(rng, -8, 9);
-  const eqn = `y = ${lin(m, c)}`;
+  const kk = d === 'hard' ? pick(rng, [2, 3]) : 1;
+  const eqn = kk === 1 ? `y = ${lin(m, c)}` : `${kk}y = ${lin(kk * m, kk * c)}`;
   const f = (x) => m * x + c;
   if (d !== 'easy' && chance(rng, 0.4)) {
     const x = nz(rng, -6, 6); const offset = pick(rng, [-3, -2, -1, 0, 1, 2, 3]);
@@ -337,6 +361,7 @@ export const tableOnLine = G('gr-table-on-line', 'gr-table-plot', (rng, d) => {
       distractors: ['Above the line', 'Below the line', 'On the line'].filter((s) => s !== ans),
       count: 3,
       solution: [
+        ...(kk > 1 ? [`Divide by $${kk}$ first: $y = ${lin(m, c)}$.`] : []),
         `Find the point on the line with the same $x$-coordinate: when $x = ${x}$, $y = ${m === 1 ? '' : `${m} \\times `}${par(x)} ${c < 0 ? '-' : '+'} ${Math.abs(c)} = ${f(x)}$.`,
         `The point has $y = ${y}$, which is ${offset > 0 ? 'more than' : offset < 0 ? 'less than' : 'equal to'} $${f(x)}$.`,
         `Answer: ${ans}`,
@@ -344,13 +369,14 @@ export const tableOnLine = G('gr-table-on-line', 'gr-table-plot', (rng, d) => {
     };
   }
   const x = nz(rng, -5, 6); const good = [x, f(x)];
-  const cands = [[f(x), x], [x, f(x) + 1], [-x, f(x)], [x, -m * x + c], [x, m * x - c], [x + 1, f(x)], [x, m + x + c]];
+  const cands = [...(kk > 1 ? [[x, kk * f(x)]] : []), [f(x), x], [x, f(x) + 1], [-x, f(x)], [x, -m * x + c], [x, m * x - c], [x + 1, f(x)], [x, m + x + c]];
   const wrong = cands.filter((p) => p[1] !== f(p[0])).map((p) => P(...p));
   return {
     prompt: `Which of these points lies on the line $${eqn}$?`,
     answer: P(...good),
     distractors: uniq(wrong, P(...good)),
     solution: [
+      ...(kk > 1 ? [`Divide by $${kk}$ first: $y = ${lin(m, c)}$.`] : []),
       'A point lies on the line if its coordinates make the equation true. Substitute the $x$-coordinate and see if you get the $y$-coordinate.',
       `For ${P(...good)}: $${m === 1 ? '' : `${m} \\times `}${par(x)} ${c < 0 ? '-' : '+'} ${Math.abs(c)} = ${f(x)}$ ✓`,
       `Answer: ${P(...good)}`,
@@ -362,11 +388,12 @@ export const tableWhichEq = G('gr-table-which-eq', 'gr-table-plot', (rng, d) => 
   const m = d === 'easy' ? int(rng, 2, 5) : nz(rng, -5, 6);
   const c = d === 'easy' ? int(rng, 1, 9) : nz(rng, -8, 9);
   if (m === c || m === 1) throw new Error('r');
-  const xs = d === 'easy' ? [1, 2, 3, 4, 5] : [-2, -1, 0, 1, 2, 3];
+  const xs = d === 'easy' ? [1, 2, 3, 4, 5] : d === 'medium' ? [-2, -1, 0, 1, 2, 3] : pick(rng, [[-4, -2, 0, 2, 4], [0, 2, 4, 6, 8], [-2, 0, 2, 4, 6]]);
+  const step = xs[1] - xs[0];
   const ys = xs.map((x) => m * x + c);
   const opt = (a, b) => Y(yeq(a, b));
   const y1 = m + c;
-  const dist = [opt(1, m), opt(c, m), opt(m, -c), opt(m + 1, c - 1), opt(-m, c), opt(1, y1 - 1), opt(m, y1), opt(m, c + m)];
+  const dist = [step > 1 ? opt(m * step, c) : null, opt(1, m), opt(c, m), opt(m, -c), opt(m + 1, c - 1), opt(-m, c), opt(1, y1 - 1), opt(m, y1), opt(m, c + m)].filter(Boolean);
   return {
     prompt: 'The table shows some values of $x$ and $y$ for a straight line.<br>Which is the equation of the line?',
     visual: table([['$x$', ...xs.map((x) => `$${tnum(x)}$`)], ['$y$', ...ys.map((v) => `$${tnum(v)}$`)]], { firstColHeader: true }),
@@ -374,7 +401,8 @@ export const tableWhichEq = G('gr-table-which-eq', 'gr-table-plot', (rng, d) => 
     distractors: uniq(dist, opt(m, c)),
     typed: { kind: 'text', accept: linAccept(m, c, 'x', 'y=') },
     solution: [
-      `Each time $x$ goes up by 1, $y$ goes ${m > 0 ? 'up' : 'down'} by $${Math.abs(m)}$, so the gradient is $${m}$: $y = ${m === -1 ? '-' : m}x + c$.`,
+      step > 1 ? `Each time $x$ goes up by ${step}, $y$ goes ${m > 0 ? 'up' : 'down'} by $${Math.abs(m * step)}$, so the gradient is $${m * step} \\div ${step} = ${m}$ (not $${m * step}$): $y = ${m === -1 ? '-' : m}x + c$.`
+        : `Each time $x$ goes up by 1, $y$ goes ${m > 0 ? 'up' : 'down'} by $${Math.abs(m)}$, so the gradient is $${m}$: $y = ${m === -1 ? '-' : m}x + c$.`,
       xs.includes(0) ? `When $x = 0$, $y = ${c}$, so $c = ${c}$.` : `When $x = 1$, $y = ${y1}$: $${m} + c = ${y1}$, so $c = ${c}$.`,
       `Check another pair: $x = ${xs[3]}$ gives $${m} \\times ${par(xs[3])} ${c < 0 ? '-' : '+'} ${Math.abs(c)} = ${ys[3]}$ ✓`,
       `Answer: $${yeq(m, c)}$`,
@@ -776,7 +804,7 @@ export const ppParallelThrough = G('gr-pp-parallel-through', 'gr-parallel-perpen
     distractors: uniq(dist, ans),
     typed: { kind: 'text', accept: linAccept(m, c, 'x', 'y=') },
     solution: [
-      `Parallel lines have the same gradient. ${given.startsWith('y =') ? '' : `Rearranging gives $${yeq(m, c0)}$, so `}the gradient is $${m.tex()}$.`,
+      `Parallel lines have the same gradient. ${given.startsWith('y =') ? 'So' : `Rearranging gives $${yeq(m, c0)}$, so`} the gradient of L is $${m.tex()}$.`,
       `Line L: $y = ${lin(m, 0)} + c$. Substitute ${P(x1, y1)}: $${y1} = ${m.mul(x1).tex()} + c$, so $c = ${c}$.`,
       `Answer: $${yeq(m, c)}$`,
     ],
@@ -838,16 +866,20 @@ export const ppUnknown = G('gr-pp-unknown', 'gr-parallel-perpendicular', (rng, d
   const yT = c + g.n * pick(rng, [1, 2, 3, -1, -2]);
   const xT = frac(yT - c).div(g);
   if (xT.d !== 1 || xT.n === 0) throw new Error('r');
+  // hard: the known point is not on the y-axis, so c must be found first
+  const x0 = d === 'hard' ? nz(rng, -3, 3) * g.d : 0; const y0 = g.mul(x0).add(c).value();
+  if (d === 'hard' && (x0 === xT.n || !Number.isInteger(y0))) throw new Error('r');
   const wrong = [frac(yT - c).div(g0), frac(yT - c).div(g.neg()), frac(yT - c).mul(g), frac(yT - c).div(g0.inv()), xT.add(1)].filter((f) => !f.eq(xT) && f.d === 1);
   return {
-    prompt: `A straight line<br>&bull; is ${perp ? 'perpendicular' : 'parallel'} to the straight line through ${P(...P1)} and ${P(...P2)}<br>&bull; and passes through ${P(0, c)} and $(x, ${yT})$.<br>Work out the value of $x$.`,
+    prompt: `A straight line<br>&bull; is ${perp ? 'perpendicular' : 'parallel'} to the straight line through ${P(...P1)} and ${P(...P2)}<br>&bull; and passes through ${P(x0, y0)} and $(x, ${yT})$.<br>Work out the value of $x$.`,
     answer: T(xT),
     distractors: uniq(wrong.map(T), T(xT)),
     typed: { kind: 'number', value: xT },
     solution: [
       `Gradient through ${P(...P1)} and ${P(...P2)}: $${fracEq(rise, run)}$.`,
       perp ? `Perpendicular gradient $= ${g.tex()}$ (negative reciprocal).` : `Parallel, so the same gradient $${g.tex()}$.`,
-      `The line is $${yeq(g, c)}$ (it passes through ${P(0, c)}). Set $y = ${yT}$: $${lin(g, 0)} = ${yT - c}$.`,
+      x0 === 0 ? `The line is $${yeq(g, c)}$ (it passes through ${P(0, c)}). Set $y = ${yT}$: $${lin(g, 0)} = ${yT - c}$.`
+        : `$y = ${lin(g, 0)} + c$ through ${P(x0, y0)}: $${y0} = ${g.mul(x0).tex()} + c$, so $c = ${c}$. Set $y = ${yT}$: $${lin(g, 0)} = ${yT - c}$.`,
       `$x = ${xT.tex()}$`,
       `Answer: $${xT.tex()}$`,
     ],

@@ -54,7 +54,7 @@ export const fmOutput = G('gr-fm-output', 'gr-function-machines', (rng, d) => {
     prompt: `Here is a function machine.<br>Work out the output when the input is $${F(x).tex()}$.`,
     visual: machine(ops.map((o) => o.sym), F(x).tex().replace(/\\frac\{(\d+)\}\{(\d+)\}/, '$1/$2'), '?'),
     answer: show(out),
-    distractors: uniq(dist.filter((q) => q.d <= 4).map(show), show(out)),
+    distractors: uniq(dist.concat([out.sub(1), out.add(2)]).filter((q) => (out.d === 1 ? q.d === 1 : q.d <= 4)).map(show), show(out)),
     typed: { kind: 'number', value: out },
     solution: ['Apply the operations in order, from left to right.', ...chain, `Answer: $${out.tex()}$`],
   };
@@ -74,7 +74,7 @@ export const fmInput = G('gr-fm-input', 'gr-function-machines', (rng, d) => {
     prompt: `Here is a function machine.<br>The output is $${out.tex()}$. Work out the input.`,
     visual: machine(ops.map((o) => o.sym), '?', out.tex()),
     answer: show(F(x)),
-    distractors: uniq(dist.filter((q) => q.d <= 4).map(show), show(F(x))),
+    distractors: uniq(dist.concat([F(x).sub(1), F(x).add(2)]).filter((q) => q.d === 1).map(show), show(F(x))),
     typed: { kind: 'number', value: x },
     solution: ['Work <b>backwards</b> from the output, using the inverse operations in reverse order.', ...chain, `Check: put $${x}$ through the machine and you get $${out.tex()}$.`, `Answer: $${x}$`],
   };
@@ -107,19 +107,34 @@ export const fmExpression = G('gr-fm-expression', 'gr-function-machines', (rng, 
   })();
   const ansTex = e.tex;
   const expanded = lin(e.a, e.b);
-  const opts = [rev.tex, noBr, lin(e.a.add(1), e.b), `x ${ops.map((o) => o.tex).join(' ')}`, lin(e.b, e.a), rev.tex === ansTex ? null : lin(rev.a, rev.b)]
-    .filter((t) => t && t !== ansTex && t !== expanded && (lin(e.a, e.b) !== t));
+  // Keep only distractors whose value really differs from the answer (some machines commute).
+  const sameAsAns = (A, B) => F(A).eq(e.a) && F(B).eq(e.b);
+  const addFirst = ops[0].kind === 'add' || ops[0].kind === 'sub';
+  const opts = [
+    sameAsAns(rev.a, rev.b) ? null : rev.tex,
+    sameAsAns(rev.a, rev.b) ? null : lin(rev.a, rev.b),
+    noBr === expanded ? null : noBr,
+    lin(e.a.add(1), e.b),
+    // the operations written in a row without brackets: only wrong when + or − comes before × or ÷
+    addFirst && ops.slice(1).some((o) => o.kind === 'mul' || o.kind === 'div') ? `x ${ops.map((o) => o.tex).join(' ')}` : null,
+    e.a.eq(e.b) ? null : lin(e.b, e.a),
+  ].filter((t) => t && t !== ansTex && t !== expanded);
   if (d === 'hard' && chance(rng, 0.5)) {
     // reverse: which machine gives this expression?
     const ans = ops.map((o) => o.sym).join(' then ');
-    const alts = [[...ops].reverse(), ops.map((o) => (o.kind === 'add' ? op('sub', o.k) : o.kind === 'sub' ? op('add', o.k) : o)), [ops[0], op(ops[1].kind, ops[1].k + 1)]];
+    const flipSign = (o) => (o.kind === 'add' ? op('sub', o.k) : o.kind === 'sub' ? op('add', o.k) : o.kind === 'mul' ? op('div', o.k) : op('mul', o.k));
+    const alts = [
+      [...ops].reverse(),
+      ops.map((o) => (o.kind === 'add' ? op('sub', o.k) : o.kind === 'sub' ? op('add', o.k) : o)),
+      [ops[0], op(ops[1].kind, ops[1].k + 1)],
+      [op(ops[0].kind, ops[0].k + 1), ops[1]],
+      [ops[1], op(ops[0].kind, ops[0].k * 2)],
+      [flipSign(ops[0]), ops[1]],
+    ].filter((a) => { const ex = machineExpr(a); return !(ex.a.eq(e.a) && ex.b.eq(e.b)); });
     return {
       prompt: `A function machine takes an input $x$ and gives the output $${ansTex}$.<br>Which operations does the machine use, in order?`,
       answer: ans,
-      distractors: uniq(alts.map((a) => a.map((o) => o.sym).join(' then ')).filter((s) => {
-        const ex = machineExpr(s.split(' then ').map((t) => ops.concat([...ops].reverse()).find((o) => o.sym === t) || op('add', 0)));
-        return ex.tex !== ansTex;
-      }).concat([`${ops[0].sym.replace(/\d+/, (m) => String(Number(m) + 1))} then ${ops[1].sym}`, `${ops[1].sym} then ${ops[0].sym.replace(/\d+/, (m) => String(Number(m) * 2))}`]), ans),
+      distractors: uniq(alts.map((a) => a.map((o) => o.sym).join(' then ')), ans),
       solution: [`Read the expression from the inside out: ${ops.map((o) => o.word).join(', then ')}.`, ops[0].kind === 'add' || ops[0].kind === 'sub' ? 'The bracket shows the adding/subtracting happens first.' : 'Multiplying $x$ first gives a term like $kx$; anything added afterwards is not multiplied.', `Answer: ${ans}`],
     };
   }
@@ -128,7 +143,7 @@ export const fmExpression = G('gr-fm-expression', 'gr-function-machines', (rng, 
     visual: machine(ops.map((o) => o.sym), 'x', '?'),
     answer: `$${ansTex}$`,
     distractors: uniq(opts.map((t) => `$${t}$`), `$${ansTex}$`),
-    typed: { kind: 'text', accept: [...linAccept(e.a, e.b, 'x'), ansTex.replace(/\s/g, '').replace(/\\left|\\right/g, '')] },
+    typed: { kind: 'text', accept: [...linAccept(e.a, e.b, 'x'), ansTex.replace(/\s/g, '').replace(/\\left|\\right/g, '').replace(/\\frac\{([^}]*)\}\{([^}]*)\}/, '($1)/$2')] },
     solution: [
       'Apply each operation to the whole expression so far.',
       ...ops.map((o, i) => `After "${o.sym}": $${machineExpr(ops.slice(0, i + 1)).tex}$`),
@@ -139,7 +154,7 @@ export const fmExpression = G('gr-fm-expression', 'gr-function-machines', (rng, 
 
 export const fmSameOutput = G('gr-fm-same', 'gr-function-machines', (rng, d) => {
   // Two machines; find the input giving the same output (forms a linear equation), or the missing operation.
-  if (d === 'easy' || chance(rng, 0.4)) {
+  if (d === 'easy' || (d === 'medium' && chance(rng, 0.4))) {
     const m = int(rng, 2, 6); const c = nz(rng, -9, 12);
     const xs = shuffle(rng, [1, 2, 3, 4, 5, 6, 7, 8, 10]).slice(0, 3);
     const hidden = pick(rng, ['mul', 'add']);
@@ -168,7 +183,9 @@ export const fmSameOutput = G('gr-fm-same', 'gr-function-machines', (rng, d) => 
   const b1 = int(rng, 1, 15); const b2 = a1 * x0 + b1 - a2 * x0;
   if (b2 === 0 || Math.abs(b2) > 30) throw new Error('r');
   const m1 = [op('mul', a1), op('add', b1)];
-  const m2 = chance(rng) ? [op(b2 > 0 ? 'add' : 'sub', Math.abs(b2) % a2 === 0 ? Math.abs(b2) / a2 : 0), op('mul', a2)] : [op('mul', a2), op(b2 > 0 ? 'add' : 'sub', Math.abs(b2))];
+  // hard: machine B adds/subtracts first, so its expression needs brackets
+  if (d === 'hard' && Math.abs(b2) % a2 !== 0) throw new Error('r');
+  const m2 = d === 'hard' || chance(rng) ? [op(b2 > 0 ? 'add' : 'sub', Math.abs(b2) % a2 === 0 ? Math.abs(b2) / a2 : 0), op('mul', a2)] : [op('mul', a2), op(b2 > 0 ? 'add' : 'sub', Math.abs(b2))];
   if (m2[0].k === 0) { m2.splice(0, 2, op('mul', a2), op(b2 > 0 ? 'add' : 'sub', Math.abs(b2))); }
   const e1 = machineExpr(m1); const e2 = machineExpr(m2);
   const sol = frac(e2.b.sub(e1.b).n * e1.a.sub(e2.a).d, 1).div(e1.a.sub(e2.a).mul(e2.b.sub(e1.b).d));
@@ -256,7 +273,7 @@ export const fnSolve = G('gr-fn-solve', 'gr-function-notation', (rng, d) => {
     return {
       prompt: `$${name}(x) = ${tex}$<br>Solve $${name}(x) = ${k}$.`,
       answer: opt,
-      distractors: uniq([`$x = ${r}$ only`, `$x = ${r * r}$ or $x = ${-r * r}$`, `$x = ${a * k * k + b}$`.length < 12 ? `$x = ${a * k * k + b}$` : null,
+      distractors: uniq([`$x = ${r}$ only`, `$x = ${r * r}$ or $x = ${-r * r}$`, `$x = ${tnum(k - b)}$`,
         (r * r * a) % 2 === 0 ? `$x = ${(r * r * a) / 2}$ or $x = ${-(r * r * a) / 2}$` : null, `$x = \\sqrt{${k}}$ or $x = -\\sqrt{${k}}$`, `$x = ${r + 1}$ or $x = ${-r - 1}$`].filter(Boolean), opt),
       typed: { kind: 'list', values: [r, -r] },
       solution: [`$${tex} = ${k}$`, `$${a === 1 ? '' : a}x^2 = ${k - b}$${a > 1 ? `, so $x^2 = ${r * r}$` : ''}`, `$x = \\pm\\sqrt{${r * r}} = \\pm ${r}$ — don't forget the negative root.`, `Answer: ${opt}`],
@@ -271,7 +288,7 @@ export const fnSolve = G('gr-fn-solve', 'gr-function-notation', (rng, d) => {
   if (k.d !== 1) throw new Error('r');
   const tex = kind === 'frac' ? `\\frac{${lin(fn.a, fn.b)}}{${c}}` : lin(fn.a, fn.b);
   const sub = k.mul(fn.a).add(fn.b).div(c); // substituted k (wrong)
-  const dist = [sub, frac(k.n * c + fn.b, fn.a), frac(k.n - fn.b), frac(k.n * c - fn.b), frac(x + 1), frac(-x)].filter((v) => v.d <= 4 && !v.eq(x));
+  const dist = [sub, frac(k.n * c + fn.b, fn.a), frac(k.n - fn.b), frac(k.n * c - fn.b), frac(x + 1), frac(-x), frac(x - 1)].filter((v) => v.d <= 4 && !v.eq(x) && Math.abs(v.value()) <= 60);
   return {
     prompt: `$${name}(x) = ${tex}$<br>Solve $${name}(x) = ${k.tex()}$.`,
     answer: T(x),
@@ -294,7 +311,7 @@ export const fnConstants = G('gr-fn-constants', 'gr-function-notation', (rng, d)
   const p = int(rng, -3, 5); const q = p + pick(rng, [2, 4, 6]);
   const fp = c.mul(p).add(dd); const fq = c.mul(q).add(dd);
   if (fp.d !== 1 || fq.d !== 1) throw new Error('r');
-  const ask = pick(rng, ['c', 'd']);
+  const ask = p === 0 ? 'c' : pick(rng, ['c', 'd']); // f(0) gives d directly, so then ask for c
   const ans = ask === 'c' ? c : frac(dd);
   const wrong = ask === 'c' ? [frac(q - p, fq.n - fp.n), fq.sub(fp), c.neg(), frac(fq.n, q || 1), c.add(1)] : [fp.sub(c), fp.sub(c.mul(p)).neg(), fq.sub(c.mul(p)), frac(fp.n - p), frac(dd).neg()];
   return {
@@ -305,7 +322,7 @@ export const fnConstants = G('gr-fn-constants', 'gr-function-notation', (rng, d)
     solution: [
       `Write two equations: $${lin(p, 0, 'c') === '0' ? '' : `${lin(p, 0, 'c')} + `}d = ${fp.tex()}$ and $${lin(q, 0, 'c')} + d = ${fq.tex()}$.`,
       `Subtract: $${q - p}c = ${fq.sub(fp).tex()}$, so $c = ${c.tex()}$.`,
-      `Substitute: $d = ${fp.tex()} - ${par(c.mul(p))} = ${dd}$.`,
+      ...(ask === 'd' ? [`Substitute: $d = ${fp.tex()} - ${par(c.mul(p))} = ${dd}$.`] : p === 0 ? [`(From $f(0)$ you can see straight away that $d = ${dd}$.)`] : []),
       `Answer: $${ask} = ${ans.tex()}$`,
     ],
   };
@@ -545,7 +562,7 @@ export const ciSolve = G('gr-ci-solve', 'gr-composite-inverse', (rng, d) => {
     return {
       prompt: `$g(x) = ${k} - x$ and $h(x) = x^3$<br>Solve $gh(x) = ${val}$.`,
       answer: opt(x),
-      distractors: uniq([-x, Math.round(Math.cbrt(Math.abs(val + k))) * Math.sign(val + k), k - val, (k - val) ** 3, x + 1].filter((v) => v !== x).map(opt), opt(x)),
+      distractors: uniq([-x, Math.round(Math.cbrt(Math.abs(val + k))) * Math.sign(val + k), k - val, x + 1, x - 1, Math.round(Math.cbrt(Math.abs(val - k))) * Math.sign(val - k)].filter((v) => v !== x && Math.abs(v) <= 60).map(opt), opt(x)),
       typed: { kind: 'number', value: x },
       solution: [`$gh(x) = g(h(x)) = g(x^3) = ${k} - x^3$.`, `$${k} - x^3 = ${val}$, so $x^3 = ${k - val}$.`, `$x = \\sqrt[3]{${k - val}} = ${x}$`, `Answer: $x = ${x}$`],
     };

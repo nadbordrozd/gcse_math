@@ -115,6 +115,7 @@ export function chart(o = {}) {
     if (axisNames) {
       body += text(X(xmax) + 18, Y(ax) - 11, axisNames[0], { italic: true, size: 15 });
       body += text(X(ay) + 12, Y(ymax) - 16, axisNames[1], { italic: true, size: 15 });
+      markBox(X(xmax) + 14, Y(ax) - 8, 24, 22); markBox(X(ay) + 12, Y(ymax) - 16, 14, 16);
     }
   } else {
     body += line(X(xmin), Y(ymin), X(xmax), Y(ymin), { width: 1.6 });
@@ -125,6 +126,8 @@ export function chart(o = {}) {
       const x = xmin + j * xstep;
       if (xlabelIf ? !xlabelIf(x) : j % xlabelEvery) continue;
       if (zeroAxes && Math.abs(x - ay) < eps) continue;
+      // don't crowd the origin's "0": skip a negative x label that would touch it
+      if (zeroAxes && xmin < 0 && ymin < 0 && x < 0 && X(0) - X(x) < 22) continue;
       body += line(X(x), Y(ax), X(x), Y(ax) + 4, { width: 1.2 });
       body += text(X(x), Y(ax) + 14, fmtX(x), { size: fontSize });
       markBox(X(x), Y(ax) + 14, fmtX(x).length * fontSize * 0.6, fontSize);
@@ -133,6 +136,7 @@ export function chart(o = {}) {
       const y = ymin + j * ystep;
       if (ylabelIf ? !ylabelIf(y) : j % ylabelEvery) continue;
       if (zeroAxes && Math.abs(y - ax) < eps) continue;
+      if (zeroAxes && xmin < 0 && ymin < 0 && y < 0 && Y(y) - Y(0) < 20) continue;
       if (!zeroAxes && Math.abs(y - ymin) < eps && Math.abs(xmin) < eps && Math.abs(ymin) < eps) {
         body += text(X(xmin) - 7, Y(y) - 1, fmtY(y), { size: fontSize, anchor: 'end' });
         continue;
@@ -378,11 +382,13 @@ export const PATTERNS = {
 };
 
 /** Draw patterns 1..k of a type side by side with captions. */
-export function patternSvg(type, k = 3, off = 0) {
+export function patternSvg(type, k = 3, off = 0, first = 1) {
+  // Patterns first..first+k−1 are drawn; the pattern labelled N contains N + off units.
   const pat = PATTERNS[type];
-  const s = ['cross', 'T', 'L'].includes(type) ? (off > 0 ? 11 : 14) : off > 1 ? 16 : off > 0 ? 18 : 22;
+  const big = first + off - 1; // how much bigger the first drawn pattern is than a 1-unit pattern
+  const s = ['cross', 'T', 'L'].includes(type) ? (big > 0 ? 11 : 14) : big > 1 ? 16 : big > 0 ? 18 : 22;
   const parts = []; let x = 10; let maxH = 0;
-  for (let n = 1; n <= k; n += 1) {
+  for (let n = first; n < first + k; n += 1) {
     const p = pat.draw(n + off, s);
     parts.push({ ...p, x, n });
     x += Math.max(p.w, 62) + 34;

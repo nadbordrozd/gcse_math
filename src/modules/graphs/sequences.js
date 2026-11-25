@@ -366,7 +366,7 @@ export const nthWhichTerm = G('seq-nth-which-term', 'seq-nth-term-use', (rng, d)
   return {
     prompt: `The $n$th term of a sequence is $${e.tex}$.<br>Which term of the sequence is equal to $${tnum(N)}$?`,
     answer: T(k),
-    distractors: uniq(dist.filter((x) => Number.isInteger(x) && x > 0 && x !== k).map(T), T(k)),
+    distractors: uniq(dist.filter((x) => Number.isInteger(x) && x > 0 && x !== k && x <= Math.max(Math.abs(N), 60)).map(T), T(k)),
     typed: { kind: 'number', value: k },
     hint: 'Form an equation: nth term = the value, and solve for n.',
     solution: [...steps, `Answer: the ${ordinal(k)} term, so $n = ${k}$`],
@@ -510,21 +510,28 @@ export const linFind = G('seq-lin-find', 'seq-linear-nth-term', (rng, d) => {
 
 export const linPattern = G('seq-lin-pattern', 'seq-linear-nth-term', (rng, d) => {
   const type = pick(rng, d === 'easy' ? ['squares', 'triangles', 'L', 'T', 'houses'] : Object.keys(PATTERNS));
-  const off = d === 'easy' ? 0 : pick(rng, [0, 1, 2, 3]);
+  // hard: the patterns shown are Patterns 2, 3, 4 (or 3, 4, 5), so Pattern 1 has to be worked out
+  const first = d === 'hard' ? pick(rng, [2, 3]) : 1;
+  const off = d === 'easy' ? 0 : d === 'medium' ? pick(rng, [0, 1, 2, 3]) : pick(rng, [-1, 0, 1]);
+  if (first + off < 1) throw new Error('r');
   const p = { ...PATTERNS[type], c: PATTERNS[type].c + PATTERNS[type].d * off };
+  if (p.c === 0) throw new Error('r');
   const count = (n) => p.d * n + p.c;
   const ans = nthOpt(p.d, p.c);
-  const dist = [nthOpt(p.d + p.c, 0), nthOpt(1, p.d), nthOpt(p.d, 0), nthOpt(p.d, -p.c), nthOpt(p.c, p.d), nthOpt(p.d, p.c + p.d), nthOpt(p.d + 1, p.c - 1), nthOpt(p.d, p.c + 1)];
+  const shownN = [first, first + 1, first + 2];
+  const dist = [nthOpt(p.d, count(first) - p.d * 0), nthOpt(p.d, count(first) - p.d), nthOpt(p.d + p.c, 0), nthOpt(1, p.d), nthOpt(p.d, 0), nthOpt(p.d, -p.c), nthOpt(p.c, p.d), nthOpt(p.d, p.c + p.d), nthOpt(p.d + 1, p.c - 1), nthOpt(p.d, p.c + 1)];
+  if (first > 1) dist.unshift(nthOpt(p.d, count(first) - p.d)); // treats the first drawn pattern as Pattern 1
   return {
-    prompt: `Here are the first three patterns in a sequence of ${p.desc}.<br>Which expression gives the number of ${p.unit} in Pattern $n$?`,
-    visual: patternSvg(type, 3, off),
+    prompt: `Here are ${first === 1 ? 'the first three patterns' : `Patterns ${shownN.join(', ').replace(/, (\d+)$/, ' and $1')}`} in a sequence of ${p.desc}.<br>Which expression gives the number of ${p.unit} in Pattern $n$?`,
+    visual: patternSvg(type, 3, off, first),
     answer: ans,
     distractors: uniq(dist, ans),
     typed: { kind: 'text', accept: linAccept(p.d, p.c, 'n') },
     solution: [
-      `Count the ${p.unit}: $${count(1)},\\ ${count(2)},\\ ${count(3)}$ — they go up by $${p.d}$ each time, so the expression starts $${p.d}n$.`,
-      `When $n = 1$, $${p.d}n = ${p.d}$, but Pattern 1 has $${count(1)}$, so add $${p.c}$.`,
-      `Check Pattern 3: $${p.d} \\times 3 + ${p.c} = ${count(3)}$ ✓`,
+      `Count the ${p.unit}: ${shownN.map((n) => `Pattern ${n} has $${count(n)}$`).join(', ')}. They go up by $${p.d}$ each time, so the expression starts $${p.d}n$.`,
+      first === 1 ? `When $n = 1$, $${p.d}n = ${p.d}$, but Pattern 1 has $${count(1)}$, so ${p.c > 0 ? 'add' : 'subtract'} $${Math.abs(p.c)}$.`
+        : `Pattern ${first} is $n = ${first}$: $${p.d} \\times ${first} = ${p.d * first}$, but it has $${count(first)}$, so ${p.c > 0 ? 'add' : 'subtract'} $${Math.abs(p.c)}$. (Pattern 1 would have $${count(1)}$.)`,
+      `Check Pattern ${first + 2}: $${p.d} \\times ${first + 2} ${p.c > 0 ? '+' : '-'} ${Math.abs(p.c)} = ${count(first + 2)}$ ✓`,
       `Answer: $${nthTex(p.d, p.c)}$`,
     ],
   };
@@ -627,9 +634,9 @@ const SPECIAL = {
   square: { name: 'Square numbers', make: (rng, d) => { const s = d === 'easy' ? 1 : int(rng, 2, 7); return [0, 1, 2, 3, 4].map((i) => (s + i) ** 2); } },
   cube: { name: 'Cube numbers', make: (rng, d) => { const s = d === 'hard' ? int(rng, 2, 4) : 1; return [0, 1, 2, 3, 4].map((i) => (s + i) ** 3); } },
   triangular: { name: 'Triangular numbers', make: (rng, d) => { const s = d === 'easy' ? 1 : int(rng, 2, 6); return [0, 1, 2, 3, 4].map((i) => tri(s + i)); } },
-  fib: { name: 'Fibonacci-type sequence', make: (rng) => { const t = [int(rng, 1, 7), int(rng, 2, 9)]; while (t.length < 6) t.push(t[t.length - 1] + t[t.length - 2]); return t.slice(0, 6); } },
-  arith: { name: 'Arithmetic (linear) sequence', make: (rng) => { const a = int(rng, 1, 12); const dd = int(rng, 3, 9); return [0, 1, 2, 3, 4].map((i) => a + i * dd); } },
-  geo: { name: 'Geometric progression', make: (rng) => { const a = int(rng, 1, 5); const r = int(rng, 2, 4); return [0, 1, 2, 3, 4].map((i) => a * r ** i); } },
+  fib: { name: 'Fibonacci-type sequence', make: (rng, d) => { const t = d === 'hard' ? [int(rng, 8, 30), int(rng, 5, 25)] : [int(rng, 1, 7), int(rng, 2, 9)]; while (t.length < 6) t.push(t[t.length - 1] + t[t.length - 2]); return t.slice(0, 6); } },
+  arith: { name: 'Arithmetic (linear) sequence', make: (rng, d) => { const dd = d === 'hard' ? -int(rng, 3, 9) : int(rng, 3, 9); const a = d === 'hard' ? int(rng, 30, 60) : int(rng, 1, 12); return [0, 1, 2, 3, 4].map((i) => a + i * dd); } },
+  geo: { name: 'Geometric progression', make: (rng, d) => { if (d === 'hard' && chance(rng, 0.5)) { const a = int(rng, 1, 5) * 81; return [0, 1, 2, 3, 4].map((i) => a / 3 ** i); } const a = int(rng, 1, 5); const r = int(rng, 2, 4); return [0, 1, 2, 3, 4].map((i) => a * r ** i); } },
 };
 const isSquare = (n) => n >= 0 && Number.isInteger(Math.sqrt(n));
 const isCube = (n) => Number.isInteger(Math.round(Math.cbrt(n))) && Math.round(Math.cbrt(n)) ** 3 === n;
@@ -684,7 +691,7 @@ function specialExplain(key, t) {
     triangular: ['Triangular numbers are $1, 3, 6, 10, 15, \\dots$ — the differences go up by one each time ($+2, +3, +4, \\dots$).', `Here the differences are ${diffs(t).map((x) => `$${x}$`).join(', ')}.`],
     fib: ['In a Fibonacci-type sequence each term is the sum of the two terms before it.', `Here: $${t[0]} + ${t[1]} = ${t[2]}$, $${t[1]} + ${t[2]} = ${t[3]}$, $${t[2]} + ${t[3]} = ${t[4]}$.`],
     arith: ['An arithmetic (linear) sequence has a constant difference.', `Here every difference is $${t[1] - t[0]}$.`],
-    geo: ['A geometric progression multiplies by the same number (the common ratio) each time.', `Here each term is $${t[1] / t[0]}$ times the one before.`],
+    geo: ['A geometric progression multiplies by the same number (the common ratio) each time.', `Here each term is $${frac(t[1], t[0]).tex()}$ times the one before.`],
   };
   return [...map[key], `Answer: ${SPECIAL[key].name}`];
 }
@@ -717,7 +724,7 @@ export const specialNext = G('seq-special-next', 'seq-special', (rng, d) => {
     distractors: uniq(dist.filter((x) => x !== null && x > 0).map(T), T(ans)),
     typed: { kind: 'number', value: ans },
     solution: [
-      ...specialExplain(key, t).slice(0, 2),
+      ...specialExplain(key, shown).slice(0, 2),
       key === 'square' ? `Next: $${Math.round(Math.sqrt(ans))}^2 = ${ans}$` : key === 'cube' ? `Next: $${Math.round(Math.cbrt(ans))}^3 = ${ans}$`
         : key === 'triangular' ? `The next difference is $${ld + 1}$: $${last} + ${ld + 1} = ${ans}$` : `Next: $${shown[3]} + ${shown[4]} = ${ans}$`,
       `Answer: $${tnum(ans)}$`,
@@ -933,12 +940,12 @@ export const geoNth = G('seq-geo-nth', 'seq-geometric', (rng, d) => {
     return {
       prompt: `Here is a geometric progression.<br>${seqTex(t)}<br>Which term of the sequence is equal to $${tnum(ans)}$?`,
       answer: T(k),
-      distractors: uniq([k - 1, k + 1, Math.round(Math.log(ans) / Math.log(r)), ans / a / r, (ans - a) / (t[1] - t[0]) + 1].filter((x) => Number.isInteger(x) && x > 0).map(T), T(k)),
+      distractors: uniq([k - 1, k + 1, Math.round(Math.log(ans) / Math.log(r)), k + 2, k - 2, Math.round(ans / (a * r * r))].filter((x) => Number.isInteger(x) && x > 0 && x <= 30).map(T), T(k)),
       typed: { kind: 'number', value: k },
       calculator: d === 'hard',
       solution: [
         `The $n$th term is $${a === 1 ? '' : `${a} \\times `}${r}^{n-1}$.`,
-        `$${tnum(ans)} ${a === 1 ? '' : `\\div ${a} = ${tnum(ans / a)}`} = ${r}^{${k - 1}}$`,
+        `$${tnum(ans)}${a === 1 ? '' : ` \\div ${a} = ${tnum(ans / a)}`} = ${r}^{${k - 1}}$`,
         `So $n - 1 = ${k - 1}$ and $n = ${k}$.`,
         `Answer: the ${ordinal(k)} term`,
       ],
@@ -954,7 +961,7 @@ export const geoNth = G('seq-geo-nth', 'seq-geometric', (rng, d) => {
     solution: [
       `The common ratio is $${r}$, so the $n$th term is $${a === 1 ? '' : `${a} \\times `}${r}^{n-1}$ (the 1st term has no multiplications by ${r}).`,
       `${ordinal(k)} term $= ${a === 1 ? '' : `${a} \\times `}${r}^{${k - 1}}${a === 1 ? '' : ` = ${a} \\times ${tnum(r ** (k - 1))}`} = ${tnum(ans)}$`,
-      `Using $${r}^{${k}}$ instead would give the ${ordinal(k + 1)} term.`,
+      `Careful: the power is $${k - 1}$, not $${k}$ — from the 1st term to the ${ordinal(k)} term you multiply by $${r}$ only $${k - 1}$ times.`,
       `Answer: $${tnum(ans)}$`,
     ],
   };
@@ -1026,7 +1033,7 @@ function geoIdentifyBuild(rng, d) {
     solution: [
       'In a geometric progression each term is the previous term <b>multiplied</b> by the same number.',
       `$${tnum(ansSeq[1])} \\div ${ansSeq[0] < 0 ? `(${tnum(ansSeq[0])})` : tnum(ansSeq[0])} = ${tnum(ansSeq[1] / ansSeq[0])}$, $${tnum(ansSeq[2])} \\div ${ansSeq[1] < 0 ? `(${tnum(ansSeq[1])})` : tnum(ansSeq[1])} = ${tnum(ansSeq[2] / ansSeq[1])}$, … the ratio is always $${tnum(ansSeq[1] / ansSeq[0])}$.`,
-      'The others either add a constant, add the two previous terms, or the ratio changes part-way.',
+      'Check the ratios in each of the other options: at least one of them is different, so they are not geometric.',
       `Answer: ${fmt(ansSeq)}`,
     ],
   };
