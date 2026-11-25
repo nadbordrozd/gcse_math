@@ -552,7 +552,7 @@ export const areaGrid = ggen('geo-area-grid', 'geo-area-basic', (rng, d) => {
     typed: { kind: 'number', value: area },
     solution: [...formula, `Answer: ${A2(area)}`],
   };
-}, { title: 'Area on a grid' });
+}, { title: 'Area on a grid', learn: ['geo-area-basic', 'geo-area-trapezium-compound'] });
 
 export const areaReverse = ggen('geo-area-reverse', 'geo-area-basic', (rng, d) => {
   const kind = pick(rng, d === 'easy' ? ['rect', 'square'] : d === 'medium' ? ['rect', 'tri', 'para'] : ['tri', 'para', 'rectPerim', 'square']);

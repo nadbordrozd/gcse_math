@@ -2,7 +2,7 @@
 import { h, p, list, steps, key, display, note, mistake, figure, columns, example, tbl } from '../../tutorial-kit.js';
 import {
   figure as fig, line, polygon, polyline, text, dot, polar, add, arcLabel, rightMark, northLine, degS, triFromAngles, place,
-  parallelArrows, FILL, ACCENT, ACCENT2, labelAt,
+  parallelArrows, FILL, ACCENT, ACCENT2, labelAt, regularPoly,
 } from './diagrams.js';
 import { raysBody, parallelFigure, drawTriangle, regularFigure } from './angles.js';
 
@@ -55,8 +55,8 @@ function zfcFig(kind) {
   if (kind === 'Z') body += mark(P, 180, 180 + t, ACCENT) + mark(Q, 0, t, ACCENT) + polyline([[30, yP], P, Q, [W - 30, yQ]], { color: ACCENT2, width: 1.5, dash: '4 4' });
   if (kind === 'F') body += mark(P, 0, t, ACCENT) + mark(Q, 0, t, ACCENT);
   if (kind === 'C') body += mark(P, 180 + t, 360, ACCENT) + mark(Q, 0, t, ACCENT2);
-  body += text(W / 2, 175, { Z: 'Alternate (Z): equal', F: 'Corresponding (F): equal', C: 'Co-interior (C): add to 180°' }[kind], { size: 13, bold: true });
-  return fig(W, 190, body, { maxWidth: 240 });
+  body += text(W / 2, 200, { Z: 'Alternate (Z): equal', F: 'Corresponding (F): equal', C: 'Co-interior (C): add to 180°' }[kind], { size: 13, bold: true });
+  return fig(W, 210, body, { maxWidth: 240 });
 }
 function triParallelFig() {
   const yU = 60; const yL = 190; const R = [210, yL]; const p = 52; const q = 73;
@@ -81,6 +81,22 @@ function backBearingFig() {
   return fig(420, 280, body);
 }
 
+function journeyFig() {
+  const A = [90, 220]; const B = polar(A, 125, 30); const C = polar(B, 110, -60);
+  let body = northLine(A, 70) + northLine(B, 70) + line(...A, ...B, { width: 2 }) + line(...B, ...C, { width: 2 }) + dot(...A) + dot(...B) + dot(...C);
+  body += arcLabel(A, [A[0], A[1] - 40], B, degS(60), { r: 24 }) + arcLabel(B, [B[0], B[1] - 40], C, degS(150), { r: 22, color: ACCENT });
+  body += arcLabel(B, A, C, 'x', { r: 30, color: ACCENT2 });
+  body += labelAt(A, 'A', 180, 14, { italic: true }) + labelAt(B, 'B', -135, 16, { italic: true }) + labelAt(C, 'C', 0, 14, { italic: true });
+  return fig(380, 300, body, { nda: true });
+}
+function pentagonDiagonalFig() {
+  const c = [180, 130]; const V = regularPoly(5, c, 95, -126);
+  let body = polygon(V, { fill: FILL }) + line(...V[0], ...V[2], { width: 2 });
+  body += arcLabel(V[2], V[0], V[1], 'x', { r: 30 }) + arcLabel(V[1], V[0], V[2], degS(108), { r: 20 });
+  ['A', 'B', 'C', 'D', 'E'].forEach((l, i) => { const u = [V[i][0] - c[0], V[i][1] - c[1]]; const n = Math.hypot(...u); body += text(V[i][0] + (u[0] / n) * 16, V[i][1] + (u[1] / n) * 16, l, { size: 15, italic: true }); });
+  return fig(360, 260, body, { nda: true });
+}
+
 /* ---------- pages ---------- */
 
 export const angleTutorials = [
@@ -88,7 +104,7 @@ export const angleTutorials = [
     id: 'geo-angle-basics',
     title: 'Angle facts',
     skills: ['geo-angle-basics'],
-    prereqs: ['alg-solve-one-two-step'],
+    prereqs: ['alg-solve-one-two-step', 'alg-solve-brackets-both-sides'],
     summary: 'Name types of angle and use the facts about angles on a straight line, around a point and vertically opposite.',
     body: [
       h('What is an angle?'),
@@ -126,7 +142,10 @@ export const angleTutorials = [
         'The angle is $3 \\times 20 + 10 = 70^\\circ$ (check: $5 \\times 20 - 30 = 70$ ✓).',
       ], '$x = 20$, angle $= 70^\\circ$'),
       mistake('using $360^\\circ$ for angles on a straight line, or $180^\\circ$ for angles around a point. Picture it: a straight line is half a turn.'),
-      note('Sense check: an angle that <i>looks</i> obtuse should come out between $90^\\circ$ and $180^\\circ$ – even when the diagram says "not drawn accurately", it is usually roughly the right shape.'),
+      note('Sense check: use the <b>type</b> of angle as a rough check – an angle that looks obtuse should come out between $90^\\circ$ and $180^\\circ$. But never measure a diagram marked "not drawn accurately": work it out from the facts.'),
+      h('Estimating and measuring'),
+      p('To estimate an angle that <i>is</i> drawn accurately, compare it with a right angle ($90^\\circ$) and a straight line ($180^\\circ$): is it less than a quarter turn, between a quarter and a half, or more than a half? Then refine – about a third of a right angle is $30^\\circ$, about half is $45^\\circ$.'),
+      note('A protractor has two scales. Put the centre on the corner and the zero line along one arm, then read the scale that starts at $0$ on <b>that</b> arm. If your acute-looking angle reads $130^\\circ$, you used the wrong scale – the answer is $180 - 130 = 50^\\circ$.'),
       h('What next?'),
       p('Next use these facts inside shapes: [[geo-angles-triangles]], then [[geo-parallel-lines]].'),
     ].join(''),
@@ -176,7 +195,7 @@ export const angleTutorials = [
         '$x = 60$ (so the angles are $60^\\circ$, $120^\\circ$, $100^\\circ$, $80^\\circ$ – they add to $360^\\circ$ ✓).',
       ], '$x = 60$'),
       mistake('in an isosceles triangle, halving the wrong angle. The two <b>equal</b> angles are at the ends of the side that is <b>not</b> marked.'),
-      note('Special quadrilaterals help too: in a parallelogram opposite angles are equal and neighbouring angles add up to $180^\\circ$; a kite has one pair of equal opposite angles.'),
+      note('Special quadrilaterals help too: in a parallelogram opposite angles are equal and neighbouring angles add up to $180^\\circ$; a kite has one pair of equal opposite angles – the two angles where a long side meets a short side, on either side of its line of symmetry.'),
       h('What next?'),
       p('Parallel lines give more equal angles: [[geo-parallel-lines]]. Shapes with more sides: [[geo-polygon-angles]].'),
     ].join(''),
@@ -216,6 +235,11 @@ export const angleTutorials = [
         '$5x + 30 = 180$, so $5x = 150$ and $x = 30$.',
         'Check: the angles are $95^\\circ$ and $85^\\circ$, which add to $180^\\circ$ ✓.',
       ], '$x = 30$'),
+      example('Example 4 – unknowns on both sides', 'Two alternate angles are $3x - 20$ and $x + 40$. Find $x$ and the size of the angles.', [
+        'Alternate angles are equal: $3x - 20 = x + 40$.',
+        '[[alg-solve-brackets-both-sides|Collect the unknowns]] on one side: $3x - x = 40 + 20$, so $2x = 60$ and $x = 30$.',
+        'Each angle is $3 \\times 30 - 20 = 70^\\circ$ (check: $30 + 40 = 70$ ✓).',
+      ], '$x = 30$, angles $70^\\circ$'),
       mistake('saying co-interior angles are <b>equal</b>. They add up to $180^\\circ$ – one is usually acute and the other obtuse.'),
       note('In any parallel-lines diagram with one crossing line there are only two sizes of angle: all the acute ones are equal, all the obtuse ones are equal, and an acute plus an obtuse makes $180^\\circ$. Use this to check.'),
       h('What next?'),
@@ -263,6 +287,15 @@ export const angleTutorials = [
         '$4e + e = 180$, so $5e = 180$ and $e = 36^\\circ$.',
         '$n = 360 \\div 36 = 10$',
       ], '10 sides'),
+      example('Example 5 – a diagonal in a regular polygon', '$ABCDE$ is a regular pentagon and $AC$ is a diagonal. Find angle $x = BCA$, and angle $ACD$.', [
+        'Each interior angle of a regular pentagon is $180 - 360 \\div 5 = 108^\\circ$, so angle $ABC = 108^\\circ$.',
+        '$AB = BC$ (the sides are equal), so triangle $ABC$ is [[geo-angles-triangles|isosceles]]: $x = (180 - 108) \\div 2 = 36^\\circ$.',
+        'Angle $ACD = 108 - 36 = 72^\\circ$.',
+      ], '$x = 36^\\circ$, angle $ACD = 72^\\circ$', { visual: pentagonDiagonalFig() }),
+      example('Example 6 – polygons meeting at a point', 'A square and a regular hexagon share a side. Find the angle $x$ between them at one end of the shared side.', [
+        'Interior angle of the square: $90^\\circ$. Of the hexagon: $180 - 360 \\div 6 = 120^\\circ$.',
+        '[[geo-angle-basics|Angles around a point]] add up to $360^\\circ$: $x = 360 - 90 - 120 = 150^\\circ$.',
+      ], '$150^\\circ$'),
       mistake('dividing $360$ by $n$ and calling it the <b>interior</b> angle. $360 \\div n$ is the exterior angle; for a regular hexagon it is $60^\\circ$, but the interior angle is $120^\\circ$.'),
       note('Sense check: interior angles of regular polygons grow towards $180^\\circ$ as $n$ grows – triangle $60^\\circ$, square $90^\\circ$, pentagon $108^\\circ$, hexagon $120^\\circ$, octagon $135^\\circ$.'),
       h('What next?'),
@@ -282,6 +315,7 @@ export const angleTutorials = [
         'Measure from <b>North</b>.',
         'Turn <b>clockwise</b>.',
         'Write it with <b>three figures</b>: $45^\\circ$ is written $045^\\circ$.',
+        'A bearing is always from $000^\\circ$ up to (but not including) $360^\\circ$. If a calculation gives more than $360^\\circ$, subtract $360^\\circ$.',
       ]) + p('"The bearing of $B$ from $A$" means: stand at $A$, face North, and turn clockwise until you face $B$.')),
       tbl([['Direction', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], ['Bearing', '$000^\\circ$', '$045^\\circ$', '$090^\\circ$', '$135^\\circ$', '$180^\\circ$', '$225^\\circ$', '$270^\\circ$', '$315^\\circ$']]),
       h('Reading a bearing from a diagram'),
@@ -304,11 +338,16 @@ export const angleTutorials = [
       example('Example 2 – back bearing over 180°', 'The bearing of $Q$ from $P$ is $300^\\circ$. Find the bearing of $P$ from $Q$.', [
         '$300$ is more than $180$, so subtract: $300 - 180 = 120$.',
       ], '$120^\\circ$'),
-      example('Example 3 – an angle in a journey', 'A ship sails from $A$ to $B$ on a bearing of $060^\\circ$, then from $B$ to $C$ on a bearing of $150^\\circ$. Find angle $ABC$.', [
-        'The bearing of $A$ from $B$ is $60 + 180 = 240^\\circ$.',
-        'From $B$, the direction to $A$ is $240^\\circ$ and the direction to $C$ is $150^\\circ$.',
-        'Angle $ABC = 240 - 150 = 90^\\circ$.',
-      ], '$90^\\circ$'),
+      example('Example 3 – an angle in a journey', 'A ship sails from $A$ to $B$ on a bearing of $060^\\circ$, then from $B$ to $C$ on a bearing of $150^\\circ$. Find angle $ABC$, marked $x$.', [
+        'Stand at $B$. The bearing of $A$ from $B$ is the back bearing: $60 + 180 = 240^\\circ$.',
+        'Both bearings from $B$ are measured clockwise from the same North line, so the angle between the directions to $A$ and to $C$ is the difference: $240 - 150 = 90^\\circ$.',
+        'If the difference ever comes out more than $180^\\circ$, the angle inside the triangle is $360^\\circ$ minus it. For example, bearings of $240^\\circ$ and $030^\\circ$ from $B$ differ by $210^\\circ$, so the angle between them is $360 - 210 = 150^\\circ$.',
+      ], '$x = 90^\\circ$', { visual: journeyFig() }),
+      example('Example 4 – using a triangle', '$B$ is $6$ km due South of $A$ and $6$ km due West of $C$. Work out the bearing of $A$ from $C$.', [
+        'Sketch it: from $B$, $A$ is straight up (North) and $C$ is straight to the right (East). Triangle $ABC$ has a right angle at $B$ and two equal sides, so its other angles are $45^\\circ$ each.',
+        'From $C$, $A$ is as far North as it is West: exactly North-West.',
+        'North-West is $360 - 45 = 315^\\circ$.',
+      ], '$315^\\circ$'),
       mistake('measuring anticlockwise, or from the wrong point. "From $A$" means the North line and the protractor go at $A$.'),
       note('Sense check with compass directions: a bearing between $090^\\circ$ and $180^\\circ$ points South-East-ish; between $180^\\circ$ and $270^\\circ$ South-West-ish.'),
       h('What next?'),

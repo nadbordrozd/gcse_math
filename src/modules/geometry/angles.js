@@ -1392,8 +1392,8 @@ export const bearingBack = ggen('geo-bear-back', 'geo-bearings', (rng, d) => {
     distractors: bWrongs(ans, hard ? [360 - b, 180 - (360 - b), 360 - b + 180, b, (360 - b) + 90] : [360 - b, b, 180 - b, b + 90, 360 - ans, ans + 90]),
     typed: { kind: 'number', value: ans },
     solution: [
-      ...(hard ? [`The marked angle at $A$ is measured anticlockwise from North, so the bearing of $B$ from $A$ is $360 - ${360 - b} = ${b}^\circ$.`] : []),
-      'The two North lines are [[geo-parallel-lines|parallel]], so the bearing back the other way differs by exactly $180^\circ$.',
+      ...(hard ? [`The marked angle at $A$ is measured anticlockwise from North, so the bearing of $B$ from $A$ is $360 - ${360 - b} = ${b}^\\circ$.`] : []),
+      'The two North lines are [[geo-parallel-lines|parallel]], so the bearing back the other way differs by exactly $180^\\circ$.',
       `$${b} ${b < 180 ? '+' : '-'} 180 = ${ans}$`,
       `Answer: ${bearingT(ans)}`,
     ],

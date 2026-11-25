@@ -136,7 +136,7 @@ export function coneFig({ rLabel = null, hLabel = null, lLabel = null, ratio = 1
   }
   if (rLabel) {
     body += dot(cx, bot, 2.5) + line(cx, bot, cx + rx, bot, { width: 1.6 });
-    body += text(cx + rx / 2, bot + ry + 12, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
+    body += htext(cx + rx / 2, bot - 11, rLabel, { size: 14, italic: /^[a-z]$/.test(rLabel) });
   }
   if (lLabel) {
     const m = mid(apex, [cx + rx, bot]);
@@ -303,8 +303,8 @@ export function polyhedronFig(verts, faces, { W = 320, H = 250, nda = false, fro
 }
 
 /** Prism over a regular n-gon (n >= 3), cross-section facing the viewer. */
-export function regularPrism(n, { depth = 1.6 } = {}) {
-  const ring = Array.from({ length: n }, (_, i) => [Math.cos(Math.PI / 2 + (2 * Math.PI * i) / n), Math.sin(Math.PI / 2 + (2 * Math.PI * i) / n)]);
+export function regularPrism(n, { depth = 1.6, rot = 0 } = {}) {
+  const ring = Array.from({ length: n }, (_, i) => [Math.cos(Math.PI / 2 + rot + (2 * Math.PI * i) / n), Math.sin(Math.PI / 2 + rot + (2 * Math.PI * i) / n)]);
   const verts = [...ring.map(([x, y]) => [x, y, 0]), ...ring.map(([x, y]) => [x, y, depth])];
   const faces = [ring.map((_, i) => i), ring.map((_, i) => n + i), ...ring.map((_, i) => [i, (i + 1) % n, n + (i + 1) % n, n + i])];
   return { verts, faces };

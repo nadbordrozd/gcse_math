@@ -97,10 +97,11 @@ export const volumeTutorials = [
       ], '$94$ cm²'),
       example('Example 2 – triangular prism', 'A prism has a right-angled triangle cross-section with sides $3$, $4$ and $5$ cm, and length $10$ cm. Find its surface area.', [
         'Two triangles: $2 \\times \\frac{1}{2} \\times 3 \\times 4 = 12$.', 'Three rectangles, one for each side: $(3 + 4 + 5) \\times 10 = 120$.', 'Total $= 12 + 120 = 132$',
-      ], '$132$ cm²', { visual: prismFig([[0, 0], [3, 0], [0, 4]], 10, { labels: [{ a: [0, 0, 0], b: [3, 0, 0], text: lab(3) }, { a: [0, 0, 0], b: [0, 4, 0], text: lab(4) }, { a: [3, 0, 0], b: [0, 4, 0], text: lab(5), away: [3, 4, 0] }, { a: [3, 0, 0], b: [3, 0, 10], text: lab(10), away: [0, 4, 0] }], depthScale: 0.5, rightAngles: [[0, 1, 2]], W: 300, H: 220 }) }),
+      ], '$132$ cm²', { visual: prismFig([[0, 0], [3, 0], [0, 4]], 10, { labels: [{ a: [0, 0, 0], b: [3, 0, 0], text: lab(3) }, { a: [0, 0, 0], b: [0, 4, 0], text: lab(4) }, { a: [3, 0, 0], b: [0, 4, 0], text: lab(5), away: [0, 0, 0] }, { a: [3, 0, 0], b: [3, 0, 10], text: lab(10), away: [0, 4, 0] }], depthScale: 0.35, rightAngles: [[0, 1, 2]], W: 320, H: 240 }) }),
       example('Example 3 – cylinder', 'Find the total surface area of a cylinder with radius $3$ cm and height $8$ cm, to 1 decimal place.', [
         'Two ends: $2 \\times \\pi \\times 3^2 = 18\\pi$.', 'Curved surface: $2 \\times \\pi \\times 3 \\times 8 = 48\\pi$.', 'Total $= 66\\pi = 207.345\\ldots$',
       ], '$207.3$ cm²'),
+      note('If one side of the triangle is not given, find it first with [[trig-pythagoras|Pythagoras]] – every side of the cross-section gives one rectangle.'),
       mistake('counting only the three faces you can see on a cuboid – there are six.'),
       h('What next?'),
       p('Cones and spheres: [[geo-cones-spheres]].'),
@@ -110,7 +111,7 @@ export const volumeTutorials = [
     id: 'geo-cones-spheres',
     title: 'Cones, spheres and pyramids',
     skills: ['geo-cones-spheres'],
-    prereqs: ['geo-volume-prism', 'geo-surface-area', 'trig-pythagoras'],
+    prereqs: ['geo-volume-prism', 'geo-surface-area', 'trig-pythagoras', 'num-squares-roots'],
     summary: 'Use the formulae for the volume and surface area of cones, spheres, hemispheres and pyramids.',
     body: [
       h('The big idea'),
@@ -140,8 +141,17 @@ export const volumeTutorials = [
       example('Example 4 – hemisphere', 'A solid hemisphere has radius $3$ cm. Find its volume and total surface area in terms of $\\pi$.', [
         'Volume: half of $\\frac{4}{3}\\pi \\times 27 = 36\\pi$, so $18\\pi$.', 'Surface: curved $2\\pi \\times 9 = 18\\pi$ plus flat $\\pi \\times 9 = 9\\pi$: $27\\pi$.',
       ], '$V = 18\\pi$ cm³, $SA = 27\\pi$ cm²'),
+      example('Example 5 – working backwards', 'A sphere has volume $36\\pi$ cm³. Find its radius.', [
+        '$\\frac{4}{3}\\pi r^3 = 36\\pi$. Divide both sides by $\\pi$: $\\frac{4}{3} r^3 = 36$.',
+        'Multiply by $\\frac{3}{4}$: $r^3 = 27$.',
+        'Take the [[num-squares-roots|cube root]]: $r = \\sqrt[3]{27} = 3$.',
+      ], '$3$ cm'),
+      example('Example 6 – a composite solid', 'A solid is a cylinder of radius $3$ cm and height $10$ cm with a hemisphere of radius $3$ cm on top. Find its volume in terms of $\\pi$.', [
+        'Cylinder: $\\pi \\times 3^2 \\times 10 = 90\\pi$.',
+        'Hemisphere: $\\frac{2}{3} \\times \\pi \\times 3^3 = 18\\pi$.',
+        'Add the parts: $90\\pi + 18\\pi = 108\\pi$.',
+      ], '$108\\pi$ cm³'),
       mistake('using the slant height in the volume of a cone, or forgetting the $\\frac{1}{3}$.'),
-      note('For composite solids (a cone on a hemisphere, a cylinder with a dome), find each part separately and add.'),
       h('What next?'),
       p('How volumes change when a shape is enlarged: [[trig-similar-area-volume]].'),
     ].join(''),

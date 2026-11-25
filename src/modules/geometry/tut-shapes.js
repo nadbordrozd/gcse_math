@@ -91,8 +91,9 @@ export const shapeTutorials = [
         '<b>Rhombus</b>: 4 equal sides, opposite sides parallel. Diagonals cross at right angles.',
         '<b>Parallelogram</b>: opposite sides equal and parallel, opposite angles equal.',
         '<b>Kite</b>: two pairs of equal sides next to each other. Diagonals cross at right angles.',
-        '<b>Trapezium</b>: exactly one pair of parallel sides.',
+        '<b>Trapezium</b>: exactly one pair of parallel sides. An <b>isosceles trapezium</b> also has its two sloping sides equal, so it has one line of symmetry.',
       ])),
+      p('Symmetry is a property too: a square has 4 lines of symmetry, a rectangle and a rhombus have 2, a kite and an isosceles trapezium have 1, and a parallelogram has none (but it does have rotational symmetry) – see [[geo-symmetry]].'),
       p('These overlap: a square is a special rectangle <i>and</i> a special rhombus, and every rectangle and rhombus is a special parallelogram. So "true for <b>every</b> parallelogram" only includes properties that rectangles, rhombuses and squares share too.'),
       h('Polygon names'),
       tbl([['Sides', '5', '6', '7', '8', '9', '10'], ['Name', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon']]),
@@ -116,7 +117,7 @@ export const shapeTutorials = [
     id: 'geo-symmetry',
     title: 'Symmetry',
     skills: ['geo-symmetry'],
-    prereqs: ['geo-2d-properties'],
+    prereqs: ['geo-2d-properties', 'gr-horizontal-vertical'],
     summary: 'Count lines of symmetry and the order of rotational symmetry, and use lines of symmetry on a grid.',
     body: [
       h('Two kinds of symmetry'),
@@ -132,11 +133,11 @@ export const shapeTutorials = [
       h('Method'),
       steps(['For lines: imagine folding. Check vertical, horizontal and diagonal lines through the centre.', 'For order: imagine tracing the shape and turning the tracing. Count the matches up to (and including) the full turn.']),
       example('Example 1', 'What is the order of rotational symmetry of a regular pentagon?', ['It looks the same after each fifth of a turn ($72^\\circ$), five times in a full turn.'], '5'),
-      example('Example 2 – lines of symmetry on a grid', 'A shape has lines of symmetry $x = 1$ and $y = 5$. One vertex is $P(4, 7)$. Find the vertex $Q$ that you reach by reflecting $P$ in both lines.', [
+      example('Example 2 – lines of symmetry on a grid', 'A shape has lines of symmetry $x = 1$ and $y = 5$ (a [[gr-horizontal-vertical|vertical line and a horizontal line]]). One vertex is $P(4, 7)$. Find the vertex $Q$ that you reach by reflecting $P$ in both lines.', [
         'Reflect in $x = 1$: $P$ is 3 to the right of the line, so its image is 3 to the left: $x = 1 - 3 = -2$.',
         'Reflect in $y = 5$: $P$ is 2 above the line, so its image is 2 below: $y = 5 - 2 = 3$.',
       ], '$Q(-2, 3)$'),
-      mistake('counting the diagonals of a rectangle as lines of symmetry. Only squares (and rhombuses) have diagonal lines of symmetry.'),
+      mistake('counting the diagonals of a rectangle as lines of symmetry. Among quadrilaterals, only squares, rhombuses and kites have a diagonal as a line of symmetry – rectangles and parallelograms do not.'),
       h('What next?'),
       p('Reflections and rotations of whole shapes: [[geo-reflection]] and [[geo-rotation]].'),
     ].join(''),
@@ -150,7 +151,7 @@ export const shapeTutorials = [
     body: [
       h('Faces, edges and vertices'),
       p('A 3D shape (a <b>solid</b>) has <b>faces</b> (flat surfaces), <b>edges</b> (where two faces meet) and <b>vertices</b> (corners). In drawings, hidden edges at the back are dashed.'),
-      columns(figure(polyhedronFig(...Object.values(regularPrism(5, { depth: 2 })), { W: 240, H: 200 }), 'Pentagonal prism'), figure(polyhedronFig(...Object.values(regularPyramid(4, { rot: 0.35 })), { W: 240, H: 200 }), 'Square-based pyramid')),
+      columns(figure(polyhedronFig(...Object.values(regularPrism(5, { depth: 2.4, rot: 0.35 })), { W: 240, H: 200 }), 'Pentagonal prism'), figure(polyhedronFig(...Object.values(regularPyramid(4, { rot: 0.35 })), { W: 240, H: 200 }), 'Square-based pyramid')),
       p('A <b>prism</b> has the same cross-section all the way through (two identical ends joined by rectangles). A <b>pyramid</b> has a base and triangular faces meeting at a point (the apex).'),
       key('Counting rules', tbl([['Solid with an $n$-sided end / base', 'Faces', 'Edges', 'Vertices'], ['Prism', '$n + 2$', '$3n$', '$2n$'], ['Pyramid', '$n + 1$', '$2n$', '$n + 1$']])
         + p('Check with <b>Euler’s rule</b>: faces + vertices − edges $= 2$.')),
@@ -195,6 +196,7 @@ export const shapeTutorials = [
       example('Example 2 – naming a solid', 'A solid has a circle for its plan and a triangle for its front and side elevations. What is it?', [
         'Round from above, pointed from the side: a cone (the apex is in the middle of the plan).',
       ], 'a cone'),
+      tbl([['Solid', 'Plan', 'Front elevation', 'Side elevation'], ['Cuboid', 'rectangle', 'rectangle', 'rectangle'], ['Cube', 'square', 'square', 'square'], ['Cylinder (standing up)', 'circle', 'rectangle', 'rectangle'], ['Cone', 'circle with a dot', 'triangle', 'triangle'], ['Sphere', 'circle', 'circle', 'circle'], ['Hemisphere (flat side down)', 'circle', 'semicircle', 'semicircle'], ['Square-based pyramid', 'square with diagonals', 'triangle', 'triangle'], ['Triangular prism (lying down)', 'rectangle', 'triangle', 'rectangle']]),
       mistake('drawing a 3D sketch as an elevation. Elevations are flat, with no slanted lines for depth.'),
       h('What next?'),
       p('Volumes of solids made of cubes: [[geo-volume-cuboid]].'),
@@ -218,9 +220,13 @@ export const shapeTutorials = [
       ])),
       h('Constructing with ruler and compasses'),
       columns(figure(constructionPanel('perp', ['A', 'B', 'C'], () => 0.5), 'Perpendicular bisector'), figure(constructionPanel('angle', ['A', 'B', 'C'], () => 0.5), 'Angle bisector')),
+      columns(figure(constructionPanel('perpPoint', ['P', 'A', 'B'], () => 0.5), 'Perpendicular from a point'), figure(constructionPanel('sixty', ['A', 'B', 'C'], () => 0.5), 'An angle of 60°'), figure(constructionPanel('sss', ['A', 'B', 'C'], () => 0.5), 'Triangle from 3 sides')),
       steps([
         '<b>Perpendicular bisector of $AB$:</b> open the compasses to more than half of $AB$. Draw arcs above and below the line from $A$, then from $B$ with the same radius. Join the two crossing points.',
         '<b>Angle bisector:</b> draw an arc from the corner cutting both arms. From those two points draw equal arcs that cross. Join the corner to the crossing point.',
+        '<b>Perpendicular from a point $P$ to a line:</b> draw an arc centred on $P$ that cuts the line twice. From those two points draw equal arcs that cross on the other side of the line. Join $P$ to the crossing point.',
+        '<b>An angle of $60^\\circ$:</b> draw an arc from the end $A$ of a line, cutting it. With the <b>same</b> radius, draw an arc from that crossing point. The two arcs meet at a point that makes an equilateral triangle with them, so joining it to $A$ gives $60^\\circ$.',
+        '<b>A triangle from three sides:</b> draw the longest side with a ruler. Set the compasses to the second length and draw an arc from one end; set them to the third length and draw an arc from the other end. Join both ends to where the arcs cross.',
       ]),
       p('Why do they work? Every crossing point of equal arcs is the same distance from both centres – exactly the rule for the locus. Leave the arcs showing: they are your working.'),
       h('Regions'),
@@ -234,7 +240,7 @@ export const shapeTutorials = [
         'The goat can reach anywhere within $12$ m of the post: a circle of radius $12$ m.', 'On the drawing: $12 \\div 5 = 2.4$ cm.',
       ], '$2.4$ cm'),
       example('Example 3 – will the triangle close?', 'Can a triangle be constructed with sides $4$ cm, $5$ cm and $10$ cm? What about $6$, $7$ and $11$ cm?', [
-        'The two shorter sides must add up to <b>more</b> than the longest, or the arcs never meet.', '$4 + 5 = 9$, less than $10$: impossible.', '$6 + 7 = 13$, more than $11$: possible.',
+        'To construct it you draw the longest side, then arcs from each end with radii equal to the other two sides. The arcs only meet if the two shorter sides add up to <b>more</b> than the longest.', '$4 + 5 = 9$, less than $10$: impossible.', '$6 + 7 = 13$, more than $11$: possible.',
       ], 'No; yes'),
       mistake('shading the wrong side of a boundary. Test one point: is it really closer to $A$? Is it inside the circle?'),
       h('What next?'),

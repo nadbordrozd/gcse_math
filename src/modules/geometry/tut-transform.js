@@ -18,7 +18,7 @@ export const transformTutorials = [
       h('The big idea'),
       p('A <b>translation</b> slides a shape without turning or flipping it. Every point moves the same distance in the same direction, so the image is the same size, shape and way round.'),
       key('Column vectors', display('\\begin{pmatrix} 3 \\\\ -2 \\end{pmatrix}') + p('The <b>top</b> number is the move across: positive = right, negative = left. The <b>bottom</b> number is the move up or down: positive = up, negative = down. This one means 3 right and 2 down.')),
-      figure(gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.translate([-5, 2])), label: 'B', fill: FILL2 }], { unitPx: 26 }), 'Shape A translated by $\\begin{pmatrix} -5 \\\\ 2 \\end{pmatrix}$ gives shape B.'),
+      figure(gridFig({ xmin: -5, xmax: 5, ymin: -5, ymax: 6 }, [{ pts: A0, label: 'A' }, { pts: img(T.translate([-5, 2])), label: 'B', fill: FILL2 }], { unitPx: 26 }), 'Shape A translated by $\\begin{pmatrix} -5 \\\\ 2 \\end{pmatrix}$ gives shape B.'),
       steps(['Translating: move one vertex at a time by the vector, then join up.', 'Describing: pick a vertex of the original and the matching vertex of the image; count across, then up or down.', 'Coordinates: add the top number to $x$ and the bottom number to $y$.']),
       example('Example 1', 'The point $(3, -2)$ is translated by $\\begin{pmatrix} -5 \\\\ 4 \\end{pmatrix}$. Find its image.', [
         '$x$: $3 + (-5) = -2$.', '$y$: $-2 + 4 = 2$.',
@@ -47,7 +47,7 @@ export const transformTutorials = [
         'Reflecting in $y = x$ swaps the coordinates: $(p, q) \\to (q, p)$. In $y = -x$: $(p, q) \\to (-q, -p)$.',
       ])),
       columns(figure(gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.reflect({ t: 'x', v: 0 })), label: 'B', fill: FILL2 }], { lines: [{ t: 'x', v: 0 }], unitPx: 22 }), 'Reflection in the $y$-axis ($x = 0$).'),
-        figure(gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.reflect({ t: 'yx' })), label: 'C', fill: FILL2 }], { lines: [{ t: 'yx' }], unitPx: 22 }), 'Reflection in $y = x$.')),
+        figure(gridFig(W5, [{ pts: [[3, 0], [5, 0], [5, 1]], label: 'A' }, { pts: [[0, 3], [0, 5], [1, 5]], label: 'C', fill: FILL2 }], { lines: [{ t: 'yx' }], unitPx: 22 }), 'Reflection in $y = x$: $(3, 0) \\to (0, 3)$, $(5, 1) \\to (1, 5)$.')),
       steps(['Draw the mirror line (check: vertical or horizontal?).', 'For each vertex, count the squares to the line, then the same number past it.', 'Join up the new vertices. A vertex on the mirror line stays put.']),
       example('Example 1 – a vertical line', 'Reflect $(5, 3)$ in the line $x = 2$.', [
         '$x = 2$ is vertical. The point is $5 - 2 = 3$ squares to the right of it.', 'Go 3 squares to the left of the line: $x = 2 - 3 = -1$. The $y$-coordinate does not change.',
@@ -56,7 +56,12 @@ export const transformTutorials = [
         '$y = -1$ is horizontal. The point is $3 - (-1) = 4$ squares above it.', 'Go 4 below: $y = -1 - 4 = -5$.',
       ], '$(2, -5)$'),
       example('Example 3 – the line y = x', 'Reflect $(4, 1)$ in the line $y = x$.', ['Swap the coordinates.'], '$(1, 4)$'),
+      example('Example 4 – the line y = −x', 'Reflect $(4, 1)$ in the line $y = -x$.', ['Swap the coordinates <b>and</b> change both signs: $(4, 1) \\to (-1, -4)$.', 'Check: the midpoint of $(4, 1)$ and $(-1, -4)$ is $(1.5, -1.5)$, which is on $y = -x$ ✓.'], '$(-1, -4)$'),
       p('To <b>find</b> a mirror line, join a vertex to its image: the mirror line goes through the midpoint, at right angles.'),
+      example('Example 5 – finding the mirror line', 'Shape A has vertices $(1, 2)$, $(3, 2)$, $(1, 3)$. Its reflection, shape B, has vertices $(-3, 2)$, $(-5, 2)$, $(-3, 3)$. Find the mirror line.', [
+        'Matching vertices have the same $y$-coordinate, so the mirror line is vertical: $x = $ something.',
+        'Midpoint of $(1, 2)$ and $(-3, 2)$: $x = (1 + (-3)) \\div 2 = -1$. (Check with $(3, 2)$ and $(-5, 2)$: $(3 - 5) \\div 2 = -1$ ✓.)',
+      ], 'the line $x = -1$'),
       mistake('mixing up $x = 2$ and $y = 2$. "$x = 2$" is every point whose $x$-coordinate is $2$ – a vertical line.'),
       h('What next?'),
       p('Turning shapes: [[geo-rotation]].'),
@@ -75,12 +80,25 @@ export const transformTutorials = [
       key('Rotations about the origin', tbl([['Rotation', '$(x, y)$ goes to'], ['$90^\\circ$ clockwise', '$(y, -x)$'], ['$90^\\circ$ anticlockwise', '$(-y, x)$'], ['$180^\\circ$ (either way)', '$(-x, -y)$']]) + p('$90^\\circ$ clockwise is the same as $270^\\circ$ anticlockwise.')),
       h('Method (tracing paper)'),
       steps(['Trace the shape and mark the centre on the tracing.', 'Put your pencil point on the centre and turn the paper by the angle, in the right direction.', 'Mark where the vertices land and join them.']),
-      p('Without tracing paper, use the movement from the centre: in a $90^\\circ$ clockwise turn, "3 right, 1 up" becomes "1 right, 3 down".'),
+      p('Without tracing paper, use the <b>movement</b> from the centre to the point, written as (across, up) with negatives for left and down. Then apply the same rules as for the origin:'),
+      list(['$90^\\circ$ clockwise: $(a, b) \\to (b, -a)$. So "3 right, 1 up" $= (3, 1)$ becomes $(1, -3)$ = "1 right, 3 down".', '$90^\\circ$ anticlockwise: $(a, b) \\to (-b, a)$.', '$180^\\circ$: $(a, b) \\to (-a, -b)$.']),
       example('Example 1 – about the origin', 'Rotate the point $(3, 1)$ by $90^\\circ$ clockwise about the origin.', ['Use $(x, y) \\to (y, -x)$: $(3, 1) \\to (1, -3)$.'], '$(1, -3)$'),
       example('Example 2 – about another point', 'Rotate $(4, 3)$ by $90^\\circ$ clockwise about $(1, 2)$.', [
         'From the centre $(1, 2)$ to the point is 3 right and 1 up.', 'A quarter turn clockwise turns this into 1 right and 3 down.', 'From the centre: $(1 + 1, 2 - 3) = (2, -1)$.',
       ], '$(2, -1)$'),
-      p('To find an unknown centre, try likely points with tracing paper: the centre is the only point that stays where it is. For a $180^\\circ$ rotation, it is the midpoint of each vertex and its image.'),
+      example('Example 3 – a movement with a negative part', 'Rotate $(2, 1)$ by $90^\\circ$ clockwise about $(1, 3)$.', [
+        'Movement from the centre: $(2 - 1, 1 - 3) = (1, -2)$, i.e. 1 right and 2 down.',
+        '$90^\\circ$ clockwise: $(a, b) \\to (b, -a)$ gives $(-2, -1)$: 2 left and 1 down.',
+        'From the centre: $(1 - 2, 3 - 1) = (-1, 2)$.',
+      ], '$(-1, 2)$'),
+      h('Finding the centre of rotation'),
+      p('The centre stays where it is, and it is the <b>same distance</b> from each vertex and its image. So it lies on the [[geo-constructions-loci|perpendicular bisector]] of the line joining a vertex to its image. Draw two of these bisectors (for two different vertices): they cross at the centre. For a $180^\\circ$ rotation it is simpler – the centre is the <b>midpoint</b> of each vertex and its image.'),
+      example('Example 4 – finding the centre', 'Shape A is rotated $180^\\circ$ to give shape B. The vertex $(3, 1)$ of A goes to $(-1, -1)$. Find the centre of rotation.', [
+        'For a half turn the centre is the midpoint of a vertex and its image.',
+        'Midpoint: $\\left(\\dfrac{3 + (-1)}{2}, \\dfrac{1 + (-1)}{2}\\right) = (1, 0)$.',
+        'Check with another vertex: $(1, 4)$ goes to $(1, -4)$, whose midpoint is also $(1, 0)$ ✓.',
+      ], '$(1, 0)$', { visual: gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.rotate(180, [1, 0])), label: 'B', fill: FILL2 }], { unitPx: 24, points: [{ p: [1, 0], cross: true, label: '(1, 0)', dx: 22, dy: -10 }] }) }),
+      p('For a $90^\\circ$ rotation, test a likely point: from the centre, the movement to each vertex must turn into the movement to its image by the rule above.'),
       mistake('turning the wrong way. Clockwise is the direction the hands of a clock move.'),
       h('What next?'),
       p('Changing size: [[geo-enlargement]]. Telling the transformations apart: [[geo-describe-transformations]].'),
@@ -90,7 +108,7 @@ export const transformTutorials = [
     id: 'geo-enlargement',
     title: 'Enlargements',
     skills: ['geo-enlargement'],
-    prereqs: ['gr-coordinates', 'rat-simplify'],
+    prereqs: ['gr-coordinates', 'num-fraction-mul-div'],
     summary: 'Enlarge shapes by whole-number and fractional scale factors from a centre, and find the scale factor and centre.',
     body: [
       h('The big idea'),
@@ -133,7 +151,8 @@ export const transformTutorials = [
       p('Do the first transformation, then do the second to the result. Then look at the start and finish: which single transformation joins them?'),
       example('Example 2', 'A shape is reflected in the $x$-axis and then in the $y$-axis. Which single transformation has the same effect?', [
         'Follow one point: $(2, 1)$ reflects in the $x$-axis to $(2, -1)$, then in the $y$-axis to $(-2, -1)$.', '$(x, y) \\to (-x, -y)$ is a half turn about the origin.',
-      ], 'Rotation $180^\\circ$ about $(0, 0)$', { visual: gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.reflect({ t: 'y', v: 0 })), label: '', fill: 'none' }, { pts: img(T.rotate(180, [0, 0])), label: 'B', fill: FILL2 }], { unitPx: 24 }) }),
+      ], 'Rotation $180^\\circ$ about $(0, 0)$ (A′ shows the shape after the first reflection)', { visual: gridFig(W5, [{ pts: A0, label: 'A' }, { pts: img(T.reflect({ t: 'y', v: 0 })), label: 'A′', fill: 'none' }, { pts: img(T.rotate(180, [0, 0])), label: 'B', fill: FILL2 }], { unitPx: 24 }) }),
+      p('Two rotations work the same way: follow a point through both. Two $90^\\circ$ clockwise turns about the origin make one $180^\\circ$ turn about the origin. If the centres differ, find the new centre as on the [[geo-rotation]] page – it is the point that ends up back where it started.'),
       h('Invariant points'),
       p('A point is <b>invariant</b> if it ends up where it started. In a reflection, every point on the mirror line is invariant; in a rotation or enlargement, the centre is invariant; a translation has no invariant points.'),
       mistake('leaving out the centre of a rotation or enlargement – "a $90^\\circ$ rotation" alone does not fix where the image goes.'),
@@ -150,7 +169,7 @@ export const transformTutorials = [
     body: [
       h('The big idea'),
       p('A negative scale factor works like an ordinary [[geo-enlargement|enlargement]], except that the image goes on the <b>opposite side of the centre</b>. Each point moves through the centre and out the other side, so the image ends up upside down.'),
-      figure(gridFig({ xmin: -5, xmax: 5, ymin: -3, ymax: 4 }, [{ pts: [[2, 1], [3, 1], [2, 3]], label: 'A' }, { pts: [[-1, 1], [-3, 1], [-1, -3]], label: 'B', fill: FILL2 }], { unitPx: 30, points: [{ p: [1, 1], cross: true, label: '(1, 1)', dx: 10, dy: -14 }] }), 'B is an enlargement of A, scale factor $-2$, centre $(1, 1)$.'),
+      figure(gridFig({ xmin: -6, xmax: 5, ymin: -6, ymax: 5 }, [{ pts: [[3, 2], [4, 2], [3, 4]], label: 'A' }, { pts: [[-3, -1], [-5, -1], [-3, -5]], label: 'B', fill: FILL2 }], { unitPx: 24, points: [{ p: [1, 1], cross: true, label: '(1, 1)', dx: 14, dy: 14 }] }), 'B is an enlargement of A, scale factor $-2$, centre $(1, 1)$.'),
       key('Negative scale factor $-k$', list([
         'Lengths are multiplied by $k$ (the size ignores the minus sign).',
         'The image is on the other side of the centre and rotated by $180^\\circ$.',

@@ -68,12 +68,12 @@ function houseFig() {
 function circlePartsFig() {
   const c = [130, 120]; const R = 90;
   let body = circle(...c, R, { width: 2 }) + dot(...c, 3);
-  const r1 = polar(c, R, 150); body += line(...c, ...r1, { color: ACCENT, width: 2.4 }) + htext(...mid(c, r1).map((v, i) => v + (i ? -10 : 0)), 'radius', { size: 12, color: ACCENT });
+  const r1 = polar(c, R, 150); body += line(...c, ...r1, { color: ACCENT, width: 2.4 }) + htext(...polar(c, R * 0.55, 172), 'radius', { size: 12, color: ACCENT });
   const d1 = polar(c, R, 200); const d2 = polar(c, R, 20); body += line(...d1, ...d2, { color: ACCENT2, width: 2.4 }) + htext(c[0] + 38, c[1] - 2, 'diameter', { size: 12, color: ACCENT2 });
   const ch1 = polar(c, R, 250); const ch2 = polar(c, R, 320); body += line(...ch1, ...ch2, { width: 2.4 }) + htext(...mid(ch1, ch2).map((v, i) => v + (i ? -12 : 0)), 'chord', { size: 12 });
   const T = polar(c, R, 70); const u = [Math.cos((70 * Math.PI) / 180), -Math.sin((70 * Math.PI) / 180)]; const tv = [-u[1], u[0]];
   body += line(T[0] - tv[0] * 70, T[1] - tv[1] * 70, T[0] + tv[0] * 70, T[1] + tv[1] * 70, { width: 2.4, color: MUTED }) + text(T[0] + 64, T[1] - 2, 'tangent', { size: 12 });
-  body += text(...polar(c, R + 18, -62), 'circumference', { size: 12 });
+  body += text(...polar(c, R + 12, 112), 'circumference', { size: 12 });
   // second circle: sector and segment
   const c2 = [370, 120];
   const s1 = polar(c2, R, 100); const s2 = polar(c2, R, 30);
@@ -236,6 +236,12 @@ export const areaTutorials = [
       example('Example 4 – working backwards', 'A circle has circumference $50$ cm. Find its radius to 1 decimal place.', [
         '$2\\pi r = 50$, so $r = \\dfrac{50}{2\\pi} = 7.957\\ldots$',
       ], '$8.0$ cm'),
+      note('A <b>quarter circle</b> works the same way: its curved edge is a quarter of $2\\pi r$, its perimeter adds the two straight radii ($+ 2r$), and its area is $\\frac{1}{4}\\pi r^2$.'),
+      example('Example 5 – a compound shape', 'A window is a rectangle $6$ m wide and $4$ m tall with a semicircle on top. Find its area to 1 decimal place.', [
+        'Rectangle: $6 \\times 4 = 24$ m².',
+        'The semicircle has diameter $6$, so radius $3$: area $= \\frac{1}{2} \\times \\pi \\times 3^2 = 4.5\\pi = 14.137\\ldots$ m².',
+        'Total $= 24 + 14.137\\ldots = 38.137\\ldots$ (split the shape into pieces as in [[geo-area-trapezium-compound]]).',
+      ], '$38.1$ m²'),
       mistake('using the diameter in $\\pi r^2$. With $d = 12$, $\\pi \\times 12^2 = 144\\pi$ – four times too big.'),
       note('Sense check: the circumference is a bit more than 3 diameters; the area is a bit more than 3 times $r^2$.'),
       h('What next?'),
@@ -254,7 +260,7 @@ export const areaTutorials = [
       key('Sector formulae', display('\\text{arc length} = \\frac{\\theta}{360} \\times 2\\pi r \\qquad \\text{sector area} = \\frac{\\theta}{360} \\times \\pi r^2') + p('Perimeter of a sector = arc length + $2r$ (the two straight radii).')),
       figure(sectorFig(9, 80, { rLabel: '9 cm', thetaLabel: '80°', rot: 20, arcHL: true }), 'A sector with radius $9$ cm and angle $80^\\circ$.'),
       h('Method'),
-      steps(['Write the fraction $\\dfrac{\\theta}{360}$ and simplify it if you can.', 'Multiply by $2\\pi r$ (arc) or $\\pi r^2$ (area).', 'For the perimeter, add the two radii.', 'Working backwards: find the full-circle value, then fraction = part ÷ whole, then angle = fraction × 360.']),
+      steps(['Write the fraction $\\dfrac{\\theta}{360}$ and simplify it if you can.', 'Multiply by $2\\pi r$ (arc) or $\\pi r^2$ (area).', 'For the perimeter, add the two radii.', 'Working backwards: find the full-circle value, then fraction = part ÷ whole, then angle = fraction × 360.', 'Finding the radius: write the formula with $r$ unknown, set it equal to the value given, and solve for $r$.']),
       example('Example 1 – arc and area', 'For the sector above, find the arc length and the area to 1 decimal place.', [
         'Fraction $= \\dfrac{80}{360} = \\dfrac{2}{9}$.',
         'Arc $= \\dfrac{2}{9} \\times 2 \\times \\pi \\times 9 = 4\\pi = 12.566\\ldots$',
@@ -266,6 +272,12 @@ export const areaTutorials = [
       example('Example 3 – finding the angle', 'A sector of a circle with radius $6$ cm has area $15\\pi$ cm². Find its angle.', [
         'The whole circle has area $\\pi \\times 6^2 = 36\\pi$.', 'Fraction of the circle $= \\dfrac{15\\pi}{36\\pi} = \\dfrac{5}{12}$.', 'Angle $= \\dfrac{5}{12} \\times 360 = 150^\\circ$.',
       ], '$150^\\circ$'),
+      example('Example 4 – finding the radius', 'A sector has angle $270^\\circ$ and arc length $15\\pi$ cm. Find its radius.', [
+        'Fraction $= \\dfrac{270}{360} = \\dfrac{3}{4}$.',
+        '$\\dfrac{3}{4} \\times 2\\pi r = 15\\pi$, so $2\\pi r = 20\\pi$ and $2r = 20$.',
+        '$r = 10$ (check: $\\frac{3}{4} \\times 2 \\times \\pi \\times 10 = 15\\pi$ ✓).',
+      ], '$10$ cm'),
+      note('A shape between two arcs with the same centre (part of a ring) has perimeter = outer arc + inner arc + the two straight edges, and area = big sector − small sector.'),
       mistake('forgetting the two radii in a perimeter, or mixing up the arc (a length, using $2\\pi r$) with the area (using $\\pi r^2$).'),
       note('Sense check: a $90^\\circ$ sector is a quarter of the circle, $180^\\circ$ is a half – compare your answer with the full circle.'),
       h('What next?'),
