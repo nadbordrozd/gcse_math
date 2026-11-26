@@ -82,6 +82,8 @@ node tools/badges/badges.mjs sheet        # contact sheet of takes; then: accept
 - `src/registry.js` – loads all modules (each independently), builds SKILLS/UNITS/GENERATORS and the prereq graph.
 - `src/app/` – the UI: `main.js` (router), `home.js`, `practice.js`, `check.js` (adaptive quick checks),
   `mock.js` (mock exams), `pages.js` (study plan, settings, about), `state.js` (localStorage), `plan.js`.
+- Skill marks (`state.marks`: "I know this" / "To do") are set by quick checks or by hand (`src/app/marks.js`) and are
+  independent of points; the 📌 To do page (`#/todo`, `renderPlan`) lists them. Old `assess` data is upgraded in `upgradeState`.
 - `src/sync.js` – progress links (`#/sync/<code>`, deflated state in the URL fragment) and the idempotent merge; UI in `src/app/transfer.js`.
 - `src/achievements.js` – achievement definitions (pure; trophies + one creature per unit). `src/app/awards.js` – earning,
   toasts, the #/achievements page and the mastery celebration (fanfare, confetti, back to topic on first mastery).

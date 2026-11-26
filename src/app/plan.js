@@ -1,6 +1,6 @@
 // Study-plan logic: which skills are visible for the chosen tier, which are secure, what to do next.
 import { SKILLS, SKILL, UNITS, GENERATORS_BY_SKILL } from '../registry.js';
-import { state, points, isMastered, skillStatus } from './state.js';
+import { state, points, isMastered, skillStatus, markOf } from './state.js';
 
 export const hasQuestions = (id) => (GENERATORS_BY_SKILL[id]?.length ?? 0) > 0;
 
@@ -13,24 +13,28 @@ export function visibleUnitSkills(unit) {
   return unit.skills.map((s) => SKILL[s.id]).filter((s) => s && (!foundation || !s.higher));
 }
 
-export const isSecure = (id) => isMastered(id) || state.assess[id]?.status === 'secure';
+export const isSecure = (id) => isMastered(id) || markOf(id) === 'know';
 
 /** Prerequisites the learner has not shown yet (only ones that have questions). */
 export const missingPrereqs = (id) => (SKILL[id]?.prereqs || []).filter((p) => hasQuestions(p) && !isSecure(p));
 
 const byGrade = (a, b) => a.grade - b.grade || SKILLS.indexOf(a) - SKILLS.indexOf(b);
 
+/** Everything marked "To do" (by a quick check or by hand), in course order. */
+export function todoSkills() {
+  return visibleSkills().filter((s) => markOf(s.id) === 'todo');
+}
 export function needsPractice() {
-  return visibleSkills().filter((s) => hasQuestions(s.id) && !isMastered(s.id) && state.assess[s.id]?.status === 'practice').sort(byGrade);
+  return todoSkills().filter((s) => hasQuestions(s.id) && !isMastered(s.id)).sort(byGrade);
 }
 export function inProgress() {
-  return visibleSkills().filter((s) => hasQuestions(s.id) && !isMastered(s.id) && points(s.id) > 0 && state.assess[s.id]?.status !== 'practice')
+  return visibleSkills().filter((s) => hasQuestions(s.id) && !isMastered(s.id) && points(s.id) > 0 && markOf(s.id) !== 'todo')
     .sort((a, b) => (state.skills[b.id]?.lastSeen || 0) - (state.skills[a.id]?.lastSeen || 0));
 }
 /** Skills not yet secure whose prerequisites are all secure – the natural next things to learn. */
 export function readyToLearn() {
   return visibleSkills().filter((s) => hasQuestions(s.id) && !isSecure(s.id) && points(s.id) === 0
-    && state.assess[s.id]?.status !== 'practice' && missingPrereqs(s.id).length === 0).sort(byGrade);
+    && markOf(s.id) !== 'todo' && missingPrereqs(s.id).length === 0).sort(byGrade);
 }
 
 /** A short, ordered list of recommendations for the home page. */
@@ -39,7 +43,7 @@ export function recommendations(limit = 4) {
   const seen = new Set();
   const add = (s, why) => { if (s && !seen.has(s.id) && out.length < limit) { seen.add(s.id); out.push({ skill: s, why }); } };
   if (state.last && SKILL[state.last] && !isMastered(state.last) && hasQuestions(state.last)) add(SKILL[state.last], 'Carry on where you left off');
-  needsPractice().slice(0, 2).forEach((s) => add(s, 'A quick check showed this needs practice'));
+  needsPractice().slice(0, 2).forEach((s) => add(s, 'On your to-do list'));
   inProgress().slice(0, 1).forEach((s) => add(s, 'You have started this'));
   readyToLearn().slice(0, limit).forEach((s) => add(s, s.prereqs.length ? 'Ready to learn: you know what it builds on' : 'A good place to start'));
   return out;
@@ -56,8 +60,19 @@ export function unitSummary(unit) {
     progress: skills.length ? pts / skills.length : 0,
     minGrade: Math.min(...grades), maxGrade: Math.max(...grades),
     check: state.checks[unit.id] || null,
-    statuses: skills.map((s) => skillStatus(s.id)),
+    statuses: skills.map((s) => dotStatus(s.id)),
+    know: skills.filter((s) => markOf(s.id) === 'know').length,
+    todo: skills.filter((s) => markOf(s.id) === 'todo').length,
   };
+}
+
+/** One colour per skill for the topic-card dots: a "to do" mark first, then mastery, "know", progress. */
+export function dotStatus(id) {
+  const m = markOf(id);
+  if (m === 'todo') return 'todo';
+  if (isMastered(id)) return 'mastered';
+  if (m === 'know') return 'know';
+  return skillStatus(id);
 }
 
 export function overallSummary() {

@@ -9,6 +9,7 @@ import { renderLearnIndex, renderTutorial, learnKey } from './learn.js';
 import { renderAchievements, syncAchievements, updateAchievementCount } from './awards.js';
 import { backfillCompletions } from './state.js';
 import { renderSync } from './transfer.js';
+import { updateTodoCount, onMarkChange } from './marks.js';
 import { soundEnabled, setSoundEnabled, preloadSounds } from './sounds.js';
 
 const root = document.getElementById('app');
@@ -22,16 +23,17 @@ function route() {
     return;
   }
   current = view || 'home';
-  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.view === (['skill', 'mixed', 'topic'].includes(current) ? 'home' : current === 'check-pick' ? 'check' : current)));
+  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.view === (['skill', 'mixed', 'topic'].includes(current) ? 'home' : current === 'check-pick' ? 'check' : current === 'plan' ? 'todo' : current)));
   window.scrollTo({ top: 0 });
+  onMarkChange(null);
   switch (view) {
     case 'skill': renderPractice(root, arg); break;
-    case 'mixed': renderPractice(root, null); break;
+    case 'mixed': renderPractice(root, null, { todo: arg === 'todo' }); break;
     case 'check-pick': renderCheckPicker(root); break;
     case 'check': renderCheck(root, arg); break;
     case 'mock': renderMockSetup(root); break;
     case 'learn': if (arg) renderTutorial(root, arg); else renderLearnIndex(root); break;
-    case 'plan': renderPlan(root); break;
+    case 'plan': case 'todo': renderPlan(root); break;
     case 'settings': renderSettings(root); break;
     case 'about': renderAbout(root); break;
     case 'achievements': renderAchievements(root); break;
@@ -43,6 +45,7 @@ function route() {
     root.insertAdjacentHTML('afterbegin', `<p class="warning">Some question modules failed to load: ${Object.keys(LOAD_ERRORS).join(', ')}</p>`);
   }
   updateAchievementCount();
+  updateTodoCount();
 }
 
 function setupSound() {

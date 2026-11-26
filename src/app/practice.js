@@ -6,7 +6,8 @@ import { esc, gradeBadge, higherBadge, progressBar, STATUS, areaStyle, AREA, isD
 import { mountQuestion } from './question.js';
 import { playSound } from './sounds.js';
 import { celebrateMastery, celebrating, syncAchievements } from './awards.js';
-import { visibleSkills, hasQuestions, isSecure, readyToLearn } from './plan.js';
+import { visibleSkills, hasQuestions, isSecure, readyToLearn, todoSkills } from './plan.js';
+import { markToggleHTML } from './marks.js';
 
 let session = null;
 
@@ -23,7 +24,8 @@ function pickArchetype(skillId, avoid) {
   return pool[pool.length - 1];
 }
 
-function mixedPool() {
+function mixedPool(todo = session?.todo) {
+  if (todo) return todoSkills().filter((s) => hasQuestions(s.id));
   let pool = visibleSkills().filter((s) => hasQuestions(s.id) && (points(s.id) > 0 || isSecure(s.id)));
   if (pool.length < 4) pool = [...pool, ...readyToLearn().slice(0, 6 - pool.length)];
   return pool;
@@ -43,24 +45,28 @@ function pickMixedSkill() {
   return pool[0];
 }
 
-export function renderPractice(root, skillId) {
+export function renderPractice(root, skillId, { todo = false } = {}) {
   const mixed = skillId === null;
   const skill = mixed ? null : SKILL[skillId];
   if (!mixed && !skill) { root.innerHTML = '<p class="empty">Skill not found. <a href="#/">Back to topics</a></p>'; return; }
   if (!mixed && !hasQuestions(skillId)) { root.innerHTML = `<p class="empty">Questions for “${esc(skill.title)}” are coming soon. <a href="#/">Back to topics</a></p>`; return; }
-  if (mixed && !mixedPool().length) {
+  if (mixed && todo && !mixedPool(true).length) {
+    root.innerHTML = '<section class="panel narrow"><h1>📌 To-do practice</h1><p>Your to-do list is empty. Mark skills with 📌 on the Topics page, or take a quick check.</p><a class="btn primary" href="#/">Choose a topic</a></section>';
+    return;
+  }
+  if (mixed && !todo && !mixedPool(false).length) {
     root.innerHTML = '<section class="panel narrow"><h1>Mixed practice</h1><p>Mixed practice reviews skills you have already started. Practise a few topics first (or take a quick check), then come back!</p><a class="btn primary" href="#/">Choose a topic</a></section>';
     return;
   }
-  session = { skillId, mixed, answered: 0, correct: 0, streak: 0, best: 0, gained: 0, lastArchetype: null, lastSkill: null, forceArchetype: session?.skillId === skillId ? session.forceArchetype : null, current: null, ctl: null };
+  session = { skillId, mixed, todo: mixed && todo, answered: 0, correct: 0, streak: 0, best: 0, gained: 0, lastArchetype: null, lastSkill: null, forceArchetype: session?.skillId === skillId ? session.forceArchetype : null, current: null, ctl: null };
   const unit = skill ? UNIT[skill.unit] : null;
   root.innerHTML = `
     <section class="practice" style="${skill ? areaStyle(skill.area) : ''}">
       <header class="practice-head">
         <nav class="crumbs"><a href="#/">Topics</a>${unit ? ` › <a href="#/topic/${unit.id}">${esc(unit.title)}</a>` : ''}</nav>
         <div class="practice-title">
-          ${mixed ? '<h1>🔀 Mixed practice</h1><p class="muted">Questions from skills you have started – great for keeping them fresh.</p>'
-    : `<h1>${gradeBadge(skill.grade)} ${esc(skill.title)} ${higherBadge(skill)}</h1><p class="muted">${esc(skill.summary)}</p>${(TUTORIALS_BY_SKILL[skill.id] || []).slice(0, 2).map((t) => `<a class="btn small learn-btn" href="#/learn/${t.id}">📖 Learn: ${esc(t.title)}</a>`).join(' ')}`}
+          ${mixed ? (todo ? '<h1>📌 To-do practice</h1><p class="muted">Questions from everything on your <a href="#/todo">to-do list</a>.</p>' : '<h1>🔀 Mixed practice</h1><p class="muted">Questions from skills you have started – great for keeping them fresh.</p>')
+    : `<div class="practice-mark">${markToggleHTML(skill.id)}</div><h1>${gradeBadge(skill.grade)} ${esc(skill.title)} ${higherBadge(skill)}</h1><p class="muted">${esc(skill.summary)}</p>${(TUTORIALS_BY_SKILL[skill.id] || []).slice(0, 2).map((t) => `<a class="btn small learn-btn" href="#/learn/${t.id}">📖 Learn: ${esc(t.title)}</a>`).join(' ')}`}
         </div>
         ${mixed ? '' : `<div class="skill-progress">
           <div class="sp-row"><span class="sp-status"></span><span class="sp-points"></span><span class="sp-level"></span></div>
@@ -203,7 +209,7 @@ function finishSession(root) {
       </div>
       <div class="btn-row">
         <a class="btn primary" href="#/">Back to topics</a>
-        ${s.mixed ? '<a class="btn" href="#/mixed" onclick="location.reload()">More mixed practice</a>' : `<a class="btn" href="#/skill/${s.skillId}" onclick="setTimeout(()=>location.reload())">Keep practising</a>`}
+        ${s.mixed ? `<a class="btn" href="#/mixed${s.todo ? '/todo' : ''}" onclick="location.reload()">More ${s.todo ? 'to-do' : 'mixed'} practice</a>` : `<a class="btn" href="#/skill/${s.skillId}" onclick="setTimeout(()=>location.reload())">Keep practising</a>`}
       </div>
     </section>`;
   session = null;

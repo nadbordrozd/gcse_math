@@ -32,7 +32,8 @@ export function math(html) {
 export const AREA = Object.fromEntries(AREAS.map((a) => [a.id, a]));
 export const areaStyle = (areaId) => {
   const a = AREA[areaId];
-  return a ? `--area:${a.color};--area-tint:${a.tint}` : '';
+  // The tint is mixed with the page surface so it works in dark mode too.
+  return a ? `--area:${a.color};--area-tint:color-mix(in srgb, ${a.color} 13%, var(--surface))` : '';
 };
 
 const GRADE_COLORS = ['', '#5b8def', '#4f9fe0', '#3fb0c4', '#3bb38f', '#6cb33f', '#d5a021', '#e8822a', '#e05a3b', '#c43b6b'];
@@ -41,11 +42,14 @@ export const higherBadge = (skill) => (skill.higher ? '<span class="tier-badge" 
 
 export const STATUS = {
   mastered: { label: 'Mastered', icon: '★', cls: 'st-mastered' },
-  secure: { label: 'Looks secure', icon: '✓', cls: 'st-secure' },
   progress: { label: 'In progress', icon: '◐', cls: 'st-progress' },
-  practice: { label: 'Needs practice', icon: '!', cls: 'st-practice' },
-  new: { label: 'Not learned yet', icon: '○', cls: 'st-new' },
   none: { label: 'Not started', icon: '', cls: 'st-none' },
+};
+
+/** The learner's marks, set by quick checks or by hand. */
+export const MARK = {
+  know: { label: 'I know this', short: 'Know it', icon: '✓', cls: 'mk-know' },
+  todo: { label: 'To do', short: 'To do', icon: '📌', cls: 'mk-todo' },
 };
 
 export function progressBar(value, max = 100, cls = '') {

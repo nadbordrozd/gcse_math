@@ -7,8 +7,9 @@
 // harder are not secure yet. So a 6-skill unit takes about 3–5 questions.
 import { UNITS, UNIT, SKILL, GENERATORS_BY_SKILL, TUTORIALS_BY_SKILL, ancestors, descendants } from '../registry.js';
 import { generateSafely } from '../core.js';
-import { state, save, isMastered } from './state.js';
-import { esc, gradeBadge, higherBadge, areaStyle, AREA, randomSeed, STATUS } from './ui.js';
+import { state, save, isMastered, markOf } from './state.js';
+import { esc, gradeBadge, higherBadge, areaStyle, AREA, randomSeed, MARK } from './ui.js';
+import { markToggleHTML, updateTodoCount } from './marks.js';
 import { mountQuestion } from './question.js';
 import { visibleUnitSkills, hasQuestions, unitLevel, unitSummary } from './plan.js';
 import { syncAchievements } from './awards.js';
@@ -122,22 +123,26 @@ function finish(root) {
   const { unit, skills, status, source } = run;
   const now = Date.now();
   for (const s of skills) {
-    if (isMastered(s.id)) continue;
-    const st = status[s.id];
-    // An inferred "not yet" should not overwrite a skill the learner has already shown elsewhere.
-    if (source[s.id] === 'inferred' && st !== 'secure' && state.assess[s.id]?.status === 'secure' && state.assess[s.id]?.source !== 'inferred') continue;
-    state.assess[s.id] = { status: st, source: source[s.id], at: now };
+    const mark = status[s.id] === 'secure' ? 'know' : 'todo';
+    const prev = state.marks[s.id];
+    if (source[s.id] === 'tested') state.marks[s.id] = { mark, by: 'check', at: now };
+    // A guess from the other answers never overrides a real answer or the learner's own mark,
+    // and never puts a mastered skill on the to-do list.
+    else if ((!prev || prev.by === 'inferred') && !(mark === 'todo' && isMastered(s.id))) state.marks[s.id] = { mark, by: 'inferred', at: now };
   }
   const level = unitLevel(unit);
   state.checks[unit.id] = { at: now, level, results: { ...status } };
   save();
   syncAchievements();
-  const start = skills.find((s) => status[s.id] !== 'secure' && !isMastered(s.id));
+  updateTodoCount();
+  const start = skills.find((s) => markOf(s.id) === 'todo' && !isMastered(s.id));
   const rows = skills.map((s) => {
-    const st = isMastered(s.id) ? 'mastered' : status[s.id];
-    const label = { secure: source[s.id] === 'tested' ? 'Secure – you got it right' : 'Probably fine (skipped)', practice: source[s.id] === 'tested' ? 'Practise this' : 'Practise this (follows on from one you missed)', new: 'Not learned yet', mastered: 'Mastered' }[st];
-    const tut = (st === 'new' || st === 'practice') && TUTORIALS_BY_SKILL[s.id]?.[0];
-    return `<li class="${STATUS[st === 'secure' ? 'secure' : st].cls}"><a href="#/skill/${s.id}">${gradeBadge(s.grade)} <span>${esc(s.title)}</span></a><span class="res">${tut ? `<a class="small" href="#/learn/${tut.id}">📖 Learn it</a> · ` : ''}${STATUS[st === 'secure' ? 'secure' : st].icon} ${label}</span></li>`;
+    const m = markOf(s.id);
+    const tested = source[s.id] === 'tested';
+    const how = tested ? (status[s.id] === 'secure' ? 'you got it right' : status[s.id] === 'new' ? "you haven't learned it yet" : 'you got it wrong')
+      : state.marks[s.id]?.by === 'inferred' ? 'from your other answers' : m ? 'kept your earlier mark' : isMastered(s.id) ? 'already mastered' : 'not marked';
+    const tut = m === 'todo' && TUTORIALS_BY_SKILL[s.id]?.[0];
+    return `<li class="${m ? MARK[m].cls : ''}"><a href="#/skill/${s.id}">${gradeBadge(s.grade)} <span>${esc(s.title)}</span></a><span class="res">${tut ? `<a class="small" href="#/learn/${tut.id}">📖 Learn it</a> · ` : ''}${m ? `${MARK[m].icon} ${MARK[m].label}` : ''} <span class="muted small">(${how})</span>${isMastered(s.id) ? ' · ★ mastered' : ''}</span>${markToggleHTML(s.id, { labels: false })}</li>`;
   }).join('');
   const correct = run.asked.filter((a) => a.outcome === 'correct').length;
   root.querySelector('.check').innerHTML = `
@@ -146,8 +151,8 @@ function finish(root) {
     <p class="lead">You answered ${correct} of ${run.asked.length} correctly. ${level ? `You look secure up to about <b>grade ${level}</b> in this topic.` : 'This topic looks fairly new to you – a great place to start.'}</p>
     ${start ? `<a class="btn primary big" href="#/skill/${start.id}">Start practising: ${esc(start.title)} →</a>` : '<p>🎉 Everything in this topic looks secure! Try mixed practice or another topic.</p>'}
     <ol class="check-results">${rows}</ol>
-    <p class="muted small">Your study plan has been updated. A single question can't tell everything – if something marked “probably fine” feels shaky, practise it anyway.</p>
-    <div class="btn-row"><a class="btn" href="#/check-pick">Check another topic</a><a class="btn" href="#/plan">See study plan</a></div>`;
+    <p class="muted small">These marks now show on the topic page and the 📌 To do list. A single question can't tell everything – change any mark with ✓ / 📌 if it doesn't feel right.</p>
+    <div class="btn-row"><a class="btn" href="#/topic/${unit.id}">See the topic</a><a class="btn" href="#/todo">📌 My to-do list</a><a class="btn" href="#/check-pick">Check another topic</a></div>`;
   run = null;
 }
 

@@ -3,37 +3,46 @@ import { UNITS, SKILL, GENERATORS, SKILLS } from '../registry.js';
 import { state, save, replaceState, resetState, points } from './state.js';
 import { esc, gradeBadge, higherBadge, progressBar, areaStyle, AREA, STATUS, isDev, toast } from './ui.js';
 import { sendButtonsHTML, wireSend } from './transfer.js';
-import { needsPractice, inProgress, readyToLearn, unitLevel, overallSummary, visibleSkills, hasQuestions, isSecure } from './plan.js';
+import { todoSkills, inProgress, readyToLearn, unitLevel, overallSummary, visibleSkills, hasQuestions, isSecure } from './plan.js';
+import { markToggleHTML, onMarkChange } from './marks.js';
 
 const skillChip = (s, extra = '') => `<a class="plan-skill" href="#/skill/${s.id}" style="${areaStyle(s.area)}">${gradeBadge(s.grade)}<span class="ps-main"><b>${esc(s.title)} ${higherBadge(s)}</b><small>${esc(AREA[s.area].short || AREA[s.area].title)}${extra}</small></span>${points(s.id) ? progressBar(points(s.id)) : ''}</a>`;
 
 export function renderPlan(root) {
-  const np = needsPractice();
+  const todo = todoSkills();
+  const practisable = todo.filter((sk) => hasQuestions(sk.id));
   const ip = inProgress();
   const ready = readyToLearn();
   const o = overallSummary();
   const unchecked = UNITS.filter((u) => !state.checks[u.id]);
+  const byUnit = UNITS.map((u) => ({ u, skills: todo.filter((sk) => sk.unit === u.id) })).filter((g) => g.skills.length);
   root.innerHTML = `
     <section class="panel plan">
-      <h1>🧭 Study plan</h1>
-      <p class="lead">Built from your quick checks and practice. Everything stays open – this is just a suggestion of what to do next.</p>
+      <h1>📌 To do <span class="count todo-total">${todo.length}</span></h1>
+      <p class="lead">Skills marked <b>To do</b> – by a quick check or by you. When one feels solid, tick it off with <b>✓</b>. Marks are yours: points don't change them.</p>
+      ${practisable.length ? `<div class="btn-row"><a class="btn primary big" href="#/mixed/todo">🔀 Practise my to-do list</a></div>` : ''}
+      ${byUnit.length ? byUnit.map(({ u, skills }) => `
+        <h3 class="area-mini" style="${areaStyle(u.area)}"><a href="#/topic/${u.id}">${esc(u.title)}</a></h3>
+        <div class="plan-list">${skills.map((sk) => `<div class="plan-row">${skillChip(sk)}${markToggleHTML(sk.id)}</div>`).join('')}</div>`).join('')
+    : '<p class="empty-todo">Nothing to do yet. Take a <a href="#/check-pick">quick check</a>, or mark skills with 📌 on the <a href="#/">Topics</a> page.</p>'}
+    </section>
+    <section class="panel plan">
+      <h2>More suggestions</h2>
       <div class="stats">
         <div class="stat"><b>${o.mastered}</b><span>mastered</span></div>
-        <div class="stat"><b>${o.secure}</b><span>secure (incl. mastered)</span></div>
+        <div class="stat"><b>${o.secure}</b><span>known or mastered</span></div>
         <div class="stat"><b>${o.total}</b><span>skills in ${state.settings.tier === 'foundation' ? 'Foundation' : 'Higher'}</span></div>
       </div>
       <div class="plan-cols">
         <div>
-          <h2>1. Needs practice <span class="count">${np.length}</span></h2>
-          ${np.length ? `<div class="plan-list">${np.slice(0, 12).map((s) => skillChip(s)).join('')}</div>${np.length > 12 ? `<p class="muted small">…and ${np.length - 12} more.</p>` : ''}` : '<p class="muted">Nothing flagged yet. Quick checks find these for you.</p>'}
-          <h2>2. In progress <span class="count">${ip.length}</span></h2>
-          ${ip.length ? `<div class="plan-list">${ip.slice(0, 10).map((s) => skillChip(s)).join('')}</div>` : '<p class="muted">Skills you have started appear here.</p>'}
+          <h3>In progress <span class="count">${ip.length}</span></h3>
+          ${ip.length ? `<div class="plan-list">${ip.slice(0, 10).map((sk) => skillChip(sk)).join('')}</div>` : '<p class="muted">Skills you have started appear here.</p>'}
+          <h3>Ready to learn <span class="count">${ready.length}</span></h3>
+          <p class="muted small">You know everything these build on.</p>
+          ${ready.length ? `<div class="plan-list">${ready.slice(0, 10).map((sk) => skillChip(sk)).join('')}</div>` : '<p class="muted">Take a quick check or master a few skills to unlock suggestions.</p>'}
         </div>
         <div>
-          <h2>3. Ready to learn <span class="count">${ready.length}</span></h2>
-          <p class="muted small">You're secure in everything these build on.</p>
-          ${ready.length ? `<div class="plan-list">${ready.slice(0, 10).map((s) => skillChip(s)).join('')}</div>` : '<p class="muted">Take a quick check or master a few skills to unlock suggestions.</p>'}
-          <h2>Topic levels</h2>
+          <h3>Topic levels</h3>
           <table class="qtable levels"><tr><th>Topic</th><th>Level</th><th></th></tr>
             ${UNITS.map((u) => {
     const c = state.checks[u.id];
@@ -45,6 +54,7 @@ export function renderPlan(root) {
         </div>
       </div>
     </section>`;
+  onMarkChange(() => { root.querySelector('.todo-total').textContent = todoSkills().length; });
 }
 
 export function renderSettings(root) {
@@ -137,8 +147,8 @@ export function renderAbout(root) {
       <p>Every topic has a short <b>Learn</b> page: the key idea, where it comes from, a method, worked examples and common mistakes. Pages link back to the ideas they build on, so if something is new you can step back as far as you need. Worked solutions link to the relevant page under <b>📖 New to this?</b></p>
       <h2>Achievements</h2>
       <p>Mastering a skill sets off a fanfare and sends you back to its topic to pick the next one. Along the way you collect <a href="#/achievements">🏆 achievements</a>: trophies for milestones, and a bestiary with one creature for each topic, tamed by mastering every skill in it. The 🔊 button in the top bar turns sounds on or off.</p>
-      <h2>Quick checks</h2>
-      <p>A quick check is a short adaptive test on one topic – usually 3 to 6 questions. It works out which skills already look secure and which need practice, and builds your study plan. It never locks anything.</p>
+      <h2>Quick checks and your to-do list</h2>
+      <p>A quick check is a short adaptive test on one topic – usually 3 to 6 questions. It marks each skill <b>✓ I know this</b> or <b>📌 To do</b>, and the topic card shows the result. You can set or change these marks yourself at any time with the ✓ and 📌 buttons next to each skill – whether or not you have taken a check or started practising. Marks are separate from points. Everything marked To do is collected on the <a href="#/todo">📌 To do</a> page, where you can practise it all as one mixed session. A check never locks anything.</p>
       <h2>Mock exams</h2>
       <p>An optional timed paper across all topics, ordered from easiest to hardest like a real paper, with a rough grade estimate. Real papers include longer questions where you show working – these single-answer questions test the same skills.</p>
       <h2>Phone and laptop</h2>

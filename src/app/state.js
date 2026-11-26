@@ -1,4 +1,6 @@
 // Persistent learner state (localStorage) and the scoring rules.
+import { upgradeState } from '../sync.js';
+
 export const STORAGE_KEY = 'gcse_maths_state_v1';
 export const CORRECT_POINTS = 7;
 export const HINT_POINTS = 3;
@@ -11,7 +13,7 @@ function defaultState() {
     schema: 1,
     settings: { tier: 'higher', answerMode: 'choice', theme: 'auto', name: '' },
     skills: {}, // id -> { points, attempts, correct, lastSeen, archetypes: {id: {a, c}} }
-    assess: {}, // id -> { status: 'secure'|'practice'|'new', source: 'tested'|'inferred'|'mastered', at }
+    marks: {}, // id -> { mark: 'know'|'todo'|null (cleared), by: 'me'|'check'|'inferred', at } – independent of points
     checks: {}, // unitId -> { at, level, results: {skillId: status} }
     mocks: [], // history of mock exam results
     flagged: [], // questions the learner reported
@@ -30,7 +32,7 @@ function load() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (saved?.schema === 1) {
       const d = defaultState();
-      return { ...d, ...saved, settings: { ...d.settings, ...saved.settings } };
+      return upgradeState({ ...d, ...saved, settings: { ...d.settings, ...saved.settings } });
     }
   } catch { /* ignore */ }
   return defaultState();
@@ -39,7 +41,7 @@ export function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* storage full or disabled */ }
 }
 export function replaceState(next) {
-  state = { ...defaultState(), ...next, settings: { ...defaultState().settings, ...next.settings } };
+  state = upgradeState({ ...defaultState(), ...next, settings: { ...defaultState().settings, ...next.settings } });
   save();
 }
 /** Earned achievements and settings survive a reset: they were really earned. */
@@ -80,7 +82,6 @@ export function recordAnswer(skillId, archetypeId, outcome) {
   // Once mastered, a skill stays mastered; points can still wobble within 100 for display.
   r.points = Math.max(0, Math.min(MASTERY_POINTS, before + delta));
   if (wasMastered && r.points < MASTERY_POINTS) r.points = MASTERY_POINTS;
-  if (r.points >= MASTERY_POINTS) state.assess[skillId] = { status: 'secure', source: 'mastered', at: Date.now() };
   state.tally.attempted += 1;
   if (outcome === 'correct' || outcome === 'hint') state.tally.correct += 1;
   state.days[today()] = (state.days[today()] || 0) + 1;
@@ -119,13 +120,17 @@ export function dayStreak() {
 }
 export const answeredToday = () => state.days[today()] || 0;
 
-/** Status shown on skill cards. */
+/** Practice status (from points only): 'mastered' | 'progress' | 'none'. */
 export function skillStatus(id) {
   if (isMastered(id)) return 'mastered';
-  const a = state.assess[id];
-  if (a?.status === 'practice') return 'practice';
-  if (a?.status === 'new') return 'new';
   if (points(id) > 0) return 'progress';
-  if (a?.status === 'secure') return 'secure';
   return 'none';
+}
+
+/** The learner's own mark: 'know' | 'todo' | null. Set by quick checks or by hand; independent of points. */
+export const markOf = (id) => state.marks[id]?.mark || null;
+export function setMark(id, mark, by = 'me') {
+  // A cleared mark is kept as { mark: null } with its time, so a progress link from another device can't bring it back.
+  state.marks[id] = { mark: mark || null, by, at: Date.now() };
+  save();
 }

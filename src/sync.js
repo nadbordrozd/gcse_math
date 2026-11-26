@@ -14,8 +14,26 @@ const keyed = (a = {}, b = {}, pick) => {
 };
 const lastActive = (s) => Math.max(0, ...Object.values(s.skills || {}).map((r) => r.lastSeen || 0));
 
+/**
+ * Older progress kept quick-check results in `assess`; they now live in `marks` ("I know this" / "To do"),
+ * which the learner can also set by hand and which are independent of points.
+ * marks: skillId -> { mark: 'know'|'todo', by: 'me'|'check'|'inferred', at }
+ */
+export function upgradeState(s) {
+  if (!s) return s;
+  s.marks = { ...(s.marks || {}) };
+  for (const [id, a] of Object.entries(s.assess || {})) {
+    if (!a || a.source === 'mastered' || s.marks[id]) continue; // 'mastered' was only a copy of the points
+    s.marks[id] = { mark: a.status === 'secure' ? 'know' : 'todo', by: a.source === 'inferred' ? 'inferred' : 'check', at: a.at || 0 };
+  }
+  delete s.assess;
+  return s;
+}
+
 /** Combine this device's progress (mine) with progress from another device (theirs). */
 export function mergeStates(mine, theirs) {
+  mine = upgradeState({ ...mine });
+  theirs = upgradeState({ ...theirs });
   const skills = keyed(mine.skills, theirs.skills, (a, b) => {
     // The most recently practised record wins; a skill mastered on either device stays mastered.
     const r = { ...later(a, b, 'lastSeen') };
@@ -36,7 +54,7 @@ export function mergeStates(mine, theirs) {
     // Tier, name and answer style follow the learner; the theme belongs to the device.
     settings: { ...mine.settings, ...pickSettings(theirs.settings), theme: mine.settings?.theme ?? 'auto' },
     skills,
-    assess: keyed(mine.assess, theirs.assess, (a, b) => later(a, b)),
+    marks: keyed(mine.marks, theirs.marks, (a, b) => later(a, b)),
     checks: keyed(mine.checks, theirs.checks, (a, b) => later(a, b)),
     mocks: union(mine.mocks, theirs.mocks, (m) => m.at).sort((a, b) => a.at - b.at),
     flagged: union(mine.flagged, theirs.flagged, (f) => `${f.at}|${f.archetype}|${f.seed}`),
@@ -114,5 +132,5 @@ export async function decodeProgress(code) {
   else if (kind !== 'j') throw new Error('Unknown link format');
   const s = JSON.parse(new TextDecoder().decode(bytes));
   if (s?.schema !== 1 || typeof s.skills !== 'object') throw new Error('Not a progress link');
-  return s;
+  return upgradeState(s);
 }

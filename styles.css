@@ -11,6 +11,7 @@
   --good: #15803d;
   --good-bg: #e8f7ee;
   --bad: #c2362b;
+  --todo: #d9480f;
   --bad-bg: #fdecea;
   --warn: #b45309;
   --warn-bg: #fff4e0;
@@ -38,6 +39,7 @@
   --good: #4ade80;
   --good-bg: #133222;
   --bad: #ff8a7a;
+  --todo: #ff9a5c;
   --bad-bg: #3a1c1c;
   --warn: #fbbf24;
   --warn-bg: #3a2e12;
@@ -505,3 +507,43 @@ details.unit { scroll-margin-top: 72px; }
 .sync-col { border: 1px solid var(--line); border-radius: 12px; padding: .8rem 1rem; }
 .sync-col h3 { margin: 0 0 .4rem; }
 .sync-col ul { list-style: none; margin: 0; padding: 0; line-height: 1.8; }
+
+/* ---------- marks: "I know this" / "To do" ---------- */
+.mk-know { --mk: var(--good); } .mk-todo { --mk: var(--todo); }
+.skill-li { display: flex; align-items: center; gap: .4rem; }
+.skill-li > .skill { flex: 1; min-width: 0; }
+.mark-toggle { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.mark-btn { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  border-radius: 8px; padding: .3rem .5rem; font: inherit; font-size: .78rem; font-weight: 650; cursor: pointer; line-height: 1.2; }
+.mark-btn:not(.on) > span[aria-hidden] { filter: grayscale(1); opacity: .7; }
+.mark-btn:hover, .mark-btn:focus-visible { border-color: var(--mk); color: var(--mk); }
+.mark-btn.on { background: var(--mk); border-color: var(--mk); color: #fff; }
+[data-theme="dark"] .mark-btn.on { color: #111; }
+.unit-chips { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+.chip { font-size: .75rem; font-weight: 650; padding: .1rem .55rem; border-radius: 99px; color: var(--mk, var(--muted));
+  background: color-mix(in srgb, var(--mk, var(--muted)) 13%, transparent); white-space: nowrap; }
+.chip-check { --mk: var(--brand); } .chip-mastered { --mk: #b98500; }
+.dot.dot-todo { background: var(--todo); } .dot.dot-know { background: var(--good); }
+.dot.dot-mastered { background: #e0a400; } .dot.dot-progress { background: var(--brand); }
+.legend .dot { display: inline-block; vertical-align: -1px; margin-right: .3rem; }
+.todo-count { display: inline-block; min-width: 1.4em; padding: 0 .35em; margin-left: .15rem; border-radius: 99px; background: var(--todo); color: #fff;
+  font-size: .75rem; font-weight: 750; text-align: center; line-height: 1.45; }
+.todo-count[hidden] { display: none; }
+.todo-filter.on { background: var(--todo); border-color: var(--todo); color: #fff; }
+.stat-link { color: inherit; text-decoration: none; }
+.stat-link:hover { outline: 2px solid var(--todo); }
+.plan-row { display: flex; align-items: center; gap: .4rem; }
+.plan-row > .plan-skill { flex: 1; min-width: 0; }
+.plan .area-mini a { color: inherit; text-decoration: none; }
+.plan .area-mini a:hover { text-decoration: underline; }
+.practice-mark { float: right; margin-left: .6rem; }
+.check-results li.mk-know { --st: var(--good); } .check-results li.mk-todo { --st: var(--todo); }
+.check-results .res { flex: 1; text-align: right; }
+.check-results .res a { display: inline; font-weight: 600; color: var(--brand); }
+@media (max-width: 600px) {
+  .mark-label { display: none; }
+  .mark-btn { padding: .4rem .55rem; font-size: .9rem; justify-content: center; }
+  .skill-li .mark-toggle, .plan-row .mark-toggle { flex-direction: column; }
+  .practice-mark { float: none; margin: 0 0 .4rem; }
+  .check-results .res { text-align: left; }
+}
