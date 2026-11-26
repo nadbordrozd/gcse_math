@@ -4,6 +4,7 @@ import { state, save, points, skillStatus, dayStreak, answeredToday, markOf } fr
 import { esc, gradeBadge, higherBadge, STATUS, MARK, progressBar, areaStyle, AREA } from './ui.js';
 import { visibleUnitSkills, recommendations, unitSummary, overallSummary, hasQuestions, todoSkills } from './plan.js';
 import { markToggleHTML, onMarkChange } from './marks.js';
+import { returnTo } from './trail.js';
 
 let searchTerm = '';
 let todoOnly = false;
@@ -86,7 +87,7 @@ export function renderHome(root, focus = {}) {
   if (unitEl) {
     requestAnimationFrame(() => unitEl.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     const row = focus.skill && unitEl.querySelector(`a.skill[href="#/skill/${focus.skill}"]`);
-    row?.classList.add('just-mastered');
+    row?.classList.add(skillStatus(focus.skill) === 'mastered' ? 'just-mastered' : 'just-here');
   }
 }
 
@@ -118,7 +119,12 @@ function renderAreas(el) {
     </section>`;
   }).join('') || `<p class="empty">${todoOnly && !term ? 'Nothing on your to-do list. Mark a skill with 📌 or take a quick check to fill it.' : 'No skills match your search.'}</p>`;
   el.querySelectorAll('.row-learn').forEach((b) => {
-    const go = (e) => { e.preventDefault(); e.stopPropagation(); location.hash = `#/learn/${b.dataset.learn}`; };
+    const go = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const skill = SKILL[b.closest('.skill-li')?.querySelector('a.skill')?.getAttribute('href')?.split('/')[2]];
+      if (skill) returnTo(`#/topic/${skill.unit}/${skill.id}`, `Back to ${UNIT[skill.unit].title}`); // come back to this row
+      location.hash = `#/learn/${b.dataset.learn}`;
+    };
     b.addEventListener('click', go);
     b.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(e); });
   });

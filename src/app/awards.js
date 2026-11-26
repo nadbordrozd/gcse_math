@@ -5,6 +5,7 @@ import { state, save } from './state.js';
 import { esc, gradeBadge, areaStyle, AREA, progressBar } from './ui.js';
 import { visibleSkills, hasQuestions } from './plan.js';
 import { playSound } from './sounds.js';
+import { returnTo } from './trail.js';
 
 const FANFARE_MS = 1700; // let the skill fanfare finish before an achievement jingle starts
 
@@ -169,11 +170,12 @@ export function celebrateMastery(skill, { first = true, mixed = false } = {}) {
       <p class="celebrate-kicker">Skill mastered!</p>
       <h2 id="celebrate-title">${gradeBadge(skill.grade)} ${esc(skill.title)}</h2>
       <p class="muted">100 points in ${r.attempts} question${r.attempts === 1 ? '' : 's'} · ${r.attempts ? Math.round((100 * r.correct) / r.attempts) : 0}% correct</p>
-      ${fresh.length ? `<div class="celebrate-unlocks"><p class="small-title">Also unlocked</p>${fresh.map((a) => `<a class="unlock" href="#/achievements"><span class="plinth small">${badgeHTML(a, 64)}</span><span><b>${esc(a.title)}</b><small>${esc(a.requirement)}</small></span></a>`).join('')}</div>` : ''}
+      ${fresh.length ? `<div class="celebrate-unlocks"><p class="small-title">Also unlocked</p>${fresh.map((a) => `<a class="unlock to-ach" href="#/achievements"><span class="plinth small">${badgeHTML(a, 64)}</span><span><b>${esc(a.title)}</b><small>${esc(a.requirement)}</small></span></a>`).join('')}</div>` : ''}
       <div class="btn-row center">
         ${toTopic
     ? `<button type="button" class="btn primary big go">Back to ${esc(unit.title)} →</button><button type="button" class="btn ghost stay">Stay and read the solution</button>`
     : `<button type="button" class="btn primary big stay">${mixed ? 'Keep going →' : 'Carry on'}</button><a class="btn ghost" href="#/topic/${unit.id}/${skill.id}">See the topic</a>`}
+        ${fresh.length ? '<a class="btn ghost to-ach" href="#/achievements">🏆 See achievements</a>' : ''}
       </div>
     </div>`;
   document.body.append(overlay);
@@ -191,6 +193,10 @@ export function celebrateMastery(skill, { first = true, mixed = false } = {}) {
     overlay.querySelector('.go')?.addEventListener('click', () => close('topic'));
     overlay.querySelector('.stay').addEventListener('click', () => close('stay'));
     overlay.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => close('link')));
+    // From the achievements, the way back is the topic (where mastering a skill leads anyway).
+    overlay.querySelectorAll('.to-ach').forEach((a) => a.addEventListener('click', () => {
+      if (toTopic) returnTo(`#/topic/${unit.id}/${skill.id}`, `Back to ${unit.title}`);
+    }));
   });
 }
 

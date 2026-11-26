@@ -13,8 +13,10 @@ import { markToggleHTML, updateTodoCount } from './marks.js';
 import { mountQuestion } from './question.js';
 import { visibleUnitSkills, hasQuestions, unitLevel, unitSummary } from './plan.js';
 import { syncAchievements } from './awards.js';
+import { backLabel } from './trail.js';
 
 let run = null;
+backLabel('check', () => (run ? 'Back to the quick check' : 'Back to your check results'));
 
 export function renderCheckPicker(root) {
   const areas = [...new Set(UNITS.map((u) => u.area))];

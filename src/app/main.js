@@ -1,7 +1,7 @@
 // Entry point: hash router and global keyboard handling.
 import { LOAD_ERRORS } from '../registry.js';
 import { renderHome } from './home.js';
-import { renderPractice, practiceKey } from './practice.js';
+import { renderPractice, practiceKey, resumePractice } from './practice.js';
 import { renderCheck, renderCheckPicker, checkKey } from './check.js';
 import { renderMockSetup, examActive } from './mock.js';
 import { renderPlan, renderSettings, renderAbout, applyTheme } from './pages.js';
@@ -10,10 +10,12 @@ import { renderAchievements, syncAchievements, updateAchievementCount } from './
 import { backfillCompletions } from './state.js';
 import { renderSync } from './transfer.js';
 import { updateTodoCount, onMarkChange } from './marks.js';
+import { travel, isSideTrip, backButtonHTML } from './trail.js';
 import { soundEnabled, setSoundEnabled, preloadSounds } from './sounds.js';
 
 const root = document.getElementById('app');
 let current = '';
+let here = { view: '', arg: '', hash: '' };
 
 function route() {
   const hash = location.hash.replace(/^#\/?/, '');
@@ -23,9 +25,18 @@ function route() {
     return;
   }
   current = view || 'home';
+  const to = { view: current, arg, hash: location.hash || '#/' };
+  const from = here;
+  here = to;
   document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.view === (['skill', 'mixed', 'topic'].includes(current) ? 'home' : current === 'check-pick' ? 'check' : current === 'plan' ? 'todo' : current)));
-  window.scrollTo({ top: 0 });
   onMarkChange(null);
+  if (travel(root, from, to)) { // back from a side trip: the page is put back as it was
+    if (view === 'skill' || view === 'mixed') resumePractice(root);
+    updateAchievementCount();
+    updateTodoCount();
+    return;
+  }
+  window.scrollTo({ top: 0 });
   switch (view) {
     case 'skill': renderPractice(root, arg); break;
     case 'mixed': renderPractice(root, null, { todo: arg === 'todo' }); break;
@@ -41,6 +52,7 @@ function route() {
     case 'topic': renderHome(root, { unit: arg, skill: arg2 }); break;
     default: renderHome(root);
   }
+  if (isSideTrip(current) && backButtonHTML()) root.insertAdjacentHTML('afterbegin', `<div class="back-bar">${backButtonHTML()}</div>`);
   if (Object.keys(LOAD_ERRORS).length) {
     root.insertAdjacentHTML('afterbegin', `<p class="warning">Some question modules failed to load: ${Object.keys(LOAD_ERRORS).join(', ')}</p>`);
   }

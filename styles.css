@@ -482,6 +482,8 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
 .unlock small { display: block; color: var(--muted); font-size: .8rem; }
 .btn-row.center { justify-content: center; }
 .skill.just-mastered { animation: mastered-glow 2.4s ease-out 2 both; }
+.skill.just-here { animation: here-glow 2s ease-out 1 both; }
+@keyframes here-glow { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--area); } }
 @keyframes mastered-glow { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px #f2c14e, 0 0 24px rgba(242, 193, 78, .7); } }
 
 @media (max-width: 640px) {
@@ -491,7 +493,7 @@ a.learn-link { text-decoration-style: dotted; text-underline-offset: 3px; }
   .nav-ach .ach-count { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .burst .rays, .burst .star, .ach-toast, .skill.just-mastered, .ach-card.earned:hover .badge-img, .ach-card.earned:hover .badge-emoji { animation: none; }
+  .burst .rays, .burst .star, .ach-toast, .skill.just-mastered, .skill.just-here, .ach-card.earned:hover .badge-img, .ach-card.earned:hover .badge-emoji { animation: none; }
   .celebrate-card { transition: none; }
 }
 details.unit { scroll-margin-top: 72px; }
@@ -546,4 +548,19 @@ details.unit { scroll-margin-top: 72px; }
   .skill-li .mark-toggle, .plan-row .mark-toggle { flex-direction: column; }
   .practice-mark { float: none; margin: 0 0 .4rem; }
   .check-results .res { text-align: left; }
+}
+
+/* The way back from a Learn page or the achievements */
+.back-bar { margin: 0 0 .8rem; }
+.back-bar.bottom { margin: 1.6rem 0 0; padding-top: 1rem; border-top: 1px solid var(--line); }
+.back-btn { font-weight: 600; }
+.next-bar .tb-short { display: none; }
+@media (max-width: 640px) {
+  .next-bar { flex-wrap: wrap; gap: .4rem .5rem; padding: .5rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); bottom: .5rem; }
+  .next-bar .delta { flex-basis: 100%; margin: 0; text-align: center; font-size: .9rem; }
+  .next-bar .delta:empty, .next-bar .delta:has(span:empty) { display: none; }
+  .next-bar .btn.ghost { padding: .5rem .45rem; font-size: .9rem; }
+  .next-bar .next-btn { margin-left: auto; padding-inline: .9rem; }
+  .next-bar .tb-long { display: none; }
+  .next-bar .tb-short { display: inline; }
 }

@@ -84,6 +84,8 @@ node tools/badges/badges.mjs sheet        # contact sheet of takes; then: accept
   `mock.js` (mock exams), `pages.js` (study plan, settings, about), `state.js` (localStorage), `plan.js`.
 - Skill marks (`state.marks`: "I know this" / "To do") are set by quick checks or by hand (`src/app/marks.js`) and are
   independent of points; the 📌 To do page (`#/todo`, `renderPlan`) lists them. Old `assess` data is upgraded in `upgradeState`.
+- `src/app/trail.js` – side trips (Learn pages, achievements) get a "← Back to …" button; a question or quick check is
+  set aside and put back exactly as it was. Pages name their back label with `backLabel`, or pick a target with `returnTo`.
 - `src/sync.js` – progress links (`#/sync/<code>`, deflated state in the URL fragment) and the idempotent merge; UI in `src/app/transfer.js`.
 - `src/achievements.js` – achievement definitions (pure; trophies + one creature per unit). `src/app/awards.js` – earning,
   toasts, the #/achievements page and the mastery celebration (fanfare, confetti, back to topic on first mastery).

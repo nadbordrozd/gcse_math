@@ -7,6 +7,7 @@ import { mountQuestion } from './question.js';
 import { isSecure, hasQuestions } from './plan.js';
 import { skillStatus } from './state.js';
 import { syncAchievements } from './awards.js';
+import { backButtonHTML } from './trail.js';
 
 let tryCtl = null;
 let searchTerm = '';
@@ -89,6 +90,7 @@ export function renderTutorial(root, id) {
           <div class="btn-row"><button class="btn another">Another question</button>${practiceButtons}</div>
         </section>` : (practiceButtons ? `<div class="btn-row">${practiceButtons}</div>` : '')}
       ${next.length ? `<section class="t-next"><h2>Where next?</h2><div class="learn-grid">${next.map(tutorialCard).join('')}</div></section>` : ''}
+      ${backButtonHTML() ? `<div class="back-bar bottom">${backButtonHTML('primary')}</div>` : ''}
     </article>`;
   if (main && hasQuestions(main.id)) {
     const tryOne = () => {

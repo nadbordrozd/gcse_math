@@ -8,8 +8,21 @@ import { playSound } from './sounds.js';
 import { celebrateMastery, celebrating, syncAchievements } from './awards.js';
 import { visibleSkills, hasQuestions, isSecure, readyToLearn, todoSkills } from './plan.js';
 import { markToggleHTML } from './marks.js';
+import { backLabel } from './trail.js';
 
 let session = null;
+
+const practiceLabel = () => (session ? 'Back to the question' : 'Back to practice');
+backLabel('skill', practiceLabel);
+backLabel('mixed', practiceLabel);
+
+/** Back from a Learn page or the achievements: same question, fresh points and mark. */
+export function resumePractice(root) {
+  if (!session) return;
+  updateHeader(root);
+  const mark = root.querySelector('.practice-mark');
+  if (mark && session.skillId) mark.innerHTML = markToggleHTML(session.skillId);
+}
 
 function pickArchetype(skillId, avoid) {
   const gens = GENERATORS_BY_SKILL[skillId] || [];
@@ -78,6 +91,7 @@ export function renderPractice(root, skillId, { todo = false } = {}) {
       <div class="next-bar" hidden>
         <span class="delta"></span>
         <button type="button" class="btn ghost flag-btn" title="Report a problem with this question">⚑ Report</button>
+        ${unit ? `<a class="btn ghost topic-btn" href="#/topic/${unit.id}/${skill.id}" title="Back to ${esc(unit.title)}" hidden>↩ <span class="tb-long">${esc(unit.title)}</span><span class="tb-short">Topic</span></a>` : ''}
         <button type="button" class="btn keep-btn" hidden>Keep practising</button>
         <button type="button" class="btn primary next-btn">Next question →</button>
       </div>
@@ -170,6 +184,8 @@ function answered(root, q, outcome) {
   const label = outcome === 'correct' ? `+${CORRECT_POINTS} points` : outcome === 'hint' ? `+${HINT_POINTS} points (hint used)` : delta < 0 ? `${delta} points` : before >= MASTERY_POINTS ? 'Mastered skills keep their star' : '';
   nb.querySelector('.delta').innerHTML = `<span class="${good ? 'pos' : 'neg'}">${label}</span>`;
   updateHeader(root);
+  const topicBtn = nb.querySelector('.topic-btn');
+  if (topicBtn) topicBtn.hidden = points(q.skill_id) < MASTERY_POINTS; // mastered: an easy way back to the topic
   nb.querySelector('.next-btn').focus({ preventScroll: true });
   if (mastered) celebrate(root, SKILL[q.skill_id], first);
   else syncAchievements();
@@ -180,12 +196,13 @@ async function celebrate(root, skill, first) {
   const s = session;
   const choice = await celebrateMastery(skill, { first, mixed: s.mixed });
   if (choice === 'topic') { backToTopic(skill); return; }
-  if (choice === 'stay' && first && !s.mixed && session === s) {
+  if (choice !== 'topic' && first && !s.mixed && session === s) {
     s.returnTo = skill;
     const nb = root.querySelector('.next-bar');
     nb.hidden = false;
     nb.querySelector('.next-btn').textContent = `Back to ${UNIT[skill.unit].title} →`;
     nb.querySelector('.keep-btn').hidden = false;
+    if (nb.querySelector('.topic-btn')) nb.querySelector('.topic-btn').hidden = true;
     nb.querySelector('.next-btn').focus({ preventScroll: true });
   }
 }
@@ -196,7 +213,8 @@ function backToTopic(skill) {
 
 function finishSession(root) {
   const s = session;
-  if (!s.answered) { location.hash = '#/'; return; }
+  const unit = s.skillId ? UNIT[SKILL[s.skillId].unit] : null;
+  if (!s.answered) { location.hash = unit ? `#/topic/${unit.id}/${s.skillId}` : '#/'; return; }
   const pct = Math.round((100 * s.correct) / s.answered);
   root.querySelector('.practice').innerHTML = `
     <section class="panel narrow summary">
@@ -208,7 +226,7 @@ function finishSession(root) {
         <div class="stat"><b>${s.gained >= 0 ? '+' : ''}${s.gained}</b><span>points</span></div>
       </div>
       <div class="btn-row">
-        <a class="btn primary" href="#/">Back to topics</a>
+        ${unit ? `<a class="btn primary" href="#/topic/${unit.id}/${s.skillId}">Back to ${esc(unit.title)}</a><a class="btn" href="#/">All topics</a>` : `<a class="btn primary" href="#/">Back to topics</a>${s.todo ? '<a class="btn" href="#/todo">📌 My to-do list</a>' : ''}`}
         ${s.mixed ? `<a class="btn" href="#/mixed${s.todo ? '/todo' : ''}" onclick="location.reload()">More ${s.todo ? 'to-do' : 'mixed'} practice</a>` : `<a class="btn" href="#/skill/${s.skillId}" onclick="setTimeout(()=>location.reload())">Keep practising</a>`}
       </div>
     </section>`;
