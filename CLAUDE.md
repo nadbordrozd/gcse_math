@@ -67,6 +67,7 @@ npm install                              # only needed for tests (KaTeX)
 python3 -m http.server 8077              # then open http://localhost:8077 (dev mode on localhost)
 node tests/validate.mjs [module|skill|archetype]   # must pass before committing generators
 node tests/sample.mjs <archetype|skill|module> --n=3 [--png=/tmp/dir]  # eyeball questions/diagrams
+node tests/validate-sync.mjs              # progress links: round trip and merge rules
 node tests/validate-achievements.mjs      # achievements: creatures per topic, badge recipes, evaluation
 node tools/badges/badges.mjs generate all-missing --takes 2   # PixelLab badges (needs PIXELLAB_API_KEY; costs ~1p each)
 node tools/badges/badges.mjs sheet        # contact sheet of takes; then: accept <id> <seed> (updates src/badges-available.js)
@@ -81,6 +82,7 @@ node tools/badges/badges.mjs sheet        # contact sheet of takes; then: accept
 - `src/registry.js` – loads all modules (each independently), builds SKILLS/UNITS/GENERATORS and the prereq graph.
 - `src/app/` – the UI: `main.js` (router), `home.js`, `practice.js`, `check.js` (adaptive quick checks),
   `mock.js` (mock exams), `pages.js` (study plan, settings, about), `state.js` (localStorage), `plan.js`.
+- `src/sync.js` – progress links (`#/sync/<code>`, deflated state in the URL fragment) and the idempotent merge; UI in `src/app/transfer.js`.
 - `src/achievements.js` – achievement definitions (pure; trophies + one creature per unit). `src/app/awards.js` – earning,
   toasts, the #/achievements page and the mastery celebration (fanfare, confetti, back to topic on first mastery).
 - `assets/sfx/` – sound effects (shared with the 11+ site); `assets/badges/` – accepted PixelLab badges (emoji until then).

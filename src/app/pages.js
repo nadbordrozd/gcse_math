@@ -2,6 +2,7 @@
 import { UNITS, SKILL, GENERATORS, SKILLS } from '../registry.js';
 import { state, save, replaceState, resetState, points } from './state.js';
 import { esc, gradeBadge, higherBadge, progressBar, areaStyle, AREA, STATUS, isDev, toast } from './ui.js';
+import { sendButtonsHTML, wireSend } from './transfer.js';
 import { needsPractice, inProgress, readyToLearn, unitLevel, overallSummary, visibleSkills, hasQuestions, isSecure } from './plan.js';
 
 const skillChip = (s, extra = '') => `<a class="plan-skill" href="#/skill/${s.id}" style="${areaStyle(s.area)}">${gradeBadge(s.grade)}<span class="ps-main"><b>${esc(s.title)} ${higherBadge(s)}</b><small>${esc(AREA[s.area].short || AREA[s.area].title)}${extra}</small></span>${points(s.id) ? progressBar(points(s.id)) : ''}</a>`;
@@ -66,8 +67,11 @@ export function renderSettings(root) {
           ${['auto', 'light', 'dark'].map((t) => `<label><input type="radio" name="theme" value="${t}" ${s.theme === t ? 'checked' : ''}> ${t[0].toUpperCase()}${t.slice(1)}</label>`).join('')}
         </fieldset>
       </form>
-      <h2>Your progress</h2>
-      <p class="muted small">Progress is saved in this browser only. Export it to move to another device.</p>
+      <h2>📲 Use another device</h2>
+      <p>Progress is saved in this browser only – there are no accounts. To switch devices (say from your phone to a laptop), send yourself a link: it carries all your progress. Open it on the other device and the two are combined, so nothing is lost on either side. Send a new link whenever you switch.</p>
+      ${sendButtonsHTML()}
+      <h2>Backup</h2>
+      <p class="muted small">Save your progress as a file, or load one you saved.</p>
       <div class="btn-row">
         <button class="btn export">Export progress</button>
         <label class="btn import">Import progress<input type="file" accept="application/json" hidden></label>
@@ -77,6 +81,7 @@ export function renderSettings(root) {
       ${flagged.length ? `<ul class="flagged">${flagged.slice().reverse().map((f) => `<li><code>${esc(f.archetype)}</code> · ${esc(f.difficulty)} · seed ${f.seed}${f.note ? ` – “${esc(f.note)}”` : ''} <span class="muted small">${esc(f.at.slice(0, 10))}</span></li>`).join('')}</ul><button class="btn small clear-flags">Clear reports</button>` : '<p class="muted">Use “⚑ Report” under a question if something looks wrong.</p>'}
       ${isDev() ? devStats() : ''}
     </section>`;
+  wireSend(root);
   const form = root.querySelector('.settings-form');
   form.addEventListener('change', () => {
     const f = new FormData(form);
@@ -136,6 +141,8 @@ export function renderAbout(root) {
       <p>A quick check is a short adaptive test on one topic – usually 3 to 6 questions. It works out which skills already look secure and which need practice, and builds your study plan. It never locks anything.</p>
       <h2>Mock exams</h2>
       <p>An optional timed paper across all topics, ordered from easiest to hardest like a real paper, with a rough grade estimate. Real papers include longer questions where you show working – these single-answer questions test the same skills.</p>
+      <h2>Phone and laptop</h2>
+      <p>There are no accounts: progress lives in the browser you use. To switch devices, go to <a href="#/settings">⚙︎ Settings</a> and send yourself a progress link. Opening it on the other device combines the two, so you can go back and forth without losing anything.</p>
       <h2>Where the questions come from</h2>
       <p>Question types are modelled on real GCSE papers. Every question is generated fresh with new numbers, so you can practise as much as you like. Spot a problem? Use <b>⚑ Report</b>.</p>
     </section>`;

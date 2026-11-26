@@ -8,6 +8,7 @@ import { renderPlan, renderSettings, renderAbout, applyTheme } from './pages.js'
 import { renderLearnIndex, renderTutorial, learnKey } from './learn.js';
 import { renderAchievements, syncAchievements, updateAchievementCount } from './awards.js';
 import { backfillCompletions } from './state.js';
+import { renderSync } from './transfer.js';
 import { soundEnabled, setSoundEnabled, preloadSounds } from './sounds.js';
 
 const root = document.getElementById('app');
@@ -34,6 +35,7 @@ function route() {
     case 'settings': renderSettings(root); break;
     case 'about': renderAbout(root); break;
     case 'achievements': renderAchievements(root); break;
+    case 'sync': renderSync(root, arg); break;
     case 'topic': renderHome(root, { unit: arg, skill: arg2 }); break;
     default: renderHome(root);
   }
